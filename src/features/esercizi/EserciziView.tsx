@@ -71,7 +71,7 @@ export function EserciziView() {
           + Nuovo
         </button>
       </div>
-      <p className="sub">Obiettivo di partenza (peso, serie, ripetizioni), tipo e recupero. Peso 0 kg vuol dire corpo libero.</p>
+      <p className="sub">Schema predefinito (peso, serie, ripetizioni), tipo e recupero: nel programma puoi cambiarlo giorno per giorno. Peso 0 kg vuol dire corpo libero.</p>
 
       {form && (
         <div className="form" id="xform">

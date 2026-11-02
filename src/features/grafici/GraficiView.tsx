@@ -8,7 +8,7 @@ import { fmt } from '../../lib/format';
 import { METRICS, repsByType, series, type Metric, type Point } from '../../lib/stats';
 
 export function GraficiView() {
-  const { exercises, entries } = useData();
+  const { exercises, done: entries } = useData();
   const [metric, setMetric] = useState<Metric>('peso');
   const [picked, setPicked] = useState<string | null>(null);
   const [selected, setSelected] = useState<Point | null>(null);

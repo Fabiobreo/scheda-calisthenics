@@ -15,6 +15,12 @@ export function parseDate(s: string): Date {
 /** 0 = lunedì ... 6 = domenica */
 export const weekdayIndex = (d: Date = new Date()) => (d.getDay() + 6) % 7;
 
+/** Data (YYYY-MM-DD) del giorno `weekday` nella settimana corrente, da lunedì a domenica. */
+export function weekDate(weekday: number, now: Date = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + weekday - weekdayIndex(now));
+  return toDateStr(d);
+}
+
 export const shortDate = (s: string) =>
   parseDate(s).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }).replace('.', '');
 

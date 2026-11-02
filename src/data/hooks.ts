@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/
 import { useRepo } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
-import type { EntryInput, ExerciseInput } from './types';
+import { todayStr } from '../lib/dates';
+import type { EntryInput, ExerciseInput, Scheme } from './types';
 
 const K = {
   exercises: ['exercises'] as QueryKey,
@@ -31,10 +32,14 @@ export function useData() {
   const en = useEntries();
   const pl = usePlan();
   const all = ex.data ?? [];
+  const entries = en.data ?? [];
+  const today = todayStr();
   return {
     exercises: all,
     active: all.filter((e) => !e.archivedAt),
-    entries: en.data ?? [],
+    entries,
+    /** solo fino a oggi: le registrazioni con data futura sono in programma, non ancora svolte */
+    done: entries.filter((e) => e.date <= today),
     plan: pl.data ?? [],
     isLoading: ex.isLoading || en.isLoading || pl.isLoading,
     error: ex.error ?? en.error ?? pl.error,
@@ -82,5 +87,8 @@ export const useDeleteEntry = () => useRepoMutation((r, id: string) => r.deleteE
 
 export const useAddPlanItem = () =>
   useRepoMutation((r, a: { weekday: number; exerciseId: string }) => r.addPlanItem(a.weekday, a.exerciseId), [K.plan]);
+
+export const useSetPlanScheme = () =>
+  useRepoMutation((r, a: { id: string; scheme: Scheme | null }) => r.setPlanScheme(a.id, a.scheme), [K.plan], 'Schema del giorno salvato');
 
 export const useRemovePlanItem = () => useRepoMutation((r, id: string) => r.removePlanItem(id), [K.plan]);

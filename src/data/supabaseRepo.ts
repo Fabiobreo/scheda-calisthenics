@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Repo } from './repo';
-import type { Entry, EntryInput, Exercise, ExerciseInput, PlanItem } from './types';
+import type { Entry, EntryInput, Exercise, ExerciseInput, PlanItem, Scheme } from './types';
 
 interface ExerciseRow {
   id: string;
@@ -30,6 +30,9 @@ interface PlanRow {
   weekday: number;
   exercise_id: string;
   sort_order: number;
+  sets: number | null;
+  reps: number | null;
+  weight: number | null;
 }
 
 const PAGE = 1000;
@@ -62,6 +65,7 @@ const toPlan = (r: PlanRow): PlanItem => ({
   weekday: r.weekday,
   exerciseId: r.exercise_id,
   sortOrder: r.sort_order,
+  scheme: r.sets === null || r.reps === null || r.weight === null ? null : { sets: r.sets, reps: r.reps, weight: Number(r.weight) },
 });
 
 function exercisePatch(p: Partial<ExerciseInput>) {
@@ -167,6 +171,14 @@ export function createSupabaseRepo(sb: SupabaseClient): Repo {
         await sb
           .from('plan_items')
           .insert({ weekday, exercise_id: exerciseId, sort_order: (last[0]?.sort_order ?? 0) + 1 }),
+      );
+    },
+    async setPlanScheme(id, scheme: Scheme | null) {
+      must(
+        await sb
+          .from('plan_items')
+          .update({ sets: scheme?.sets ?? null, reps: scheme?.reps ?? null, weight: scheme?.weight ?? null })
+          .eq('id', id),
       );
     },
     async removePlanItem(id) {

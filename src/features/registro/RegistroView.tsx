@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ConfirmButton, Seg, TypeChip } from '../../components/ui';
 import { useData, useDeleteEntry, useUpdateEntry } from '../../data/hooks';
 import { DIFFICULTIES, DIFFICULTY_LABEL, type Entry } from '../../data/types';
-import { longDate } from '../../lib/dates';
+import { longDate, todayStr } from '../../lib/dates';
 import { fmtSets } from '../../lib/format';
 import { recordEntryIds, totalReps } from '../../lib/stats';
 import { useLogger } from '../logger/Logger';
@@ -10,7 +10,7 @@ import { useLogger } from '../logger/Logger';
 const PAGE = 20;
 
 export function RegistroView() {
-  const { exercises, entries } = useData();
+  const { exercises, entries, done } = useData();
   const openLogger = useLogger();
   const setDifficulty = useUpdateEntry('Difficoltà salvata');
   const del = useDeleteEntry();
@@ -31,7 +31,8 @@ export function RegistroView() {
     );
 
   const byId = new Map(exercises.map((e) => [e.id, e]));
-  const prIds = recordEntryIds(entries);
+  const prIds = recordEntryIds(done);
+  const today = todayStr();
   // entries arriva già dalla più recente
   const byDate = new Map<string, Entry[]>();
   for (const e of entries) byDate.set(e.date, [...(byDate.get(e.date) ?? []), e]);
@@ -60,6 +61,7 @@ export function RegistroView() {
                     <div className="pmeta">{fmtSets(e.sets)}</div>
                     <div className="chips">
                       {ex && <TypeChip type={ex.type} />}
+                      {e.date > today && <span className="chip mut">In programma</span>}
                       {e.kind === 'attempt' && <span className="chip mut">Tentativo</span>}
                       {prIds.has(e.id) && <span className="chip pr">★ Record</span>}
                     </div>

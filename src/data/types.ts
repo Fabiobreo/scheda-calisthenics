@@ -41,10 +41,23 @@ export interface Entry {
 
 export type EntryInput = Omit<Entry, 'id' | 'createdAt'>;
 
+/** Serie × ripetizioni × peso: lo schema predefinito di un esercizio o quello di un giorno del programma. */
+export interface Scheme {
+  sets: number;
+  reps: number;
+  weight: number;
+}
+
 export interface PlanItem {
   id: string;
   /** 0 = lunedì ... 6 = domenica */
   weekday: number;
   exerciseId: string;
   sortOrder: number;
+  /** schema di questo giorno; null = usa quello predefinito dell'esercizio */
+  scheme: Scheme | null;
 }
+
+export const defaultScheme = (ex: Exercise): Scheme => ({ sets: ex.targetSets, reps: ex.targetReps, weight: ex.targetWeight });
+
+export const planScheme = (p: PlanItem, ex: Exercise): Scheme => p.scheme ?? defaultScheme(ex);

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Entry, Exercise } from '../data/types';
 import { niceScale, personalBest, recordEntryIds, repsByType, series } from './stats';
 import { fmtSets } from './format';
+import { weekDate } from './dates';
 
 let n = 0;
 const entry = (p: Partial<Entry> & Pick<Entry, 'exerciseId' | 'date' | 'sets'>): Entry => ({
@@ -93,5 +94,16 @@ describe('fmtSets', () => {
   });
   it('elenca le serie con pesi diversi', () => {
     expect(fmtSets([{ weight: 52.5, reps: 6 }, { weight: 50, reps: 5 }])).toBe('52,5 kg × 6 · 50 kg × 5');
+  });
+});
+
+describe('weekDate', () => {
+  it('dà la data del giorno nella settimana corrente, da lunedì a domenica', () => {
+    const mercoledi = new Date(2026, 10, 4);
+    expect(weekDate(0, mercoledi)).toBe('2026-11-02');
+    expect(weekDate(2, mercoledi)).toBe('2026-11-04');
+    expect(weekDate(6, mercoledi)).toBe('2026-11-08');
+    // domenica: il lunedì è quello precedente, non il successivo
+    expect(weekDate(0, new Date(2026, 10, 8))).toBe('2026-11-02');
   });
 });

@@ -95,13 +95,21 @@ export function createLocalRepo(): Repo {
     },
 
     async listPlan() {
-      return load().plan.sort((a, b) => a.sortOrder - b.sortOrder);
+      // i dati salvati prima dello schema per giorno non hanno il campo
+      return load()
+        .plan.map((p) => ({ ...p, scheme: p.scheme ?? null }))
+        .sort((a, b) => a.sortOrder - b.sortOrder);
     },
     async addPlanItem(weekday, exerciseId) {
       tx((db) => {
         if (db.plan.some((p) => p.weekday === weekday && p.exerciseId === exerciseId)) return;
         const order = db.plan.filter((p) => p.weekday === weekday).reduce((m, p) => Math.max(m, p.sortOrder), 0);
-        db.plan.push({ id: crypto.randomUUID(), weekday, exerciseId, sortOrder: order + 1 });
+        db.plan.push({ id: crypto.randomUUID(), weekday, exerciseId, sortOrder: order + 1, scheme: null });
+      });
+    },
+    async setPlanScheme(id, scheme) {
+      tx((db) => {
+        db.plan = db.plan.map((p) => (p.id === id ? { ...p, scheme } : p));
       });
     },
     async removePlanItem(id) {
