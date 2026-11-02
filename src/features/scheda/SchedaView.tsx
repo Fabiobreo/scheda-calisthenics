@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../app/toast';
-import { Field, Select, TypeChip } from '../../components/ui';
-import { useAddPlanItem, useData, useRemovePlanItem, useSetPlanScheme, useUpdateExercise } from '../../data/hooks';
-import { DIFFICULTY_LABEL, planScheme, type Exercise, type PlanItem } from '../../data/types';
-import { DAY_LONG, DAY_SHORT, longDate, shortDate, todayStr, weekDate, weekdayIndex } from '../../lib/dates';
+import { Field, Seg, Select, TypeChip } from '../../components/ui';
+import { useAddPlanItem, useApplyPlanChanges, useData, useRemovePlanItem, useSetPlanScheme, useUpdateExercise } from '../../data/hooks';
+import { DIFFICULTY_LABEL, type PlanChanges, type PlanItem, type Scheme } from '../../data/types';
+import { DAY_SHORT, addDays, inWeek, longDate, mondayOf, parseDate, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
 import { fmt, fmtSets, numInput, parseNum } from '../../lib/format';
-import { lastTraining, personalBest, recordEntryIds } from '../../lib/stats';
+import { byDay, copyWeek, weekItems, type CopyMode } from '../../lib/plan';
+import { lastTraining, personalBest, recordEntryIds, suggestScheme } from '../../lib/stats';
 import { useLogger } from '../logger/Logger';
 
 export function SchedaView() {
@@ -124,19 +125,41 @@ function Programma() {
   const openLogger = useLogger();
   const addItem = useAddPlanItem();
   const removeItem = useRemovePlanItem();
-  const today = weekdayIndex();
-  const [day, setDay] = useState(today);
+  const setScheme = useSetPlanScheme();
+  // qui e non nel pannello: il pannello si chiude subito e i callback di mutate non arriverebbero
+  const apply = useApplyPlanChanges();
+  const toast = useToast();
+  const today = todayStr();
+  const thisMonday = mondayOf(today);
+  const [monday, setMonday] = useState(thisMonday);
+  const [day, setDay] = useState(weekdayIndex());
   const [adding, setAdding] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
 
   const byId = new Map(active.map((e) => [e.id, e]));
-  const items = plan.filter((p) => p.weekday === day && byId.has(p.exerciseId));
+  const visible = plan.filter((p) => byId.has(p.exerciseId));
+  // il giorno scelto nella settimana mostrata: registrare da qui usa questa data, anche se futura
+  const date = addDays(monday, day);
+  const items = visible.filter((p) => p.date === date).sort(byDay);
+  const weekCount = visible.filter((p) => inWeek(p.date, monday)).length;
   const avail = active.filter((e) => !items.some((p) => p.exerciseId === e.id));
   const addId = avail.some((e) => e.id === adding) ? adding : (avail[0]?.id ?? '');
-  // il giorno scelto nella settimana corrente: registrare da qui usa questa data, anche se futura
-  const date = weekDate(day);
-  const future = date > todayStr();
+  const future = date > today;
   const title = longDate(date);
+  const dayName = title.split(' ')[0];
+
+  const reset = () => {
+    setEditing(null);
+    setAddOpen(false);
+  };
+  const goWeek = (m: string, d = day) => {
+    setMonday(m);
+    setDay(d);
+    reset();
+    setCopyOpen(false);
+  };
 
   return (
     <section className="card">
@@ -148,32 +171,57 @@ function Programma() {
           </button>
         )}
       </div>
-      <p className="sub">Scegli gli esercizi di ogni giorno con serie, ripetizioni e peso. Puoi registrare anche i giorni che devono ancora venire.</p>
+      <p className="sub">Scegli gli esercizi di ogni giorno con serie, ripetizioni, peso e recupero. Prepara una settimana e copiala in quelle dopo.</p>
+
+      <div className="weeknav">
+        <button className="x" onClick={() => goWeek(addDays(monday, -7))} aria-label="Settimana precedente">
+          ‹
+        </button>
+        <div className="weeknav-t">
+          <b>{weekLabel(monday)}</b>
+          {monday === thisMonday ? (
+            <span>Questa settimana</span>
+          ) : (
+            <button className="link small" onClick={() => goWeek(thisMonday, weekdayIndex())}>
+              Torna a oggi
+            </button>
+          )}
+        </div>
+        <button className="x" onClick={() => goWeek(addDays(monday, 7))} aria-label="Settimana successiva">
+          ›
+        </button>
+      </div>
+
       <div className="days">
-        {DAY_SHORT.map((d, i) => (
-          <button
-            key={d}
-            className={`day${i === day ? ' on' : ''}${i === today ? ' today' : ''}`}
-            onClick={() => {
-              setDay(i);
-              setEditing(null);
-            }}
-            aria-label={DAY_LONG[i]}
-            aria-pressed={i === day}
-          >
-            <span>{d}</span>
-            <i>{plan.filter((p) => p.weekday === i && byId.has(p.exerciseId)).length}</i>
-          </button>
-        ))}
+        {DAY_SHORT.map((d, i) => {
+          const dt = addDays(monday, i);
+          const n = visible.filter((p) => p.date === dt).length;
+          return (
+            <button
+              key={d}
+              className={`day${i === day ? ' on' : ''}${dt === today ? ' today' : ''}`}
+              onClick={() => {
+                setDay(i);
+                reset();
+              }}
+              aria-label={`${longDate(dt)}, ${n} ${n === 1 ? 'esercizio' : 'esercizi'}`}
+              aria-pressed={i === day}
+            >
+              <span>{d}</span>
+              <i>{parseDate(dt).getDate()}</i>
+              <small>{n ? `${n} es.` : '–'}</small>
+            </button>
+          );
+        })}
       </div>
       <h3 style={{ fontSize: 22, marginTop: 18 }}>{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
 
       <div className="plan">
-        {items.length === 0 && <p className="empty">Nessun esercizio per {DAY_LONG[day]}. Aggiungine uno qui sotto.</p>}
+        {items.length === 0 && <p className="empty">Nessun esercizio per {dayName}. Aggiungine uno qui sotto.</p>}
         {items.map((p) => {
           const ex = byId.get(p.exerciseId)!;
-          const sc = planScheme(p, ex);
-          // già registrato (o programmato) per la data di questo giorno
+          const sc = p.scheme;
+          // già registrato (o programmato) per questa data
           const saved = entries.find((e) => e.exerciseId === ex.id && e.kind === 'training' && e.date === date);
           const last = lastTraining(done, ex.id);
           return (
@@ -181,9 +229,9 @@ function Programma() {
               <div>
                 <div className="pname">{ex.name}</div>
                 <div className="pmeta">
-                  {sc.sets} × {sc.reps} · {fmt(sc.weight)} kg{!p.scheme && ' (predefinito)'}{' '}
+                  {sc.sets} × {sc.reps} · {fmt(sc.weight)} kg{sc.rest > 0 && ` · rec. ${sc.rest} s`}{' '}
                   {editing !== p.id && (
-                    <button className="link small" onClick={() => setEditing(p.id)} aria-label={`Modifica serie, ripetizioni e peso di ${ex.name} per ${DAY_LONG[day]}`}>
+                    <button className="link small" onClick={() => setEditing(p.id)} aria-label={`Modifica serie, ripetizioni, peso e recupero di ${ex.name} per ${dayName}`}>
                       Modifica
                     </button>
                   )}
@@ -211,11 +259,22 @@ function Programma() {
                 >
                   {saved ? 'Apri' : future ? 'Programma' : 'Registra'}
                 </button>
-                <button className="x" onClick={() => removeItem.mutate(p.id)} aria-label={`Togli ${ex.name} da ${DAY_LONG[day]}`}>
+                <button className="x" onClick={() => removeItem.mutate(p.id)} aria-label={`Togli ${ex.name} da ${dayName}`}>
                   ×
                 </button>
               </div>
-              {editing === p.id && <SchemeForm item={p} ex={ex} day={day} onDone={() => setEditing(null)} />}
+              {editing === p.id && (
+                <SchemeForm
+                  initial={sc}
+                  hint={`Vale solo per ${title}.`}
+                  saveLabel="Salva"
+                  onSave={(scheme) => {
+                    setScheme.mutate({ id: p.id, scheme });
+                    setEditing(null);
+                  }}
+                  onCancel={() => setEditing(null)}
+                />
+              )}
             </div>
           );
         })}
@@ -224,9 +283,24 @@ function Programma() {
       {avail.length > 0 ? (
         <div className="addrow">
           <Select label="Aggiungi esercizio" hideLabel value={addId} options={avail.map((e) => ({ v: e.id, l: e.name }))} onChange={setAdding} />
-          <button className="btn" disabled={!addId} onClick={() => addItem.mutate({ weekday: day, exerciseId: addId })}>
-            Aggiungi
-          </button>
+          {!addOpen && (
+            <button className="btn" disabled={!addId} onClick={() => setAddOpen(true)}>
+              Aggiungi
+            </button>
+          )}
+          {addOpen && addId && (
+            <SchemeForm
+              key={addId}
+              initial={suggestScheme(plan, done, addId)}
+              hint={`Per ${title}: poi puoi cambiarlo quando vuoi.`}
+              saveLabel="Aggiungi"
+              onSave={(scheme) => {
+                addItem.mutate({ date, exerciseId: addId, scheme });
+                setAddOpen(false);
+              }}
+              onCancel={() => setAddOpen(false)}
+            />
+          )}
         </div>
       ) : (
         active.length === 0 && (
@@ -235,27 +309,147 @@ function Programma() {
           </p>
         )
       )}
+
+      {weekCount > 0 && !copyOpen && (
+        <div className="row" style={{ marginTop: 16 }}>
+          <button className="btn small ghost" onClick={() => setCopyOpen(true)}>
+            Copia questa settimana…
+          </button>
+        </div>
+      )}
+      {copyOpen && (
+        <CopyWeek
+          plan={visible}
+          from={monday}
+          onCopy={(changes, n) => {
+            apply.mutate(changes, { onSuccess: () => toast(`Settimana copiata in ${n} ${n === 1 ? 'settimana' : 'settimane'}`) });
+            setCopyOpen(false);
+          }}
+          onCancel={() => setCopyOpen(false)}
+        />
+      )}
     </section>
+  );
+}
+
+/** Copia gli esercizi della settimana `from` (con il loro schema) sulle settimane scelte. */
+function CopyWeek({
+  plan,
+  from,
+  onCopy,
+  onCancel,
+}: {
+  plan: PlanItem[];
+  from: string;
+  /** `weeks`: quante settimane sono state scelte */
+  onCopy: (changes: PlanChanges, weeks: number) => void;
+  onCancel: () => void;
+}) {
+  const toast = useToast();
+  const [shown, setShown] = useState(8);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [mode, setMode] = useState<CopyMode>('merge');
+
+  const weeks = Array.from({ length: shown }, (_, i) => addDays(from, 7 * (i + 1)));
+  const count = (m: string) => weekItems(plan, m).length;
+  const anyFull = [...picked].some((m) => count(m) > 0);
+  const toggle = (m: string) => {
+    const next = new Set(picked);
+    if (next.has(m)) next.delete(m);
+    else next.add(m);
+    setPicked(next);
+  };
+
+  const copy = () => {
+    if (!picked.size) return toast('Scegli almeno una settimana');
+    const changes = copyWeek(plan, from, [...picked], anyFull ? mode : 'merge');
+    if (!changes.add.length && !changes.remove.length) return toast('Le settimane scelte hanno già tutti questi esercizi');
+    onCopy(changes, picked.size);
+  };
+
+  return (
+    <div className="form" style={{ marginTop: 16 }}>
+      <div className="card-h">
+        <h3 style={{ fontSize: 20 }}>Copia {weekLabel(from)}</h3>
+        <button className="link small" onClick={() => setPicked(new Set(weeks.slice(0, 4)))}>
+          Prossime 4
+        </button>
+      </div>
+      <p className="hint">Esercizi, serie, ripetizioni, peso e recupero vanno negli stessi giorni delle settimane scelte. Poi li ritocchi giorno per giorno.</p>
+      <div className="weeks">
+        {weeks.map((m) => {
+          const n = count(m);
+          return (
+            <label className="check-row" key={m}>
+              <input type="checkbox" checked={picked.has(m)} onChange={() => toggle(m)} />
+              <span>{weekLabel(m)}</span>
+              <span className="hint">{n ? `${n} ${n === 1 ? 'esercizio' : 'esercizi'}` : 'vuota'}</span>
+            </label>
+          );
+        })}
+      </div>
+      <div className="row">
+        <button className="link small" onClick={() => setShown(shown + 8)}>
+          Mostra altre settimane
+        </button>
+      </div>
+      {anyFull && (
+        <div className="fld">
+          <span>Nelle settimane che hanno già esercizi</span>
+          <Seg
+            label="Nelle settimane che hanno già esercizi"
+            value={mode}
+            options={[
+              { v: 'merge', l: 'Aggiungi i mancanti' },
+              { v: 'replace', l: 'Sostituisci tutto' },
+            ]}
+            onChange={setMode}
+          />
+          <span className="fld-hint">
+            {mode === 'merge' ? 'Quello che c’è già resta com’è, con le sue serie.' : 'Gli esercizi già programmati in quelle settimane vengono tolti.'}
+          </span>
+        </div>
+      )}
+      <div className="row">
+        <button className="btn small" onClick={copy} disabled={!picked.size}>
+          {picked.size ? `Copia in ${picked.size} ${picked.size === 1 ? 'settimana' : 'settimane'}` : 'Copia'}
+        </button>
+        <button className="btn small ghost" onClick={onCancel}>
+          Annulla
+        </button>
+      </div>
+    </div>
   );
 }
 
 const isInt = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
 
-/** Serie, ripetizioni e peso di un esercizio in un giorno: non tocca lo schema predefinito né gli altri giorni. */
-function SchemeForm({ item, ex, day, onDone }: { item: PlanItem; ex: Exercise; day: number; onDone: () => void }) {
-  const setScheme = useSetPlanScheme();
+/** Serie, ripetizioni, peso e recupero di un esercizio in un giorno: non tocca gli altri giorni. */
+function SchemeForm({
+  initial,
+  hint,
+  saveLabel,
+  onSave,
+  onCancel,
+}: {
+  initial: Scheme;
+  hint: string;
+  saveLabel: string;
+  onSave: (s: Scheme) => void;
+  onCancel: () => void;
+}) {
   const toast = useToast();
-  const sc = planScheme(item, ex);
-  const [weight, setWeight] = useState(numInput(sc.weight));
-  const [sets, setSets] = useState(String(sc.sets));
-  const [reps, setReps] = useState(String(sc.reps));
+  const [weight, setWeight] = useState(numInput(initial.weight));
+  const [sets, setSets] = useState(String(initial.sets));
+  const [reps, setReps] = useState(String(initial.reps));
+  const [rest, setRest] = useState(String(initial.rest));
 
   const save = () => {
-    const scheme = { weight: parseNum(weight || '0'), sets: Number(sets), reps: Number(reps) };
+    const scheme = { weight: parseNum(weight || '0'), sets: Number(sets), reps: Number(reps), rest: Number(rest || '0') };
     if (!(scheme.weight >= 0 && scheme.weight < 10000) || !isInt(scheme.sets, 1, 50) || !isInt(scheme.reps, 1, 1000))
       return toast('Controlla peso, serie e ripetizioni');
-    setScheme.mutate({ id: item.id, scheme });
-    onDone();
+    if (!isInt(scheme.rest, 0, 3600)) return toast('Recupero tra 0 e 3600 secondi');
+    onSave(scheme);
   };
 
   return (
@@ -265,25 +459,15 @@ function SchemeForm({ item, ex, day, onDone }: { item: PlanItem; ex: Exercise; d
         <Field label="Serie" inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} />
         <Field label="Rip." inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} />
       </div>
-      <p className="hint">
-        Vale solo per {DAY_LONG[day]}. Predefinito: {ex.targetSets} × {ex.targetReps} · {fmt(ex.targetWeight)} kg.
-      </p>
+      <div className="grid2">
+        <Field label="Recupero (s)" inputMode="numeric" value={rest} onChange={(e) => setRest(e.target.value)} />
+      </div>
+      <p className="hint">{hint} Peso 0 kg vuol dire corpo libero, recupero 0 niente timer.</p>
       <div className="row">
         <button className="btn small" onClick={save}>
-          Salva
+          {saveLabel}
         </button>
-        {item.scheme && (
-          <button
-            className="btn small ghost"
-            onClick={() => {
-              setScheme.mutate({ id: item.id, scheme: null });
-              onDone();
-            }}
-          >
-            Usa predefinito
-          </button>
-        )}
-        <button className="btn small ghost" onClick={onDone}>
+        <button className="btn small ghost" onClick={onCancel}>
           Annulla
         </button>
       </div>

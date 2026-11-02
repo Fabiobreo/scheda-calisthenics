@@ -15,10 +15,28 @@ export function parseDate(s: string): Date {
 /** 0 = lunedì ... 6 = domenica */
 export const weekdayIndex = (d: Date = new Date()) => (d.getDay() + 6) % 7;
 
-/** Data (YYYY-MM-DD) del giorno `weekday` nella settimana corrente, da lunedì a domenica. */
-export function weekDate(weekday: number, now: Date = new Date()): string {
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + weekday - weekdayIndex(now));
+/** YYYY-MM-DD spostata di `n` giorni (anche negativi). */
+export function addDays(s: string, n: number): string {
+  const d = parseDate(s);
+  d.setDate(d.getDate() + n);
   return toDateStr(d);
+}
+
+/** Lunedì (YYYY-MM-DD) della settimana che contiene la data. */
+export const mondayOf = (s: string) => addDays(s, -weekdayIndex(parseDate(s)));
+
+/** Giorni tra due date YYYY-MM-DD (b - a). Arrotondato: il cambio dell'ora legale non sposta il conto. */
+export const daysBetween = (a: string, b: string) => Math.round((parseDate(b).getTime() - parseDate(a).getTime()) / 86400000);
+
+/** true se `s` cade nella settimana che inizia dal lunedì `monday`. */
+export const inWeek = (s: string, monday: string) => s >= monday && s <= addDays(monday, 6);
+
+/** "2–8 nov", oppure "30 nov – 6 dic" se la settimana cambia mese. */
+export function weekLabel(monday: string): string {
+  const a = parseDate(monday);
+  const b = parseDate(addDays(monday, 6));
+  const month = (d: Date) => d.toLocaleDateString('it-IT', { month: 'short' }).replace('.', '');
+  return a.getMonth() === b.getMonth() ? `${a.getDate()}–${b.getDate()} ${month(b)}` : `${a.getDate()} ${month(a)} – ${b.getDate()} ${month(b)}`;
 }
 
 export const shortDate = (s: string) =>

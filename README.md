@@ -71,13 +71,15 @@ supabase/migrations/  schema SQL
 
 ## Modello dati
 
-- **exercises**: catalogo con schema predefinito (serie × rip. × kg), tipo (forza/volume/tecnico), recupero in secondi,
-  flag `in_records` e archiviazione (archiviare conserva lo storico, eliminare lo cancella).
+- **exercises**: catalogo dei movimenti, senza serie né ripetizioni: nome (unico per utente, maiuscole a parte),
+  tipo (forza/volume/tecnico), flag `in_records` e archiviazione (archiviare conserva lo storico, eliminare lo cancella).
+  Così "Trazioni" è un solo esercizio nei grafici, qualunque schema si usi.
 - **entries**: un esercizio svolto in una data, con `sets` = `[{ weight, reps }, ...]`, difficoltà e `kind`
   (`training` o `attempt` per i tentativi di record). Una data futura vuol dire allenamento in programma:
   compare nello storico come "In programma" ed entra in record e grafici solo quando arriva quel giorno.
-- **plan_items**: esercizi assegnati a ogni giorno della settimana (0 = lunedì), con `sets`/`reps`/`weight` propri
-  del giorno; tutti null = schema predefinito dell'esercizio.
+- **plan_items**: esercizi programmati in una data del calendario (`date`), con `sets`/`reps`/`weight`/`rest_seconds`
+  del giorno (obbligatori: lo schema sta solo qui). Un esercizio al massimo una volta per giorno. Nell'app si scorre
+  settimana per settimana e una settimana si può copiare nelle successive.
 
 I record personali non sono più una lista separata: sono calcolati dalla miglior serie singola
 (più peso, a parità di peso più ripetizioni) tra allenamenti e tentativi degli esercizi segnati "nei record".

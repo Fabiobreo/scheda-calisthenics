@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Entry, Exercise } from '../data/types';
-import { niceScale, personalBest, recordEntryIds, repsByType, series } from './stats';
+import type { Entry, Exercise, PlanItem } from '../data/types';
+import { niceScale, personalBest, recordEntryIds, repsByType, series, suggestedRest, suggestScheme } from './stats';
 import { fmtSets } from './format';
-import { weekDate } from './dates';
+import { addDays, mondayOf, weekLabel } from './dates';
+import { copyWeek } from './plan';
 
 let n = 0;
 const entry = (p: Partial<Entry> & Pick<Entry, 'exerciseId' | 'date' | 'sets'>): Entry => ({
@@ -97,13 +98,80 @@ describe('fmtSets', () => {
   });
 });
 
-describe('weekDate', () => {
-  it('dà la data del giorno nella settimana corrente, da lunedì a domenica', () => {
-    const mercoledi = new Date(2026, 10, 4);
-    expect(weekDate(0, mercoledi)).toBe('2026-11-02');
-    expect(weekDate(2, mercoledi)).toBe('2026-11-04');
-    expect(weekDate(6, mercoledi)).toBe('2026-11-08');
+describe('date delle settimane', () => {
+  it('trova il lunedì della settimana, anche di domenica', () => {
+    expect(mondayOf('2026-11-04')).toBe('2026-11-02');
+    expect(mondayOf('2026-11-02')).toBe('2026-11-02');
     // domenica: il lunedì è quello precedente, non il successivo
-    expect(weekDate(0, new Date(2026, 10, 8))).toBe('2026-11-02');
+    expect(mondayOf('2026-11-08')).toBe('2026-11-02');
+  });
+
+  it("sposta le date oltre mese, anno e cambio dell'ora legale", () => {
+    expect(addDays('2026-10-26', 7)).toBe('2026-11-02');
+    expect(addDays('2026-12-28', 7)).toBe('2027-01-04');
+    expect(addDays('2027-03-22', 7)).toBe('2027-03-29');
+    expect(addDays('2026-11-02', -7)).toBe('2026-10-26');
+  });
+
+  it('scrive la settimana, con due mesi se serve', () => {
+    expect(weekLabel('2026-11-02')).toBe('2–8 nov');
+    expect(weekLabel('2026-11-30')).toBe('30 nov – 6 dic');
+  });
+});
+
+describe('copyWeek', () => {
+  const sc = (sets: number) => ({ sets, reps: 5, weight: 0, rest: 90 });
+  const at = (date: string, exerciseId: string, sortOrder: number, sets = 3): PlanItem => ({ id: `p${++n}`, date, exerciseId, sortOrder, scheme: sc(sets) });
+  const plan = [at('2026-11-02', 'trazioni', 1, 5), at('2026-11-02', 'dip', 2), at('2026-11-05', 'squat', 1)];
+
+  it('copia esercizi e schema negli stessi giorni delle settimane scelte', () => {
+    const { add, remove } = copyWeek(plan, '2026-11-02', ['2026-11-09', '2026-11-16'], 'merge');
+    expect(remove).toEqual([]);
+    expect(add.map((p) => `${p.date} ${p.exerciseId} ${p.scheme.sets}`)).toEqual([
+      '2026-11-09 trazioni 5',
+      '2026-11-09 dip 3',
+      '2026-11-12 squat 3',
+      '2026-11-16 trazioni 5',
+      '2026-11-16 dip 3',
+      '2026-11-19 squat 3',
+    ]);
+  });
+
+  it('in merge lascia com’è quello che c’è già e mette i nuovi in coda al giorno', () => {
+    const already = at('2026-11-09', 'trazioni', 1, 8);
+    const { add, remove } = copyWeek([...plan, already], '2026-11-02', ['2026-11-09'], 'merge');
+    expect(remove).toEqual([]);
+    expect(add.map((p) => `${p.date} ${p.exerciseId} ${p.sortOrder}`)).toEqual(['2026-11-09 dip 2', '2026-11-12 squat 1']);
+  });
+
+  it('in replace toglie tutta la settimana di destinazione', () => {
+    const already = at('2026-11-10', 'plank', 1);
+    const { add, remove } = copyWeek([...plan, already], '2026-11-02', ['2026-11-09'], 'replace');
+    expect(remove).toEqual([already.id]);
+    expect(add).toHaveLength(3);
+  });
+
+  it('ignora la settimana di partenza tra le destinazioni', () => {
+    expect(copyWeek(plan, '2026-11-02', ['2026-11-02'], 'replace')).toEqual({ remove: [], add: [] });
+  });
+});
+
+describe('suggestScheme', () => {
+  const item = (exerciseId: string, scheme: PlanItem['scheme']): PlanItem => ({ id: `p${++n}`, date: '2026-11-02', exerciseId, sortOrder: 0, scheme });
+
+  it("prende lo schema che l'esercizio ha già nel programma, l'ultimo se sono più d'uno", () => {
+    const plan = [item('dip', { sets: 3, reps: 8, weight: 0, rest: 60 }), item('dip', { sets: 5, reps: 5, weight: 20, rest: 120 })];
+    expect(suggestScheme(plan, [], 'dip')).toEqual({ sets: 5, reps: 5, weight: 20, rest: 120 });
+    expect(suggestedRest(plan, 'dip')).toBe(120);
+  });
+
+  it("senza programma parte dall'ultimo allenamento, con il recupero predefinito", () => {
+    const es = [dip([[30, 6], [25, 6], [25, 5]], '2026-11-09'), dip([[10, 10]], '2026-11-02')];
+    expect(suggestScheme([], es, 'dip')).toEqual({ sets: 3, reps: 6, weight: 30, rest: 90 });
+    expect(suggestedRest([], 'dip')).toBe(90);
+  });
+
+  it('senza dati propone 3 × 8 a corpo libero', () => {
+    expect(suggestScheme([], [], 'dip')).toEqual({ sets: 3, reps: 8, weight: 0, rest: 90 });
   });
 });

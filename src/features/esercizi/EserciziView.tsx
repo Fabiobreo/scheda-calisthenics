@@ -3,33 +3,25 @@ import { useToast } from '../../app/toast';
 import { ConfirmButton, Field, Select, TypeChip } from '../../components/ui';
 import { useArchiveExercise, useCreateExercise, useData, useDeleteExercise, useUpdateExercise } from '../../data/hooks';
 import { EXERCISE_TYPES, TYPE_LABEL, type Exercise, type ExerciseType } from '../../data/types';
-import { fmt, numInput, parseNum } from '../../lib/format';
 
 interface Form {
   id: string | null;
   name: string;
-  weight: string;
-  sets: string;
-  reps: string;
-  rest: string;
   type: ExerciseType;
   inRecords: boolean;
 }
 
-const blank: Form = { id: null, name: '', weight: '0', sets: '3', reps: '8', rest: '90', type: 'volume', inRecords: false };
+const blank: Form = { id: null, name: '', type: 'volume', inRecords: false };
 
 const toForm = (e: Exercise): Form => ({
   id: e.id,
   name: e.name,
-  weight: numInput(e.targetWeight),
-  sets: String(e.targetSets),
-  reps: String(e.targetReps),
-  rest: String(e.restSeconds),
   type: e.type,
   inRecords: e.inRecords,
 });
 
-const isInt = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
+/** Confronto dei nomi come lo fa il database: maiuscole e spazi esterni non contano. */
+const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 export function EserciziView() {
   const { exercises, active, entries } = useData();
@@ -47,15 +39,11 @@ export function EserciziView() {
   const save = () => {
     if (!form) return;
     const name = form.name.trim();
-    const weight = parseNum(form.weight || '0');
-    const sets = Number(form.sets);
-    const reps = Number(form.reps);
-    const rest = Number(form.rest || '0');
     if (!name) return toast("Scrivi il nome dell'esercizio");
     if (name.length > 80) return toast('Nome troppo lungo');
-    if (!(weight >= 0 && weight < 10000) || !isInt(sets, 1, 50) || !isInt(reps, 1, 1000)) return toast('Controlla peso, serie e ripetizioni');
-    if (!isInt(rest, 0, 3600)) return toast('Recupero tra 0 e 3600 secondi');
-    const body = { name, type: form.type, targetSets: sets, targetReps: reps, targetWeight: weight, restSeconds: rest, inRecords: form.inRecords };
+    const twin = exercises.find((e) => e.id !== form.id && sameName(e.name, name));
+    if (twin) return toast(twin.archivedAt ? `"${twin.name}" esiste già tra gli archiviati: ripristinalo` : `"${twin.name}" esiste già`);
+    const body = { name, type: form.type, inRecords: form.inRecords };
     if (form.id) update.mutate({ id: form.id, patch: body });
     else create.mutate(body);
     setForm(null);
@@ -71,20 +59,12 @@ export function EserciziView() {
           + Nuovo
         </button>
       </div>
-      <p className="sub">Schema predefinito (peso, serie, ripetizioni), tipo e recupero: nel programma puoi cambiarlo giorno per giorno. Peso 0 kg vuol dire corpo libero.</p>
+      <p className="sub">Solo il movimento, senza serie e ripetizioni: quelle le scegli nel programma, giorno per giorno. Così i grafici seguono l'esercizio qualunque schema usi.</p>
 
       {form && (
         <div className="form" id="xform">
           <Field label="Nome" value={form.name} autoComplete="off" autoFocus maxLength={80} onChange={(e) => patch({ name: e.target.value })} />
-          <div className="grid3">
-            <Field label="Peso (kg)" inputMode="decimal" value={form.weight} onChange={(e) => patch({ weight: e.target.value })} />
-            <Field label="Serie" inputMode="numeric" value={form.sets} onChange={(e) => patch({ sets: e.target.value })} />
-            <Field label="Rip." inputMode="numeric" value={form.reps} onChange={(e) => patch({ reps: e.target.value })} />
-          </div>
-          <div className="grid2">
-            <Select label="Tipo" value={form.type} options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))} onChange={(type) => patch({ type })} />
-            <Field label="Recupero (s)" inputMode="numeric" value={form.rest} onChange={(e) => patch({ rest: e.target.value })} />
-          </div>
+          <Select label="Tipo" value={form.type} options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))} onChange={(type) => patch({ type })} />
           <label className="check-row">
             <input type="checkbox" checked={form.inRecords} onChange={(e) => patch({ inRecords: e.target.checked })} />
             Mostra nei record personali
@@ -105,9 +85,6 @@ export function EserciziView() {
         <div className="entry" key={e.id}>
           <div>
             <b>{e.name}</b>
-            <div className="pmeta">
-              {e.targetSets} serie × {e.targetReps} rip. · {fmt(e.targetWeight)} kg · recupero {e.restSeconds} s
-            </div>
             <div className="chips">
               <TypeChip type={e.type} />
               {e.inRecords && <span className="chip mut">Nei record</span>}

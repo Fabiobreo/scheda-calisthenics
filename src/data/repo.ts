@@ -1,4 +1,4 @@
-import type { Entry, EntryInput, Exercise, ExerciseInput, PlanItem, Scheme } from './types';
+import type { Entry, EntryInput, Exercise, ExerciseInput, PlanChanges, PlanItem, Scheme } from './types';
 
 /** Accesso ai dati. Due implementazioni: Supabase (cloud) e localStorage (modalità locale). */
 export interface Repo {
@@ -15,8 +15,10 @@ export interface Repo {
   deleteEntry(id: string): Promise<void>;
 
   listPlan(): Promise<PlanItem[]>;
-  addPlanItem(weekday: number, exerciseId: string): Promise<void>;
-  /** null = torna allo schema predefinito dell'esercizio */
-  setPlanScheme(id: string, scheme: Scheme | null): Promise<void>;
+  /** in fondo agli esercizi del giorno `date` (YYYY-MM-DD) */
+  addPlanItem(date: string, exerciseId: string, scheme: Scheme): Promise<void>;
+  setPlanScheme(id: string, scheme: Scheme): Promise<void>;
   removePlanItem(id: string): Promise<void>;
+  /** prima toglie, poi aggiunge */
+  applyPlanChanges(changes: PlanChanges): Promise<void>;
 }

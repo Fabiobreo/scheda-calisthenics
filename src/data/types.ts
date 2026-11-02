@@ -12,10 +12,6 @@ export interface Exercise {
   id: string;
   name: string;
   type: ExerciseType;
-  targetSets: number;
-  targetReps: number;
-  targetWeight: number;
-  restSeconds: number;
   inRecords: boolean;
   sortOrder: number;
   archivedAt: string | null;
@@ -41,23 +37,31 @@ export interface Entry {
 
 export type EntryInput = Omit<Entry, 'id' | 'createdAt'>;
 
-/** Serie × ripetizioni × peso: lo schema predefinito di un esercizio o quello di un giorno del programma. */
+/** Serie × ripetizioni × peso e recupero di un esercizio in un giorno del programma. */
 export interface Scheme {
   sets: number;
   reps: number;
   weight: number;
+  /** secondi di recupero tra le serie; 0 = niente timer */
+  rest: number;
 }
 
 export interface PlanItem {
   id: string;
-  /** 0 = lunedì ... 6 = domenica */
-  weekday: number;
+  /** YYYY-MM-DD: il giorno del calendario in cui è programmato */
+  date: string;
   exerciseId: string;
   sortOrder: number;
-  /** schema di questo giorno; null = usa quello predefinito dell'esercizio */
-  scheme: Scheme | null;
+  scheme: Scheme;
 }
 
-export const defaultScheme = (ex: Exercise): Scheme => ({ sets: ex.targetSets, reps: ex.targetReps, weight: ex.targetWeight });
+export type PlanItemInput = Omit<PlanItem, 'id'>;
 
-export const planScheme = (p: PlanItem, ex: Exercise): Scheme => p.scheme ?? defaultScheme(ex);
+/** Modifica di più giorni in un colpo (es. copia di una settimana): id da togliere, righe da aggiungere. */
+export interface PlanChanges {
+  remove: string[];
+  add: PlanItemInput[];
+}
+
+/** Recupero quando non c'è uno schema da cui prenderlo. */
+export const DEFAULT_REST = 90;

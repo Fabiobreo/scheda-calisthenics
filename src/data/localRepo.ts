@@ -1,5 +1,7 @@
 import type { Repo } from './repo';
-import type { Entry, Exercise, PlanItem } from './types';
+import { addDays, mondayOf, todayStr } from '../lib/dates';
+import { byDay } from '../lib/plan';
+import { DEFAULT_REST, type Entry, type Exercise, type PlanItem, type Scheme } from './types';
 
 const KEY = 'scheda:local-db:v1';
 
@@ -9,10 +11,38 @@ interface Db {
   plan: PlanItem[];
 }
 
+/** Esercizio salvato prima che lo schema passasse al programma. */
+type LegacyExercise = Exercise & { targetSets?: number; targetReps?: number; targetWeight?: number; restSeconds?: number };
+
+/** Riga del programma salvata quando era per giorno della settimana (0 = lunedì). */
+type LegacyPlanItem = PlanItem & { weekday?: number };
+
+/**
+ * Porta i dati vecchi al formato attuale, come le migration del cloud:
+ * lo schema predefinito passa dall'esercizio al programma (0003), la settimana tipo diventa la settimana in corso (0004).
+ */
+function upgrade(db: Db): Db {
+  const legacy = new Map((db.exercises as LegacyExercise[]).map((e) => [e.id, e]));
+  const monday = mondayOf(todayStr());
+  db.plan = (db.plan as LegacyPlanItem[]).map(({ weekday, ...p }) => {
+    const ex = legacy.get(p.exerciseId);
+    const old = p.scheme as Partial<Scheme> | null;
+    const scheme: Scheme = {
+      sets: old?.sets ?? ex?.targetSets ?? 3,
+      reps: old?.reps ?? ex?.targetReps ?? 8,
+      weight: old?.weight ?? ex?.targetWeight ?? 0,
+      rest: old?.rest ?? ex?.restSeconds ?? DEFAULT_REST,
+    };
+    return { ...p, date: p.date ?? addDays(monday, weekday ?? 0), scheme };
+  });
+  db.exercises = (db.exercises as LegacyExercise[]).map(({ targetSets, targetReps, targetWeight, restSeconds, ...e }) => e);
+  return db;
+}
+
 function load(): Db {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as Db;
+    if (raw) return upgrade(JSON.parse(raw) as Db);
   } catch {
     /* storage non disponibile o corrotto: riparto vuoto */
   }
@@ -95,16 +125,13 @@ export function createLocalRepo(): Repo {
     },
 
     async listPlan() {
-      // i dati salvati prima dello schema per giorno non hanno il campo
-      return load()
-        .plan.map((p) => ({ ...p, scheme: p.scheme ?? null }))
-        .sort((a, b) => a.sortOrder - b.sortOrder);
+      return load().plan.sort(byDay);
     },
-    async addPlanItem(weekday, exerciseId) {
+    async addPlanItem(date, exerciseId, scheme) {
       tx((db) => {
-        if (db.plan.some((p) => p.weekday === weekday && p.exerciseId === exerciseId)) return;
-        const order = db.plan.filter((p) => p.weekday === weekday).reduce((m, p) => Math.max(m, p.sortOrder), 0);
-        db.plan.push({ id: crypto.randomUUID(), weekday, exerciseId, sortOrder: order + 1, scheme: null });
+        if (db.plan.some((p) => p.date === date && p.exerciseId === exerciseId)) return;
+        const order = db.plan.filter((p) => p.date === date).reduce((m, p) => Math.max(m, p.sortOrder), 0);
+        db.plan.push({ id: crypto.randomUUID(), date, exerciseId, sortOrder: order + 1, scheme });
       });
     },
     async setPlanScheme(id, scheme) {
@@ -115,6 +142,15 @@ export function createLocalRepo(): Repo {
     async removePlanItem(id) {
       tx((db) => {
         db.plan = db.plan.filter((p) => p.id !== id);
+      });
+    },
+    async applyPlanChanges({ remove, add }) {
+      tx((db) => {
+        const gone = new Set(remove);
+        db.plan = db.plan.filter((p) => !gone.has(p.id));
+        // come il vincolo unique del cloud: un esercizio una volta sola per giorno
+        for (const p of add)
+          if (!db.plan.some((x) => x.date === p.date && x.exerciseId === p.exerciseId)) db.plan.push({ ...p, id: crypto.randomUUID() });
       });
     },
   };

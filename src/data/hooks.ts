@@ -3,7 +3,7 @@ import { useRepo } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
 import { todayStr } from '../lib/dates';
-import type { EntryInput, ExerciseInput, Scheme } from './types';
+import type { EntryInput, ExerciseInput, PlanChanges, Scheme } from './types';
 
 const K = {
   exercises: ['exercises'] as QueryKey,
@@ -86,9 +86,15 @@ export const useUpdateEntry = (okMsg?: string) =>
 export const useDeleteEntry = () => useRepoMutation((r, id: string) => r.deleteEntry(id), [K.entries]);
 
 export const useAddPlanItem = () =>
-  useRepoMutation((r, a: { weekday: number; exerciseId: string }) => r.addPlanItem(a.weekday, a.exerciseId), [K.plan]);
+  useRepoMutation(
+    (r, a: { date: string; exerciseId: string; scheme: Scheme }) => r.addPlanItem(a.date, a.exerciseId, a.scheme),
+    [K.plan],
+  );
 
 export const useSetPlanScheme = () =>
-  useRepoMutation((r, a: { id: string; scheme: Scheme | null }) => r.setPlanScheme(a.id, a.scheme), [K.plan], 'Schema del giorno salvato');
+  useRepoMutation((r, a: { id: string; scheme: Scheme }) => r.setPlanScheme(a.id, a.scheme), [K.plan], 'Schema del giorno salvato');
 
 export const useRemovePlanItem = () => useRepoMutation((r, id: string) => r.removePlanItem(id), [K.plan]);
+
+export const useApplyPlanChanges = (okMsg?: string) =>
+  useRepoMutation((r, a: PlanChanges) => r.applyPlanChanges(a), [K.plan], okMsg);

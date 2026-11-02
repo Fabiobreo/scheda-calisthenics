@@ -1,15 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Repo } from './repo';
-import type { Entry, EntryInput, Exercise, ExerciseInput, PlanItem, Scheme } from './types';
+import type { Entry, EntryInput, Exercise, ExerciseInput, PlanItem, PlanItemInput, Scheme } from './types';
 
 interface ExerciseRow {
   id: string;
   name: string;
   type: Exercise['type'];
-  target_sets: number;
-  target_reps: number;
-  target_weight: number;
-  rest_seconds: number;
   in_records: boolean;
   sort_order: number;
   archived_at: string | null;
@@ -27,12 +23,13 @@ interface EntryRow {
 
 interface PlanRow {
   id: string;
-  weekday: number;
+  date: string;
   exercise_id: string;
   sort_order: number;
-  sets: number | null;
-  reps: number | null;
-  weight: number | null;
+  sets: number;
+  reps: number;
+  weight: number;
+  rest_seconds: number;
 }
 
 const PAGE = 1000;
@@ -41,10 +38,6 @@ const toExercise = (r: ExerciseRow): Exercise => ({
   id: r.id,
   name: r.name,
   type: r.type,
-  targetSets: r.target_sets,
-  targetReps: r.target_reps,
-  targetWeight: Number(r.target_weight),
-  restSeconds: r.rest_seconds,
   inRecords: r.in_records,
   sortOrder: r.sort_order,
   archivedAt: r.archived_at,
@@ -62,23 +55,23 @@ const toEntry = (r: EntryRow): Entry => ({
 
 const toPlan = (r: PlanRow): PlanItem => ({
   id: r.id,
-  weekday: r.weekday,
+  date: r.date,
   exerciseId: r.exercise_id,
   sortOrder: r.sort_order,
-  scheme: r.sets === null || r.reps === null || r.weight === null ? null : { sets: r.sets, reps: r.reps, weight: Number(r.weight) },
+  scheme: { sets: r.sets, reps: r.reps, weight: Number(r.weight), rest: r.rest_seconds },
 });
 
 function exercisePatch(p: Partial<ExerciseInput>) {
   const row: Record<string, unknown> = {};
   if (p.name !== undefined) row.name = p.name;
   if (p.type !== undefined) row.type = p.type;
-  if (p.targetSets !== undefined) row.target_sets = p.targetSets;
-  if (p.targetReps !== undefined) row.target_reps = p.targetReps;
-  if (p.targetWeight !== undefined) row.target_weight = p.targetWeight;
-  if (p.restSeconds !== undefined) row.rest_seconds = p.restSeconds;
   if (p.inRecords !== undefined) row.in_records = p.inRecords;
   return row;
 }
+
+const schemeRow = (s: Scheme) => ({ sets: s.sets, reps: s.reps, weight: s.weight, rest_seconds: s.rest });
+
+const planRow = (p: PlanItemInput) => ({ date: p.date, exercise_id: p.exerciseId, sort_order: p.sortOrder, ...schemeRow(p.scheme) });
 
 function entryPatch(p: Partial<EntryInput>) {
   const row: Record<string, unknown> = {};
@@ -155,34 +148,46 @@ export function createSupabaseRepo(sb: SupabaseClient): Repo {
     },
 
     async listPlan() {
-      const rows = must(await sb.from('plan_items').select('*').order('sort_order').order('created_at'));
-      return (rows as PlanRow[]).map(toPlan);
+      // anche il programma cresce settimana dopo settimana: leggo a pagine come le registrazioni
+      const out: PlanItem[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const rows = must(
+          await sb
+            .from('plan_items')
+            .select('*')
+            .order('date')
+            .order('sort_order')
+            .order('created_at')
+            .range(from, from + PAGE - 1),
+        ) as PlanRow[];
+        out.push(...rows.map(toPlan));
+        if (rows.length < PAGE) return out;
+      }
     },
-    async addPlanItem(weekday, exerciseId) {
+    async addPlanItem(date, exerciseId, scheme) {
       const last = must(
         await sb
           .from('plan_items')
           .select('sort_order')
-          .eq('weekday', weekday)
+          .eq('date', date)
           .order('sort_order', { ascending: false })
           .limit(1),
       ) as { sort_order: number }[];
       must(
         await sb
           .from('plan_items')
-          .insert({ weekday, exercise_id: exerciseId, sort_order: (last[0]?.sort_order ?? 0) + 1 }),
+          .insert(planRow({ date, exerciseId, sortOrder: (last[0]?.sort_order ?? 0) + 1, scheme })),
       );
     },
-    async setPlanScheme(id, scheme: Scheme | null) {
-      must(
-        await sb
-          .from('plan_items')
-          .update({ sets: scheme?.sets ?? null, reps: scheme?.reps ?? null, weight: scheme?.weight ?? null })
-          .eq('id', id),
-      );
+    async setPlanScheme(id, scheme) {
+      must(await sb.from('plan_items').update(schemeRow(scheme)).eq('id', id));
     },
     async removePlanItem(id) {
       must(await sb.from('plan_items').delete().eq('id', id));
+    },
+    async applyPlanChanges({ remove, add }) {
+      if (remove.length) must(await sb.from('plan_items').delete().in('id', remove));
+      if (add.length) must(await sb.from('plan_items').insert(add.map(planRow)));
     },
   };
 }

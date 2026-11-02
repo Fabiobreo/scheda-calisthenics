@@ -3,10 +3,10 @@ import { useRestTimer } from '../../app/restTimer';
 import { useToast } from '../../app/toast';
 import { Field, Select, Seg } from '../../components/ui';
 import { useCreateEntry, useData, useUpdateEntry } from '../../data/hooks';
-import { DIFFICULTIES, DIFFICULTY_LABEL, defaultScheme, type Difficulty, type Entry, type EntryKind, type Exercise, type Scheme } from '../../data/types';
+import { DEFAULT_REST, DIFFICULTIES, DIFFICULTY_LABEL, type Difficulty, type Entry, type EntryKind, type Scheme } from '../../data/types';
 import { shortDate, todayStr } from '../../lib/dates';
 import { fmtSets, numInput, parseNum } from '../../lib/format';
-import { lastTraining } from '../../lib/stats';
+import { lastTraining, personalBest, suggestedRest } from '../../lib/stats';
 
 const DRAFT_KEY = 'scheda:logger-draft';
 
@@ -24,9 +24,11 @@ interface Draft {
   date: string;
   rows: Row[];
   difficulty: Difficulty | null;
+  /** secondi di recupero per il timer */
+  rest: number;
 }
 
-/** `scheme`: schema del giorno del programma da cui si apre; senza, quello predefinito dell'esercizio. */
+/** `scheme`: schema del giorno del programma da cui si apre; senza, si parte dall'ultimo allenamento. */
 type OpenOpts = { entry: Entry } | { exerciseId?: string; kind?: EntryKind; date?: string; scheme?: Scheme };
 
 const Ctx = createContext<(o?: OpenOpts) => void>(() => {});
@@ -34,7 +36,9 @@ export const useLogger = () => useContext(Ctx);
 
 function readDraft(): Draft | null {
   try {
-    return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null') as Draft | null;
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null') as Draft | null;
+    // le bozze salvate prima del recupero nel programma non hanno il campo
+    return d && { ...d, rest: d.rest ?? DEFAULT_REST };
   } catch {
     return null;
   }
@@ -49,14 +53,20 @@ function writeDraft(d: Draft | null) {
   }
 }
 
-/** Serie di partenza: lo schema del giorno, altrimenti quello predefinito dell'esercizio. */
-function startingRows(ex: Exercise, kind: EntryKind, scheme: Scheme = defaultScheme(ex)): Row[] {
-  if (kind === 'attempt') return [{ weight: numInput(ex.targetWeight), reps: '1', done: false }];
-  return Array.from({ length: scheme.sets }, () => ({ weight: numInput(scheme.weight), reps: String(scheme.reps), done: false }));
+/**
+ * Serie di partenza. Tentativo: una serie al peso del record attuale.
+ * Allenamento: lo schema del giorno, altrimenti le serie dell'ultimo allenamento, altrimenti una serie da compilare.
+ */
+function startingRows(entries: Entry[], exerciseId: string, kind: EntryKind, scheme?: Scheme): Row[] {
+  if (kind === 'attempt') return [{ weight: numInput(personalBest(entries, exerciseId)?.set.weight ?? 0), reps: '1', done: false }];
+  if (scheme) return Array.from({ length: scheme.sets }, () => ({ weight: numInput(scheme.weight), reps: String(scheme.reps), done: false }));
+  const last = lastTraining(entries, exerciseId);
+  if (last) return last.sets.map((x) => ({ weight: numInput(x.weight), reps: String(x.reps), done: false }));
+  return [{ weight: '0', reps: '', done: false }];
 }
 
 export function LoggerProvider({ children }: { children: ReactNode }) {
-  const { active } = useData();
+  const { active, done, plan } = useData();
   // la bozza sopravvive al ricaricamento della pagina: un allenamento a metà non va perso
   const [draft, setDraftState] = useState<Draft | null>(readDraft);
 
@@ -76,6 +86,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
           date: e.date,
           rows: e.sets.map((s) => ({ weight: numInput(s.weight), reps: String(s.reps), done: true })),
           difficulty: e.difficulty,
+          rest: suggestedRest(plan, e.exerciseId),
         });
         return;
       }
@@ -90,9 +101,17 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
         setDraft(saved);
         return;
       }
-      setDraft({ entryId: null, exerciseId: ex.id, kind, date, rows: startingRows(ex, kind, o.scheme), difficulty: null });
+      setDraft({
+        entryId: null,
+        exerciseId: ex.id,
+        kind,
+        date,
+        rows: startingRows(done, ex.id, kind, o.scheme),
+        difficulty: null,
+        rest: o.scheme?.rest ?? suggestedRest(plan, ex.id),
+      });
     },
-    [active, setDraft],
+    [active, done, plan, setDraft],
   );
 
   return (
@@ -104,7 +123,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
 }
 
 function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | null) => void }) {
-  const { active, exercises, done, isLoading } = useData();
+  const { active, exercises, done, plan, isLoading } = useData();
   const timer = useRestTimer();
   const toast = useToast();
   const create = useCreateEntry(draft.kind === 'attempt' ? 'Tentativo salvato' : 'Allenamento salvato');
@@ -134,19 +153,20 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
 
   const last = attempt ? undefined : lastTraining(done, ex.id);
   const future = draft.date > todayStr();
+  const rest = draft.rest;
 
   const patch = (p: Partial<Draft>) => setDraft({ ...draft, ...p });
   const patchRow = (i: number, p: Partial<Row>) => patch({ rows: draft.rows.map((r, j) => (j === i ? { ...r, ...p } : r)) });
 
   const switchExercise = (id: string) => {
     const next = active.find((e) => e.id === id);
-    if (next) patch({ exerciseId: id, rows: startingRows(next, draft.kind) });
+    if (next) patch({ exerciseId: id, rows: startingRows(done, id, draft.kind), rest: suggestedRest(plan, id) });
   };
 
   const toggleDone = (i: number) => {
     const done = !draft.rows[i].done;
     patchRow(i, { done });
-    if (done && ex.restSeconds > 0 && i < draft.rows.length - 1) timer.start(ex.restSeconds, `Recupero · ${ex.name}`);
+    if (done && rest > 0 && i < draft.rows.length - 1) timer.start(rest, `Recupero · ${ex.name}`);
   };
 
   function close() {
@@ -182,11 +202,11 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
           ) : (
             <Select label="Esercizio" value={draft.exerciseId} options={choices.map((e) => ({ v: e.id, l: e.name }))} onChange={switchExercise} />
           )}
-          {!attempt && (last || ex.restSeconds > 0) && (
+          {!attempt && (last || rest > 0) && (
             <p className="hint">
               {last && `Ultima volta ${fmtSets(last.sets)} · ${shortDate(last.date)}`}
-              {last && ex.restSeconds > 0 && ' · '}
-              {ex.restSeconds > 0 && `recupero ${ex.restSeconds} s`}
+              {last && rest > 0 && ' · '}
+              {rest > 0 && `recupero ${rest} s`}
             </p>
           )}
 
@@ -229,8 +249,8 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
               >
                 + Serie
               </button>
-              {ex.restSeconds > 0 && (
-                <button className="btn small ghost" onClick={() => timer.start(ex.restSeconds, `Recupero · ${ex.name}`)}>
+              {rest > 0 && (
+                <button className="btn small ghost" onClick={() => timer.start(rest, `Recupero · ${ex.name}`)}>
                   Avvia recupero
                 </button>
               )}

@@ -1,4 +1,4 @@
-import type { Entry, Exercise, ExerciseType, WorkSet } from '../data/types';
+import { DEFAULT_REST, type Entry, type Exercise, type ExerciseType, type PlanItem, type Scheme, type WorkSet } from '../data/types';
 
 export type Metric = 'peso' | 'reps' | 'volume';
 
@@ -94,6 +94,23 @@ export function repsByType(entries: Entry[], exercises: Exercise[], limit = 10):
 /** Ultima registrazione d'allenamento per l'esercizio (le entries arrivano dalla più recente). */
 export const lastTraining = (entries: Entry[], exerciseId: string) =>
   entries.find((e) => e.exerciseId === exerciseId && e.kind === 'training');
+
+const lastInPlan = (plan: PlanItem[], exerciseId: string) => [...plan].reverse().find((p) => p.exerciseId === exerciseId);
+
+/** Recupero da proporre per un esercizio: quello dell'ultima volta che compare nel programma. */
+export const suggestedRest = (plan: PlanItem[], exerciseId: string) => lastInPlan(plan, exerciseId)?.scheme.rest ?? DEFAULT_REST;
+
+/**
+ * Schema da proporre quando si aggiunge un esercizio a un giorno: quello che ha già nel programma,
+ * altrimenti l'ultimo allenamento registrato, altrimenti 3 × 8 a corpo libero.
+ */
+export function suggestScheme(plan: PlanItem[], entries: Entry[], exerciseId: string): Scheme {
+  const inPlan = lastInPlan(plan, exerciseId);
+  if (inPlan) return inPlan.scheme;
+  const last = lastTraining(entries, exerciseId);
+  if (last) return { sets: last.sets.length, reps: last.sets[0].reps, weight: maxWeight(last.sets), rest: DEFAULT_REST };
+  return { sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST };
+}
 
 /** Scala "tonda" per l'asse Y: 4 tacche circa. */
 export function niceScale(max: number): { top: number; step: number } {
