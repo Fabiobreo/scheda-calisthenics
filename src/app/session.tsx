@@ -29,10 +29,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const userId = session?.user.id ?? null;
   const email = session?.user.email ?? null;
 
-  // cambio utente o uscita: non mostrare i dati in cache dell'account precedente
+  // Uscita o cambio utente: non mostrare i dati in cache dell'account precedente.
+  // Solo se prima c'era un utente, e con resetQueries invece di clear: gli effetti dei figli
+  // girano prima di questo, quindi le query delle viste sono già agganciate e clear() le
+  // staccherebbe dai componenti, lasciandoli in "Caricamento…" per sempre.
   useEffect(() => {
     if (loading) return;
-    if (lastUser.current !== userId) qc.clear();
+    if (lastUser.current && lastUser.current !== userId) void qc.resetQueries();
     lastUser.current = userId;
   }, [loading, userId, qc]);
 
