@@ -19,7 +19,15 @@ const TABS = [
 
 export function App() {
   const session = useSession();
-  const [recovery, endRecovery] = usePasswordRecovery();
+  const recovery = usePasswordRecovery();
+
+  if (session.status === 'signed-out')
+    return (
+      <div className="wrap">
+        <UpdateBanner />
+        <AuthScreen />
+      </div>
+    );
 
   return (
     <div className="wrap">
@@ -40,10 +48,9 @@ export function App() {
       </header>
       <UpdateBanner />
       {session.status === 'loading' && <p className="empty">Caricamento…</p>}
-      {session.status === 'signed-out' && <AuthScreen />}
       {session.status === 'ready' &&
         (recovery ? (
-          <NewPasswordScreen onDone={endRecovery} />
+          <NewPasswordScreen email={session.email} />
         ) : (
           <LoggerProvider>
             <Main local={session.mode === 'local'} />

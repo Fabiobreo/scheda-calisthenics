@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useId, useState, type InputHTMLAttributes, type ReactNode, type Ref } from 'react';
 import { TYPE_LABEL, type ExerciseType } from '../data/types';
 
 export function Seg<T extends string>({
@@ -46,13 +46,83 @@ export function ConfirmButton({ onConfirm, children = 'Elimina', confirmLabel = 
   );
 }
 
-export function Field({ label, ...input }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
+type FieldProps = {
+  label: string;
+  /** testo d'aiuto sotto il campo, letto dagli screen reader */
+  hint?: ReactNode;
+  /** errore del campo: lo segna come non valido */
+  error?: string;
+  ref?: Ref<HTMLInputElement>;
+} & InputHTMLAttributes<HTMLInputElement>;
+
+/** id e attributi aria per collegare suggerimento ed errore all'input. */
+function useDescribed(hint: ReactNode, error?: string) {
   const id = useId();
+  const hintId = hint ? `${id}-hint` : undefined;
+  const errId = error ? `${id}-err` : undefined;
+  return {
+    id,
+    aria: { 'aria-invalid': error ? true : undefined, 'aria-describedby': [errId, hintId].filter(Boolean).join(' ') || undefined },
+    below: (
+      <>
+        {error && (
+          <span className="fld-err" id={errId}>
+            {error}
+          </span>
+        )}
+        {hint && (
+          <span className="fld-hint" id={hintId}>
+            {hint}
+          </span>
+        )}
+      </>
+    ),
+  };
+}
+
+export function Field({ label, hint, error, ...input }: FieldProps) {
+  const d = useDescribed(hint, error);
   return (
-    <label className="fld" htmlFor={id}>
-      <span>{label}</span>
-      <input id={id} {...input} />
-    </label>
+    <div className="fld">
+      <label className="fld-l" htmlFor={d.id}>
+        {label}
+      </label>
+      <input id={d.id} {...d.aria} {...input} />
+      {d.below}
+    </div>
+  );
+}
+
+/** Campo password con pulsante per mostrarla. `aside` va a destra dell'etichetta (es. "Password dimenticata?"). */
+export function PasswordField({ label, aside, hint, error, ...input }: FieldProps & { aside?: ReactNode }) {
+  const d = useDescribed(hint, error);
+  const [show, setShow] = useState(false);
+  return (
+    <div className="fld">
+      <div className="fld-h">
+        <label className="fld-l" htmlFor={d.id}>
+          {label}
+        </label>
+        {aside}
+      </div>
+      <div className="pw">
+        <input id={d.id} {...d.aria} {...input} type={show ? 'text' : 'password'} />
+        <button
+          type="button"
+          className="pw-toggle"
+          onClick={() => setShow(!show)}
+          aria-label={show ? 'Nascondi password' : 'Mostra password'}
+          aria-pressed={show}
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+            <circle cx="12" cy="12" r="3" />
+            {show && <path d="M4 4l16 16" />}
+          </svg>
+        </button>
+      </div>
+      {d.below}
+    </div>
   );
 }
 

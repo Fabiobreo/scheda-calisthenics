@@ -1,132 +1,298 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { Field } from '../../components/ui';
-import { supabase } from '../../lib/supabase';
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
+import { useToast } from '../../app/toast';
+import { Field, PasswordField, Seg } from '../../components/ui';
+import { recovery, supabase } from '../../lib/supabase';
+import { authMessage } from './errors';
 
-type Mode = 'signin' | 'signup' | 'reset';
+type Mode = 'signin' | 'signup' | 'reset' | 'sent';
+type Msg = { ok: boolean; text: string; resend?: boolean };
 
-const MESSAGES: Record<string, string> = {
-  'Invalid login credentials': 'Email o password non corretti.',
-  'Email not confirmed': "Conferma prima l'email: controlla la posta.",
-  'User already registered': 'Esiste già un account con questa email.',
-};
-const it = (msg: string) => MESSAGES[msg] ?? msg;
+const RESEND_COOLDOWN = 60;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Secondi rimasti prima di poter reinviare un'email. */
+function useCooldown() {
+  const [until, setUntil] = useState(0);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (until <= Date.now()) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [until]);
+  const left = Math.max(0, Math.ceil((until - now) / 1000));
+  return [left, () => (setNow(Date.now()), setUntil(Date.now() + RESEND_COOLDOWN * 1000))] as const;
+}
+
+function SubmitButton({ busy, disabled, children }: { busy: boolean; disabled?: boolean; children: ReactNode }) {
+  return (
+    <button className="btn block" aria-busy={busy} disabled={busy || disabled}>
+      {busy && <span className="spinner" aria-hidden="true" />}
+      {busy ? 'Attendi…' : children}
+    </button>
+  );
+}
 
 export function AuthScreen() {
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useState<Msg | null>(null);
+  const [cooldown, startCooldown] = useCooldown();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const firstRender = useRef(true);
+
+  // il pulsante premuto sparisce col cambio di modalità: porto il focus in un punto sensato
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    if (mode === 'sent') titleRef.current?.focus();
+    else emailRef.current?.focus();
+  }, [mode]);
+
+  const go = (m: Mode) => {
+    setMode(m);
+    setMsg(null);
+    setErrors({});
+    // una password scritta per accedere non deve diventare quella di un nuovo account
+    setPassword('');
+  };
+
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!email.trim()) e.email = "Scrivi l'email.";
+    else if (!EMAIL_RE.test(email.trim())) e.email = 'Email non valida.';
+    if (mode !== 'reset') {
+      if (!password) e.password = 'Scrivi la password.';
+      else if (mode === 'signup' && password.length < 8) e.password = 'Almeno 8 caratteri.';
+    }
+    setErrors(e);
+    return !e.email && !e.password;
+  };
+
+  const resend = async () => {
+    if (!supabase || cooldown) return;
+    setBusy(true);
+    const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: location.origin } });
+    setBusy(false);
+    if (error) return setMsg({ ok: false, text: authMessage(error) });
+    startCooldown();
+    setMsg({ ok: true, text: 'Email reinviata.' });
+  };
 
   const submit = async (ev: FormEvent) => {
     ev.preventDefault();
-    if (!supabase) return;
+    if (!supabase || busy || !validate()) return;
+    const addr = email.trim();
     setBusy(true);
     setMsg(null);
     try {
       if (mode === 'signin') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) setMsg({ ok: false, text: it(error.message) });
+        const { error } = await supabase.auth.signInWithPassword({ email: addr, password });
+        if (error) setMsg({ ok: false, text: authMessage(error), resend: error.code === 'email_not_confirmed' });
       } else if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: location.origin } });
-        if (error) setMsg({ ok: false, text: it(error.message) });
-        else if (!data.session) setMsg({ ok: true, text: "Ti ho mandato un'email: apri il link per confermare l'account, poi accedi." });
-      } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
-        setMsg(error ? { ok: false, text: it(error.message) } : { ok: true, text: "Se l'account esiste, riceverai un'email per reimpostare la password." });
+        const { data, error } = await supabase.auth.signUp({ email: addr, password, options: { emailRedirectTo: location.origin } });
+        if (error) setMsg({ ok: false, text: authMessage(error) });
+        // con la conferma email attiva Supabase non dà errore per un'email già usata:
+        // restituisce un utente senza identità e non manda nessuna email
+        else if (data.user && data.user.identities?.length === 0)
+          setMsg({ ok: false, text: 'Esiste già un account con questa email. Accedi, oppure reimposta la password se non la ricordi.' });
+        else if (!data.session) {
+          startCooldown();
+          setMode('sent');
+          setPassword('');
+        }
+      } else if (mode === 'reset') {
+        const { error } = await supabase.auth.resetPasswordForEmail(addr, { redirectTo: location.origin });
+        if (error) setMsg({ ok: false, text: authMessage(error) });
+        else {
+          startCooldown();
+          setMsg({ ok: true, text: `Se esiste un account per ${addr}, riceverai un link per scegliere una nuova password. Controlla anche lo spam.` });
+        }
       }
     } catch {
-      setMsg({ ok: false, text: 'Connessione non riuscita. Riprova.' });
+      setMsg({ ok: false, text: 'Connessione non riuscita. Controlla la rete e riprova.' });
     } finally {
       setBusy(false);
     }
   };
 
-  const title = mode === 'signin' ? 'Accedi' : mode === 'signup' ? 'Crea account' : 'Password dimenticata';
+  const notice = (
+    <div aria-live="polite" className="notice-slot">
+      {msg && (
+        <div className={msg.ok ? 'notice' : 'notice err'}>
+          <p>{msg.text}</p>
+          {msg.resend && (
+            <button type="button" className="link small" onClick={resend} disabled={busy || cooldown > 0}>
+              {cooldown ? `Reinvia email di conferma (${cooldown} s)` : 'Reinvia email di conferma'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <section className="card">
-      <h2>{title}</h2>
-      <p className="sub">I tuoi allenamenti, salvati nel cloud e sincronizzati tra telefono e computer.</p>
-      <form className="form" onSubmit={submit}>
-        <Field label="Email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        {mode !== 'reset' && (
-          <Field
-            label="Password"
-            type="password"
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            minLength={mode === 'signup' ? 8 : undefined}
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+    <div className="auth-page">
+      <header className="auth-hero">
+        <p className="eyebrow">Registro allenamenti</p>
+        <h1>
+          Scheda
+          <br />
+          Calisthenics
+        </h1>
+        <p className="lede">Programma, serie e record personali. Salvati nel cloud, uguali su telefono e computer.</p>
+      </header>
+
+      <section className="card auth-card">
+        {mode === 'sent' ? (
+          <>
+            <h2 ref={titleRef} tabIndex={-1}>
+              Controlla la posta
+            </h2>
+            <p className="sub">
+              Abbiamo mandato un link di conferma a <b className="em">{email.trim()}</b>. Aprilo, poi torna qui e accedi con la tua password.
+            </p>
+            <p className="hint" style={{ marginTop: 12 }}>
+              Non la trovi? Guarda nello spam, oppure fatti mandare un'altra email.
+            </p>
+            {notice}
+            <div className="stack">
+              <button className="btn block" onClick={() => go('signin')}>
+                Ho confermato, accedi
+              </button>
+              <button className="btn ghost block" onClick={resend} disabled={busy || cooldown > 0}>
+                {cooldown ? `Reinvia email (${cooldown} s)` : 'Reinvia email'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {mode === 'reset' ? (
+              <>
+                <h2>Password dimenticata</h2>
+                <p className="sub">Ti mandiamo un link per sceglierne una nuova.</p>
+              </>
+            ) : (
+              <Seg
+                label="Accesso o registrazione"
+                value={mode}
+                options={[
+                  { v: 'signin', l: 'Accedi' },
+                  { v: 'signup', l: 'Registrati' },
+                ]}
+                onChange={(m) => m !== mode && go(m)}
+              />
+            )}
+
+            <form className="form" onSubmit={submit} noValidate>
+              <fieldset disabled={busy}>
+                <Field
+                  ref={emailRef}
+                  label="Email"
+                  name="email"
+                  type="email"
+                  autoComplete={mode === 'signup' ? 'email' : 'username'}
+                  inputMode="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={email}
+                  error={errors.email}
+                  onChange={(e) => (setEmail(e.target.value), errors.email && setErrors({ ...errors, email: undefined }))}
+                />
+                {mode !== 'reset' && (
+                  <PasswordField
+                    label="Password"
+                    name="password"
+                    autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                    value={password}
+                    error={errors.password}
+                    hint={mode === 'signup' ? 'Almeno 8 caratteri.' : undefined}
+                    onChange={(e) => (setPassword(e.target.value), errors.password && setErrors({ ...errors, password: undefined }))}
+                    aside={
+                      mode === 'signin' && (
+                        <button type="button" className="link small tap" onClick={() => go('reset')}>
+                          Password dimenticata?
+                        </button>
+                      )
+                    }
+                  />
+                )}
+              </fieldset>
+              {notice}
+              <SubmitButton busy={busy} disabled={mode === 'reset' && cooldown > 0}>
+                {mode === 'signin' ? 'Accedi' : mode === 'signup' ? 'Crea account' : cooldown ? `Invia di nuovo (${cooldown} s)` : 'Invia link'}
+              </SubmitButton>
+            </form>
+
+            {mode === 'reset' && (
+              <div className="auth-foot">
+                <button className="link tap" onClick={() => go('signin')}>
+                  ← Torna all'accesso
+                </button>
+              </div>
+            )}
+          </>
         )}
-        {msg && <p className={msg.ok ? 'hint' : 'error'}>{msg.text}</p>}
-        <div className="row">
-          <button className="btn" disabled={busy}>
-            {busy ? 'Attendi…' : mode === 'signin' ? 'Accedi' : mode === 'signup' ? 'Registrati' : 'Invia email'}
-          </button>
-        </div>
-      </form>
-      <div className="row" style={{ marginTop: 14 }}>
-        {mode !== 'signin' && (
-          <button className="link" onClick={() => (setMode('signin'), setMsg(null))}>
-            Ho già un account
-          </button>
-        )}
-        {mode !== 'signup' && (
-          <button className="link" onClick={() => (setMode('signup'), setMsg(null))}>
-            Crea un account
-          </button>
-        )}
-        {mode === 'signin' && (
-          <button className="link" onClick={() => (setMode('reset'), setMsg(null))}>
-            Password dimenticata?
-          </button>
-        )}
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }
 
-/** true dopo aver aperto il link di reimpostazione password ricevuto via email. */
+/** true dopo aver aperto il link di reimpostazione password ricevuto via email (anche dopo un ricaricamento). */
 export function usePasswordRecovery() {
-  const [recovery, setRecovery] = useState(false);
-  useEffect(() => {
-    if (!supabase) return;
-    const { data } = supabase.auth.onAuthStateChange((event) => event === 'PASSWORD_RECOVERY' && setRecovery(true));
-    return () => data.subscription.unsubscribe();
-  }, []);
-  return [recovery, () => setRecovery(false)] as const;
+  return useSyncExternalStore(recovery.subscribe, recovery.get);
 }
 
-export function NewPasswordScreen({ onDone }: { onDone: () => void }) {
+export function NewPasswordScreen({ email }: { email: string | null }) {
+  const toast = useToast();
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const submit = async (ev: FormEvent) => {
     ev.preventDefault();
-    if (!supabase) return;
+    if (!supabase || busy) return;
+    if (password.length < 8) return setError('Almeno 8 caratteri.');
     setBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (error) setError(it(error.message));
-    else onDone();
+    setError('');
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) return setError(authMessage(error));
+      recovery.end();
+      toast('Password aggiornata');
+    } catch {
+      setError('Connessione non riuscita. Controlla la rete e riprova.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <section className="card">
-      <h2>Nuova password</h2>
-      <form className="form" onSubmit={submit}>
-        <Field label="Password" type="password" autoComplete="new-password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} />
-        {error && <p className="error">{error}</p>}
-        <div className="row">
-          <button className="btn" disabled={busy}>
-            Salva password
-          </button>
-        </div>
-      </form>
-    </section>
+    <div className="auth-page">
+      <section className="card auth-card">
+        <h2>Nuova password</h2>
+        <p className="sub">Scegline una di almeno 8 caratteri.</p>
+        <form className="form" onSubmit={submit} noValidate>
+          <fieldset disabled={busy}>
+            {/* serve al gestore password per sapere a quale account associare la nuova password */}
+            <input type="email" name="email" autoComplete="username" value={email ?? ''} readOnly hidden />
+            <PasswordField
+              label="Nuova password"
+              name="new-password"
+              autoComplete="new-password"
+              value={password}
+              error={error || undefined}
+              onChange={(e) => (setPassword(e.target.value), setError(''))}
+            />
+          </fieldset>
+          <SubmitButton busy={busy}>Salva password</SubmitButton>
+        </form>
+      </section>
+    </div>
   );
 }
