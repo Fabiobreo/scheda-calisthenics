@@ -1,7 +1,8 @@
-import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { Link, NavLink, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { useData } from '../data/hooks';
+import { useData, useProfile } from '../data/hooks';
 import { AccountView } from '../features/account/AccountView';
+import { AtletaView, AtletiView } from '../features/atleti/AtletiView';
 import { AuthScreen, NewPasswordScreen, usePasswordRecovery } from '../features/auth/AuthScreen';
 import { EserciziView } from '../features/esercizi/EserciziView';
 import { GraficiView } from '../features/grafici/GraficiView';
@@ -68,12 +69,15 @@ export function App() {
 
 function Main() {
   const { isLoading, error } = useData();
+  const trainer = useProfile().data?.isTrainer;
+  const tabs = trainer ? [...TABS, { to: '/atleti', label: 'Atleti' }] : TABS;
   return (
     <>
       <nav className="nav">
         <div className="seg">
-          {TABS.map((t) => (
-            <NavLink key={t.to} to={t.to} end className={({ isActive }) => (isActive ? 'on' : '')}>
+          {tabs.map((t) => (
+            // "Atleti" resta acceso anche sulla pagina di un atleta
+            <NavLink key={t.to} to={t.to} end={t.to !== '/atleti'} className={({ isActive }) => (isActive ? 'on' : '')}>
               {t.label}
             </NavLink>
           ))}
@@ -90,12 +94,21 @@ function Main() {
             <Route path="/registro" element={<RegistroView />} />
             <Route path="/esercizi" element={<EserciziView />} />
             <Route path="/account" element={<AccountView />} />
+            <Route path="/invito/:code" element={<InviteRoute />} />
+            <Route path="/atleti" element={<AtletiView />} />
+            <Route path="/atleti/:athleteId" element={<AtletaView />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}
       </main>
     </>
   );
+}
+
+/** Link d'invito di un trainer: si apre Account con il codice già compilato. */
+function InviteRoute() {
+  const { code } = useParams();
+  return <AccountView inviteCode={code} />;
 }
 
 function UpdateBanner() {

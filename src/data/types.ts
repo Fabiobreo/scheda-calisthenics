@@ -1,6 +1,18 @@
 export interface Profile {
   /** nome mostrato agli altri (es. al trainer); null = non ancora scelto */
   displayName: string | null;
+  /** modalità trainer attiva: può invitare atleti e leggerne i dati */
+  isTrainer: boolean;
+}
+
+/** Collegamento attivo tra un trainer e un atleta. */
+export interface CoachLink {
+  id: string;
+  trainerId: string;
+  athleteId: string;
+  trainerName: string | null;
+  athleteName: string | null;
+  createdAt: string;
 }
 
 export type ExerciseType = 'forza' | 'volume' | 'tecnico';

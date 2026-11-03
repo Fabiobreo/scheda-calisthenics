@@ -1,4 +1,4 @@
-import type { CatalogExercise, Entry, EntryInput, Exercise, ExerciseInput, PlanChanges, PlanItem, Profile, Scheme } from './types';
+import type { CatalogExercise, CoachLink, Entry, EntryInput, Exercise, ExerciseInput, PlanChanges, PlanItem, Profile, Scheme } from './types';
 
 /** Accesso ai dati di un utente. */
 export interface Repo {
@@ -6,6 +6,17 @@ export interface Repo {
   updateProfile(patch: Partial<Profile>): Promise<void>;
   /** Elimina l'account con tutti i suoi dati. Non si torna indietro. */
   deleteAccount(): Promise<void>;
+
+  /** collegamenti attivi in cui l'utente è trainer o atleta */
+  listLinks(): Promise<CoachLink[]>;
+  /** codice d'invito attuale del trainer; null = non ancora generato */
+  getInviteCode(): Promise<string | null>;
+  /** nuovo codice: quello vecchio smette di valere */
+  rotateInviteCode(): Promise<string>;
+  /** nome del trainer dietro un codice; null = codice non valido */
+  previewInvite(code: string): Promise<{ trainerName: string | null } | null>;
+  acceptInvite(code: string): Promise<void>;
+  endLink(id: string): Promise<void>;
 
   /** catalogo comune, in ordine di categoria */
   listCatalog(): Promise<CatalogExercise[]>;

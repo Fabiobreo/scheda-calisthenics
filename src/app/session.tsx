@@ -48,8 +48,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
 export const useSession = () => useContext(Ctx);
 
-export function useRepo(): Repo {
-  const s = useSession();
-  if (s.status !== 'ready') throw new Error('useRepo fuori da una sessione pronta');
-  return s.repo;
+/** Di chi sono i dati che le viste stanno mostrando. */
+export interface Scope {
+  repo: Repo;
+  userId: string;
+  /** dati di un altro utente (un atleta visto dal suo trainer): si leggono soltanto */
+  readOnly: boolean;
 }
+
+const ScopeCtx = createContext<Scope | null>(null);
+
+/** Le viste dentro leggono i dati dell'atleta invece che quelli dell'utente collegato. */
+export function AthleteScope({ athleteId, children }: { athleteId: string; children: ReactNode }) {
+  const value = useMemo<Scope>(() => ({ repo: createSupabaseRepo(supabase, athleteId), userId: athleteId, readOnly: true }), [athleteId]);
+  return <ScopeCtx.Provider value={value}>{children}</ScopeCtx.Provider>;
+}
+
+export function useScope(): Scope {
+  const scoped = useContext(ScopeCtx);
+  const s = useSession();
+  if (scoped) return scoped;
+  if (s.status !== 'ready') throw new Error('useScope fuori da una sessione pronta');
+  return { repo: s.repo, userId: s.userId, readOnly: false };
+}
+
+export const useRepo = (): Repo => useScope().repo;

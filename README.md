@@ -100,6 +100,12 @@ supabase/migrations/  schema SQL
 - **catalog_exercises**: catalogo comune a tutti gli utenti, in sola lettura (cambia solo con le migration).
   Id stabili e leggibili (`trazioni`, `dip`…), categoria (tirata, spinta, gambe, core, skill), tipo predefinito e sinonimi
   ("pull up", "chin up"…) per riconoscere i nomi scritti a mano.
+- **coach_links** e **trainer_invites**: trainer e atleti. La modalità trainer è un flag del profilo (`is_trainer`),
+  attivabile da chiunque. Il trainer genera un codice d'invito (uno per volta: rigenerarlo invalida il vecchio);
+  l'atleta vede il nome del trainer e conferma (`preview_invite`, `accept_invite`). Da lì il trainer **legge**
+  esercizi, registrazioni e programma dell'atleta (`is_coach_of` nelle policy), senza poterli modificare, finché uno
+  dei due non chiude il collegamento (`end_coach_link`). Un solo trainer attivo per atleta. Collegamenti e codici
+  cambiano solo tramite queste funzioni, mai con insert/update diretti.
 - **exercises**: gli esercizi dell'utente, senza serie né ripetizioni. Ognuno è collegato a una voce del catalogo
   (`catalog_id`, al massimo una volta per utente; il nome viene dal catalogo) oppure è personalizzato (`name` proprio,
   unico per utente, maiuscole a parte). In più tipo (forza/volume/tecnico), flag `in_records` e archiviazione

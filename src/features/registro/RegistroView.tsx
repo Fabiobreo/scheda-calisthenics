@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useScope } from '../../app/session';
 import { ConfirmButton, Seg, TypeChip } from '../../components/ui';
 import { useData, useDeleteEntry, useUpdateEntry } from '../../data/hooks';
 import { DIFFICULTIES, DIFFICULTY_LABEL, type Entry } from '../../data/types';
@@ -15,18 +16,22 @@ export function RegistroView() {
   const setDifficulty = useUpdateEntry('Difficoltà salvata');
   const del = useDeleteEntry();
   const [shown, setShown] = useState(PAGE);
+  // storico di un atleta visto dal trainer: niente modifiche
+  const { readOnly } = useScope();
 
   const head = (
     <>
       <h2>Storico</h2>
-      <p className="sub">Le tue sessioni, dalla più recente. Per ogni esercizio scegli com'è andata.</p>
+      <p className="sub">
+        {readOnly ? "Le sessioni dell'atleta, dalla più recente, con la difficoltà che ha indicato." : "Le tue sessioni, dalla più recente. Per ogni esercizio scegli com'è andata."}
+      </p>
     </>
   );
   if (!entries.length)
     return (
       <section className="card">
         {head}
-        <p className="empty">Ancora nessuna sessione. Registra il primo esercizio dalla Scheda.</p>
+        <p className="empty">{readOnly ? 'Ancora nessuna sessione.' : 'Ancora nessuna sessione. Registra il primo esercizio dalla Scheda.'}</p>
       </section>
     );
 
@@ -65,22 +70,28 @@ export function RegistroView() {
                       {e.kind === 'attempt' && <span className="chip mut">Tentativo</span>}
                       {prIds.has(e.id) && <span className="chip pr">★ Record</span>}
                     </div>
-                    <div className="fld" style={{ marginTop: 12 }}>
-                      <span>Difficoltà</span>
-                      <Seg
-                        label="Difficoltà"
-                        value={e.difficulty}
-                        options={DIFFICULTIES.map((x) => ({ v: x, l: DIFFICULTY_LABEL[x] }))}
-                        onChange={(v) => setDifficulty.mutate({ id: e.id, patch: { difficulty: e.difficulty === v ? null : v } })}
-                      />
+                    {readOnly ? (
+                      e.difficulty && <div className="pmeta">Difficoltà: {DIFFICULTY_LABEL[e.difficulty].toLowerCase()}</div>
+                    ) : (
+                      <div className="fld" style={{ marginTop: 12 }}>
+                        <span>Difficoltà</span>
+                        <Seg
+                          label="Difficoltà"
+                          value={e.difficulty}
+                          options={DIFFICULTIES.map((x) => ({ v: x, l: DIFFICULTY_LABEL[x] }))}
+                          onChange={(v) => setDifficulty.mutate({ id: e.id, patch: { difficulty: e.difficulty === v ? null : v } })}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {!readOnly && (
+                    <div className="pact col">
+                      <button className="btn small ghost" onClick={() => openLogger({ entry: e })}>
+                        Modifica
+                      </button>
+                      <ConfirmButton onConfirm={() => del.mutate(e.id)} />
                     </div>
-                  </div>
-                  <div className="pact col">
-                    <button className="btn small ghost" onClick={() => openLogger({ entry: e })}>
-                      Modifica
-                    </button>
-                    <ConfirmButton onConfirm={() => del.mutate(e.id)} />
-                  </div>
+                  )}
                 </div>
               );
             })}

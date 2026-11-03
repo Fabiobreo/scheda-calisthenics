@@ -4,15 +4,21 @@ import { useToast } from '../../app/toast';
 import { Field } from '../../components/ui';
 import { useData, useDeleteAccount, useProfile, useUpdateProfile } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
+import { MyTrainerCard, TrainerModeCard } from './CoachingCards';
 
 const CONFIRM_WORD = 'ELIMINA';
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-export function AccountView() {
+/** `inviteCode`: arrivando da un link d'invito, il codice è già compilato. */
+export function AccountView({ inviteCode }: { inviteCode?: string }) {
   return (
     <>
+      {/* arrivando da un invito la cosa da fare è collegarsi: va in cima */}
+      {inviteCode && <MyTrainerCard inviteCode={inviteCode} />}
       <ProfileCard />
+      {!inviteCode && <MyTrainerCard />}
+      <TrainerModeCard />
       <ExportCard />
       <DeleteCard />
     </>

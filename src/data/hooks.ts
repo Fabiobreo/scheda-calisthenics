@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useRepo } from '../app/session';
+import { useRepo, useScope } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
 import { todayStr } from '../lib/dates';
@@ -11,7 +11,14 @@ const K = {
   plan: ['plan'] as QueryKey,
   profile: ['profile'] as QueryKey,
   catalog: ['catalog'] as QueryKey,
+  links: ['links'] as QueryKey,
+  invite: ['invite'] as QueryKey,
 };
+
+/** Chiave di una query sui dati di un utente: quelli propri e quelli di un atleta non si mescolano in cache. */
+function useKey(base: QueryKey): QueryKey {
+  return [...base, useScope().userId];
+}
 
 /** Catalogo comune: cambia solo con un deploy, non serve rileggerlo durante la sessione. */
 export function useCatalog() {
@@ -21,22 +28,22 @@ export function useCatalog() {
 
 export function useProfile() {
   const repo = useRepo();
-  return useQuery({ queryKey: K.profile, queryFn: () => repo.getProfile() });
+  return useQuery({ queryKey: useKey(K.profile), queryFn: () => repo.getProfile() });
 }
 
 export function useExercises() {
   const repo = useRepo();
-  return useQuery({ queryKey: K.exercises, queryFn: () => repo.listExercises() });
+  return useQuery({ queryKey: useKey(K.exercises), queryFn: () => repo.listExercises() });
 }
 
 export function useEntries() {
   const repo = useRepo();
-  return useQuery({ queryKey: K.entries, queryFn: () => repo.listEntries() });
+  return useQuery({ queryKey: useKey(K.entries), queryFn: () => repo.listEntries() });
 }
 
 export function usePlan() {
   const repo = useRepo();
-  return useQuery({ queryKey: K.plan, queryFn: () => repo.listPlan() });
+  return useQuery({ queryKey: useKey(K.plan), queryFn: () => repo.listPlan() });
 }
 
 /** Tutti i dati dell'app: le viste ne usano sempre più di uno. */
@@ -59,20 +66,37 @@ export function useData() {
   };
 }
 
-function useRepoMutation<A>(fn: (repo: Repo, args: A) => Promise<unknown>, keys: QueryKey[], okMsg?: string) {
+/** `dbMessage`: in caso d'errore mostra il messaggio del database (le funzioni dei collegamenti spiegano cosa non va). */
+function useRepoMutation<A>(fn: (repo: Repo, args: A) => Promise<unknown>, keys: QueryKey[], okMsg?: string, dbMessage = false) {
   const repo = useRepo();
   const qc = useQueryClient();
   const toast = useToast();
   return useMutation({
     mutationFn: (args: A) => fn(repo, args),
     onSuccess: () => okMsg && toast(okMsg),
-    onError: () => toast('Non riesco a salvare. Riprova.'),
+    onError: (e) => toast(dbMessage && e instanceof Error && e.message ? e.message : 'Non riesco a salvare. Riprova.'),
     onSettled: () => Promise.all(keys.map((queryKey) => qc.invalidateQueries({ queryKey }))),
   });
 }
 
-export const useUpdateProfile = () =>
-  useRepoMutation((r, a: Partial<Profile>) => r.updateProfile(a), [K.profile], 'Profilo salvato');
+export const useUpdateProfile = (okMsg = 'Profilo salvato') =>
+  useRepoMutation((r, a: Partial<Profile>) => r.updateProfile(a), [K.profile], okMsg);
+
+export function useLinks() {
+  const repo = useRepo();
+  return useQuery({ queryKey: useKey(K.links), queryFn: () => repo.listLinks() });
+}
+
+export function useInviteCode() {
+  const repo = useRepo();
+  return useQuery({ queryKey: useKey(K.invite), queryFn: () => repo.getInviteCode() });
+}
+
+export const useRotateInvite = () => useRepoMutation((r) => r.rotateInviteCode(), [K.invite], undefined, true);
+
+export const useAcceptInvite = () => useRepoMutation((r, code: string) => r.acceptInvite(code), [K.links], 'Collegato al trainer', true);
+
+export const useEndLink = (okMsg: string) => useRepoMutation((r, id: string) => r.endLink(id), [K.links], okMsg, true);
 
 export function useDeleteAccount() {
   const repo = useRepo();

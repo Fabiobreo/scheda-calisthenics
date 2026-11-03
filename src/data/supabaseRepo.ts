@@ -1,6 +1,27 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Repo } from './repo';
-import type { CatalogExercise, Entry, EntryInput, Exercise, ExerciseInput, PlanItem, PlanItemInput, Profile, Scheme } from './types';
+import type { CatalogExercise, CoachLink, Entry, EntryInput, Exercise, ExerciseInput, PlanItem, PlanItemInput, Profile, Scheme } from './types';
+
+interface LinkRow {
+  id: string;
+  trainer_id: string;
+  athlete_id: string;
+  created_at: string;
+  trainer: { display_name: string | null } | null;
+  athlete: { display_name: string | null } | null;
+}
+
+const LINK_COLS =
+  'id, trainer_id, athlete_id, created_at, trainer:profiles!coach_links_trainer_id_fkey(display_name), athlete:profiles!coach_links_athlete_id_fkey(display_name)';
+
+const toLink = (r: LinkRow): CoachLink => ({
+  id: r.id,
+  trainerId: r.trainer_id,
+  athleteId: r.athlete_id,
+  trainerName: r.trainer?.display_name ?? null,
+  athleteName: r.athlete?.display_name ?? null,
+  createdAt: r.created_at,
+});
 
 interface CatalogRow {
   id: string;
@@ -128,18 +149,51 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
 
   return {
     async getProfile() {
-      const row = must(await sb.from('profiles').select('display_name').eq('id', userId).single()) as { display_name: string | null };
-      return { displayName: row.display_name };
+      const row = must(await sb.from('profiles').select('display_name, is_trainer').eq('id', userId).single()) as {
+        display_name: string | null;
+        is_trainer: boolean;
+      };
+      return { displayName: row.display_name, isTrainer: row.is_trainer };
     },
     async updateProfile(patch: Partial<Profile>) {
       const row: Record<string, unknown> = {};
       if (patch.displayName !== undefined) row.display_name = patch.displayName;
+      if (patch.isTrainer !== undefined) row.is_trainer = patch.isTrainer;
       must(await sb.from('profiles').update(row).eq('id', userId));
     },
     async deleteAccount() {
       must(await sb.rpc('delete_own_account'));
       // la sessione punta a un utente che non c'è più: la chiudo solo su questo dispositivo
       await sb.auth.signOut({ scope: 'local' });
+    },
+
+    async listLinks() {
+      const rows = must(
+        await sb
+          .from('coach_links')
+          .select(LINK_COLS)
+          .eq('status', 'active')
+          .or(`trainer_id.eq.${userId},athlete_id.eq.${userId}`)
+          .order('created_at'),
+      );
+      return (rows as unknown as LinkRow[]).map(toLink);
+    },
+    async getInviteCode() {
+      const rows = must(await sb.from('trainer_invites').select('code').eq('trainer_id', userId)) as { code: string }[];
+      return rows[0]?.code ?? null;
+    },
+    async rotateInviteCode() {
+      return must(await sb.rpc('rotate_invite_code')) as string;
+    },
+    async previewInvite(code) {
+      const rows = must(await sb.rpc('preview_invite', { invite_code: code })) as { trainer_name: string | null }[];
+      return rows[0] ? { trainerName: rows[0].trainer_name } : null;
+    },
+    async acceptInvite(code) {
+      must(await sb.rpc('accept_invite', { invite_code: code }));
+    },
+    async endLink(id) {
+      must(await sb.rpc('end_coach_link', { link: id }));
     },
 
     async listCatalog() {
