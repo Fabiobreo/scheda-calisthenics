@@ -69,6 +69,8 @@ export interface Entry {
   kind: EntryKind;
   sets: WorkSet[];
   difficulty: Difficulty | null;
+  /** nota dell'atleta, letta anche dal trainer */
+  note: string | null;
   createdAt: string;
 }
 
@@ -90,9 +92,42 @@ export interface PlanItem {
   exerciseId: string;
   sortOrder: number;
   scheme: Scheme;
+  /** trainer che l'ha programmato; null = programmato dall'atleta */
+  assignedBy: string | null;
+  /** nota del trainer */
+  note: string | null;
 }
 
-export type PlanItemInput = Omit<PlanItem, 'id'>;
+/** Riga nuova scritta dall'utente stesso: mai a nome di un trainer. */
+export type PlanItemInput = Omit<PlanItem, 'id' | 'assignedBy'>;
+
+/** Scheda modello di un trainer: settimane relative, senza date. */
+export interface Program {
+  id: string;
+  name: string;
+  weeks: number;
+  updatedAt: string;
+}
+
+/** Esercizio di una scheda modello: voce del catalogo oppure nome personalizzato. */
+export interface ProgramItem {
+  id: string;
+  programId: string;
+  /** 1 ... weeks */
+  week: number;
+  /** 0 = lunedì ... 6 = domenica */
+  weekday: number;
+  catalogId: string | null;
+  customName: string | null;
+  sortOrder: number;
+  scheme: Scheme;
+  note: string | null;
+}
+
+export type ProgramItemInput = Omit<ProgramItem, 'id'>;
+
+/** Cosa mettere in un giorno: una voce del catalogo o un nome personalizzato. */
+export type ExerciseRef = { catalogId: string; customName: null } | { catalogId: null; customName: string };
 
 /** Modifica di più giorni in un colpo (es. copia di una settimana): id da togliere, righe da aggiungere. */
 export interface PlanChanges {

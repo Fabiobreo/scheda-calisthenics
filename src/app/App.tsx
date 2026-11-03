@@ -1,8 +1,10 @@
-import { Link, NavLink, Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useData, useProfile } from '../data/hooks';
 import { AccountView } from '../features/account/AccountView';
 import { AtletaView, AtletiView } from '../features/atleti/AtletiView';
+import { SchedaModelloView } from '../features/atleti/SchedeView';
 import { AuthScreen, NewPasswordScreen, usePasswordRecovery } from '../features/auth/AuthScreen';
 import { EserciziView } from '../features/esercizi/EserciziView';
 import { GraficiView } from '../features/grafici/GraficiView';
@@ -19,9 +21,40 @@ const TABS = [
   { to: '/esercizi', label: 'Esercizi' },
 ];
 
+/**
+ * Codice d'invito aperto da chi non ha ancora un account: la mail di conferma riporta alla home,
+ * quindi lo ricordo e, dopo l'accesso, riapro la pagina dell'invito.
+ */
+const PENDING_INVITE = 'scheda:pending-invite';
+const INVITE_PATH = /^\/invito\/([A-Za-z0-9]{8})\/?$/;
+
+const pendingInvite = {
+  get: () => {
+    try {
+      return localStorage.getItem(PENDING_INVITE);
+    } catch {
+      return null;
+    }
+  },
+  set: (code: string | null) => {
+    try {
+      if (code) localStorage.setItem(PENDING_INVITE, code);
+      else localStorage.removeItem(PENDING_INVITE);
+    } catch {
+      /* ignora */
+    }
+  },
+};
+
 export function App() {
   const session = useSession();
   const recovery = usePasswordRecovery();
+  const location = useLocation();
+  const invite = INVITE_PATH.exec(location.pathname)?.[1];
+
+  useEffect(() => {
+    if (session.status === 'signed-out' && invite) pendingInvite.set(invite.toUpperCase());
+  }, [session.status, invite]);
 
   if (session.status === 'signed-out')
     return (
@@ -69,6 +102,16 @@ export function App() {
 
 function Main() {
   const { isLoading, error } = useData();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // invito ricordato da prima dell'accesso: si riapre una volta sola
+  useEffect(() => {
+    const code = pendingInvite.get();
+    if (!code) return;
+    pendingInvite.set(null);
+    if (!INVITE_PATH.test(location.pathname)) navigate(`/invito/${code}`, { replace: true });
+  }, [location.pathname, navigate]);
   const trainer = useProfile().data?.isTrainer;
   const tabs = trainer ? [...TABS, { to: '/atleti', label: 'Atleti' }] : TABS;
   return (
@@ -97,6 +140,7 @@ function Main() {
             <Route path="/invito/:code" element={<InviteRoute />} />
             <Route path="/atleti" element={<AtletiView />} />
             <Route path="/atleti/:athleteId" element={<AtletaView />} />
+            <Route path="/schede/:programId" element={<SchedaModelloView />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}

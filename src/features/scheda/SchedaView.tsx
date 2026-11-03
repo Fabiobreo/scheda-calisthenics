@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
-import { Field, Seg, Select, TypeChip } from '../../components/ui';
+import { SchemeForm } from '../../components/SchemeForm';
+import { Seg, Select, TypeChip } from '../../components/ui';
 import {
   useAddCatalogToPlan,
   useAddPlanItem,
   useApplyPlanChanges,
   useCatalog,
   useData,
+  useLinks,
   useRemovePlanItem,
   useSetPlanScheme,
   useUpdateExercise,
 } from '../../data/hooks';
-import { CATEGORY_LABEL, DIFFICULTY_LABEL, type PlanChanges, type PlanItem, type Scheme } from '../../data/types';
+import { CATEGORY_LABEL, DIFFICULTY_LABEL, type PlanChanges, type PlanItem } from '../../data/types';
 import { byCategory } from '../../lib/catalog';
 import { DAY_SHORT, addDays, inWeek, longDate, mondayOf, parseDate, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
-import { fmt, fmtSets, numInput, parseNum } from '../../lib/format';
+import { fmt, fmtSets } from '../../lib/format';
 import { byDay, copyWeek, weekItems, type CopyMode } from '../../lib/plan';
 import { lastTraining, personalBest, recordEntryIds, suggestScheme } from '../../lib/stats';
 import { useLogger } from '../logger/Logger';
@@ -141,6 +144,11 @@ function Programma() {
   // qui e non nel pannello: il pannello si chiude subito e i callback di mutate non arriverebbero
   const apply = useApplyPlanChanges();
   const toast = useToast();
+  const session = useSession();
+  const myId = session.status === 'ready' ? session.userId : '';
+  // le righe del trainer che mi segue sono sue: le registro ma non le modifico
+  const myTrainer = useLinks().data?.find((l) => l.athleteId === myId)?.trainerId;
+  const locked = (p: PlanItem) => p.assignedBy !== null && p.assignedBy === myTrainer;
   const today = todayStr();
   const thisMonday = mondayOf(today);
   const [monday, setMonday] = useState(thisMonday);
@@ -246,13 +254,14 @@ function Programma() {
           // già registrato (o programmato) per questa data
           const saved = entries.find((e) => e.exerciseId === ex.id && e.kind === 'training' && e.date === date);
           const last = lastTraining(done, ex.id);
+          const fromTrainer = locked(p);
           return (
             <div className="pitem" key={p.id}>
               <div>
                 <div className="pname">{ex.name}</div>
                 <div className="pmeta">
                   {sc.sets} × {sc.reps} · {fmt(sc.weight)} kg{sc.rest > 0 && ` · rec. ${sc.rest} s`}{' '}
-                  {editing !== p.id && (
+                  {!fromTrainer && editing !== p.id && (
                     <button className="link small" onClick={() => setEditing(p.id)} aria-label={`Modifica serie, ripetizioni, peso e recupero di ${ex.name} per ${dayName}`}>
                       Modifica
                     </button>
@@ -270,20 +279,28 @@ function Programma() {
                     </div>
                   )
                 )}
+                {p.note && (
+                  <p className="coach-note" style={{ marginTop: 8 }}>
+                    <b>Dal trainer:</b> {p.note}
+                  </p>
+                )}
                 <div className="chips">
                   <TypeChip type={ex.type} />
+                  {fromTrainer && <span className="chip mut">Dal trainer</span>}
                 </div>
               </div>
               <div className="pact">
                 <button
                   className={`btn small${saved ? ' ghost' : ''}`}
-                  onClick={() => openLogger(saved ? { entry: saved } : { exerciseId: ex.id, date, scheme: sc })}
+                  onClick={() => openLogger(saved ? { entry: saved } : { exerciseId: ex.id, date, scheme: sc, coachNote: p.note })}
                 >
                   {saved ? 'Apri' : future ? 'Programma' : 'Registra'}
                 </button>
-                <button className="x" onClick={() => removeItem.mutate(p.id)} aria-label={`Togli ${ex.name} da ${dayName}`}>
-                  ×
-                </button>
+                {!fromTrainer && (
+                  <button className="x" onClick={() => removeItem.mutate(p.id)} aria-label={`Togli ${ex.name} da ${dayName}`}>
+                    ×
+                  </button>
+                )}
               </div>
               {editing === p.id && (
                 <SchemeForm
@@ -338,6 +355,7 @@ function Programma() {
         <CopyWeek
           plan={visible}
           from={monday}
+          locked={locked}
           onCopy={(changes, n) => {
             apply.mutate(changes, { onSuccess: () => toast(`Settimana copiata in ${n} ${n === 1 ? 'settimana' : 'settimane'}`) });
             setCopyOpen(false);
@@ -353,11 +371,14 @@ function Programma() {
 function CopyWeek({
   plan,
   from,
+  locked,
   onCopy,
   onCancel,
 }: {
   plan: PlanItem[];
   from: string;
+  /** righe del trainer: restano dove sono */
+  locked: (p: PlanItem) => boolean;
   /** `weeks`: quante settimane sono state scelte */
   onCopy: (changes: PlanChanges, weeks: number) => void;
   onCancel: () => void;
@@ -379,7 +400,7 @@ function CopyWeek({
 
   const copy = () => {
     if (!picked.size) return toast('Scegli almeno una settimana');
-    const changes = copyWeek(plan, from, [...picked], anyFull ? mode : 'merge');
+    const changes = copyWeek(plan, from, [...picked], anyFull ? mode : 'merge', locked);
     if (!changes.add.length && !changes.remove.length) return toast('Le settimane scelte hanno già tutti questi esercizi');
     onCopy(changes, picked.size);
   };
@@ -423,66 +444,13 @@ function CopyWeek({
             onChange={setMode}
           />
           <span className="fld-hint">
-            {mode === 'merge' ? 'Quello che c’è già resta com’è, con le sue serie.' : 'Gli esercizi già programmati in quelle settimane vengono tolti.'}
+            {mode === 'merge' ? 'Quello che c’è già resta com’è, con le sue serie.' : 'Gli esercizi già programmati in quelle settimane vengono tolti, tranne quelli del tuo trainer.'}
           </span>
         </div>
       )}
       <div className="row">
         <button className="btn small" onClick={copy} disabled={!picked.size}>
           {picked.size ? `Copia in ${picked.size} ${picked.size === 1 ? 'settimana' : 'settimane'}` : 'Copia'}
-        </button>
-        <button className="btn small ghost" onClick={onCancel}>
-          Annulla
-        </button>
-      </div>
-    </div>
-  );
-}
-
-const isInt = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
-
-/** Serie, ripetizioni, peso e recupero di un esercizio in un giorno: non tocca gli altri giorni. */
-function SchemeForm({
-  initial,
-  hint,
-  saveLabel,
-  onSave,
-  onCancel,
-}: {
-  initial: Scheme;
-  hint: string;
-  saveLabel: string;
-  onSave: (s: Scheme) => void;
-  onCancel: () => void;
-}) {
-  const toast = useToast();
-  const [weight, setWeight] = useState(numInput(initial.weight));
-  const [sets, setSets] = useState(String(initial.sets));
-  const [reps, setReps] = useState(String(initial.reps));
-  const [rest, setRest] = useState(String(initial.rest));
-
-  const save = () => {
-    const scheme = { weight: parseNum(weight || '0'), sets: Number(sets), reps: Number(reps), rest: Number(rest || '0') };
-    if (!(scheme.weight >= 0 && scheme.weight < 10000) || !isInt(scheme.sets, 1, 50) || !isInt(scheme.reps, 1, 1000))
-      return toast('Controlla peso, serie e ripetizioni');
-    if (!isInt(scheme.rest, 0, 3600)) return toast('Recupero tra 0 e 3600 secondi');
-    onSave(scheme);
-  };
-
-  return (
-    <div className="form" style={{ gridColumn: '1 / -1', marginTop: 8 }}>
-      <div className="grid3">
-        <Field label="Peso (kg)" inputMode="decimal" value={weight} autoFocus onChange={(e) => setWeight(e.target.value)} />
-        <Field label="Serie" inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} />
-        <Field label="Rip." inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} />
-      </div>
-      <div className="grid2">
-        <Field label="Recupero (s)" inputMode="numeric" value={rest} onChange={(e) => setRest(e.target.value)} />
-      </div>
-      <p className="hint">{hint} Peso 0 kg vuol dire corpo libero, recupero 0 niente timer.</p>
-      <div className="row">
-        <button className="btn small" onClick={save}>
-          {saveLabel}
         </button>
         <button className="btn small ghost" onClick={onCancel}>
           Annulla

@@ -106,6 +106,13 @@ supabase/migrations/  schema SQL
   esercizi, registrazioni e programma dell'atleta (`is_coach_of` nelle policy), senza poterli modificare, finché uno
   dei due non chiude il collegamento (`end_coach_link`). Un solo trainer attivo per atleta. Collegamenti e codici
   cambiano solo tramite queste funzioni, mai con insert/update diretti.
+- **programs**, **program_items**, **program_assignments**: schede modello del trainer (N settimane; ogni esercizio in
+  settimana e giorno relativi, voce del catalogo o nome personalizzato, con schema e nota). `assign_program` le scrive
+  nel calendario di un atleta da un lunedì, creando tra i suoi esercizi quelli che mancano; `coach_add_plan_item`
+  aggiunge un singolo esercizio a un giorno. Cambiare o cancellare la scheda modello non tocca quelle assegnate.
+- **plan_items.assigned_by**: le righe scritte dal trainer sono sue finché segue l'atleta: l'atleta le registra ma non
+  le modifica, il trainer le ritocca (schema e nota). Se il collegamento finisce, tornano dell'atleta.
+  `entries.note` è la nota dell'atleta sulla sessione, che il trainer legge.
 - **exercises**: gli esercizi dell'utente, senza serie né ripetizioni. Ognuno è collegato a una voce del catalogo
   (`catalog_id`, al massimo una volta per utente; il nome viene dal catalogo) oppure è personalizzato (`name` proprio,
   unico per utente, maiuscole a parte). In più tipo (forza/volume/tecnico), flag `in_records` e archiviazione

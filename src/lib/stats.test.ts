@@ -10,6 +10,7 @@ const entry = (p: Partial<Entry> & Pick<Entry, 'exerciseId' | 'date' | 'sets'>):
   id: `e${++n}`,
   kind: 'training',
   difficulty: null,
+  note: null,
   createdAt: `2026-01-01T00:00:${String(n).padStart(2, '0')}Z`,
   ...p,
 });
@@ -121,7 +122,7 @@ describe('date delle settimane', () => {
 
 describe('copyWeek', () => {
   const sc = (sets: number) => ({ sets, reps: 5, weight: 0, rest: 90 });
-  const at = (date: string, exerciseId: string, sortOrder: number, sets = 3): PlanItem => ({ id: `p${++n}`, date, exerciseId, sortOrder, scheme: sc(sets) });
+  const at = (date: string, exerciseId: string, sortOrder: number, sets = 3): PlanItem => ({ id: `p${++n}`, date, exerciseId, sortOrder, scheme: sc(sets), assignedBy: null, note: null });
   const plan = [at('2026-11-02', 'trazioni', 1, 5), at('2026-11-02', 'dip', 2), at('2026-11-05', 'squat', 1)];
 
   it('copia esercizi e schema negli stessi giorni delle settimane scelte', () => {
@@ -151,13 +152,21 @@ describe('copyWeek', () => {
     expect(add).toHaveLength(3);
   });
 
+  it('non tocca le righe del trainer: restano anche in replace e la copia non le duplica', () => {
+    const fromTrainer = { ...at('2026-11-09', 'trazioni', 1, 8), assignedBy: 'trainer' };
+    const mine = at('2026-11-10', 'plank', 1);
+    const { add, remove } = copyWeek([...plan, fromTrainer, mine], '2026-11-02', ['2026-11-09'], 'replace', (p) => p.assignedBy !== null);
+    expect(remove).toEqual([mine.id]);
+    expect(add.map((p) => `${p.date} ${p.exerciseId} ${p.sortOrder}`)).toEqual(['2026-11-09 dip 2', '2026-11-12 squat 1']);
+  });
+
   it('ignora la settimana di partenza tra le destinazioni', () => {
     expect(copyWeek(plan, '2026-11-02', ['2026-11-02'], 'replace')).toEqual({ remove: [], add: [] });
   });
 });
 
 describe('suggestScheme', () => {
-  const item = (exerciseId: string, scheme: PlanItem['scheme']): PlanItem => ({ id: `p${++n}`, date: '2026-11-02', exerciseId, sortOrder: 0, scheme });
+  const item = (exerciseId: string, scheme: PlanItem['scheme']): PlanItem => ({ id: `p${++n}`, date: '2026-11-02', exerciseId, sortOrder: 0, scheme, assignedBy: null, note: null });
 
   it("prende lo schema che l'esercizio ha già nel programma, l'ultimo se sono più d'uno", () => {
     const plan = [item('dip', { sets: 3, reps: 8, weight: 0, rest: 60 }), item('dip', { sets: 5, reps: 5, weight: 20, rest: 120 })];

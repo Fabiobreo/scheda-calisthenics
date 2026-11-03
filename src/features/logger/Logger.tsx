@@ -26,10 +26,17 @@ interface Draft {
   difficulty: Difficulty | null;
   /** secondi di recupero per il timer */
   rest: number;
+  /** nota dell'atleta sulla sessione */
+  note: string;
+  /** indicazioni del trainer per questo esercizio in questo giorno */
+  coachNote: string | null;
 }
 
-/** `scheme`: schema del giorno del programma da cui si apre; senza, si parte dall'ultimo allenamento. */
-type OpenOpts = { entry: Entry } | { exerciseId?: string; kind?: EntryKind; date?: string; scheme?: Scheme };
+/**
+ * `scheme`: schema del giorno del programma da cui si apre; senza, si parte dall'ultimo allenamento.
+ * `coachNote`: nota del trainer su quel giorno, da tenere sotto gli occhi mentre ci si allena.
+ */
+type OpenOpts = { entry: Entry } | { exerciseId?: string; kind?: EntryKind; date?: string; scheme?: Scheme; coachNote?: string | null };
 
 const Ctx = createContext<(o?: OpenOpts) => void>(() => {});
 export const useLogger = () => useContext(Ctx);
@@ -37,8 +44,8 @@ export const useLogger = () => useContext(Ctx);
 function readDraft(): Draft | null {
   try {
     const d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null') as Draft | null;
-    // le bozze salvate prima del recupero nel programma non hanno il campo
-    return d && { ...d, rest: d.rest ?? DEFAULT_REST };
+    // le bozze salvate da versioni precedenti non hanno tutti i campi
+    return d && { ...d, rest: d.rest ?? DEFAULT_REST, note: d.note ?? '', coachNote: d.coachNote ?? null };
   } catch {
     return null;
   }
@@ -87,6 +94,8 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
           rows: e.sets.map((s) => ({ weight: numInput(s.weight), reps: String(s.reps), done: true })),
           difficulty: e.difficulty,
           rest: suggestedRest(plan, e.exerciseId),
+          note: e.note ?? '',
+          coachNote: plan.find((p) => p.exerciseId === e.exerciseId && p.date === e.date)?.note ?? null,
         });
         return;
       }
@@ -109,6 +118,8 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
         rows: startingRows(done, ex.id, kind, o.scheme),
         difficulty: null,
         rest: o.scheme?.rest ?? suggestedRest(plan, ex.id),
+        note: '',
+        coachNote: o.coachNote ?? null,
       });
     },
     [active, done, plan, setDraft],
@@ -180,7 +191,9 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
     if (!sets.length) return toast('Aggiungi almeno una serie');
     if (sets.some((s) => !(s.weight >= 0 && s.weight < 10000) || !Number.isInteger(s.reps) || s.reps < 1))
       return toast('Controlla peso e ripetizioni di ogni serie');
-    const body = { exerciseId: draft.exerciseId, kind: draft.kind, date: draft.date || todayStr(), sets, difficulty: draft.difficulty };
+    const note = draft.note.trim();
+    if (note.length > 500) return toast('Nota troppo lunga (massimo 500 caratteri)');
+    const body = { exerciseId: draft.exerciseId, kind: draft.kind, date: draft.date || todayStr(), sets, difficulty: draft.difficulty, note: note || null };
     if (draft.entryId) update.mutate({ id: draft.entryId, patch: body });
     else create.mutate(body);
     setDraft(null);
@@ -207,6 +220,11 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
               {last && `Ultima volta ${fmtSets(last.sets)} · ${shortDate(last.date)}`}
               {last && rest > 0 && ' · '}
               {rest > 0 && `recupero ${rest} s`}
+            </p>
+          )}
+          {draft.coachNote && (
+            <p className="coach-note">
+              <b>Dal trainer:</b> {draft.coachNote}
             </p>
           )}
 
@@ -270,6 +288,14 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
               onChange={(d) => patch({ difficulty: draft.difficulty === d ? null : d })}
             />
           </div>
+          <Field
+            label="Nota (facoltativa)"
+            value={draft.note}
+            maxLength={500}
+            placeholder="Com'è andata, sensazioni, dolori…"
+            hint="La vede anche il tuo trainer."
+            onChange={(e) => patch({ note: e.target.value })}
+          />
 
           <div className="row">
             <button className="btn" onClick={save}>

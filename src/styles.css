@@ -75,6 +75,7 @@ main { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
 .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 a.link { text-decoration: none; }
+.coach-note { margin: 0; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); font-size: 15px; }
 .code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: .12em; }
 .link { background: none; border: 0; padding: 4px 0; color: var(--accent); font-weight: 600; font-size: 15px; }
 .link:disabled { color: var(--muted); cursor: not-allowed; }

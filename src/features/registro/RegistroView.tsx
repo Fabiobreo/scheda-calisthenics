@@ -64,6 +64,7 @@ export function RegistroView() {
                   <div>
                     <b>{ex?.name ?? 'Esercizio rimosso'}</b>
                     <div className="pmeta">{fmtSets(e.sets)}</div>
+                    {e.note && <div className="pmeta">Nota: {e.note}</div>}
                     <div className="chips">
                       {ex && <TypeChip type={ex.type} />}
                       {e.date > today && <span className="chip mut">In programma</span>}

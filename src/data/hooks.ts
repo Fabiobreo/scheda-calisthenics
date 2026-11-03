@@ -3,7 +3,17 @@ import { useRepo, useScope } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
 import { todayStr } from '../lib/dates';
-import type { CatalogExercise, EntryInput, Exercise, ExerciseInput, PlanChanges, Profile, Scheme } from './types';
+import type {
+  CatalogExercise,
+  EntryInput,
+  Exercise,
+  ExerciseInput,
+  ExerciseRef,
+  PlanChanges,
+  Profile,
+  ProgramItemInput,
+  Scheme,
+} from './types';
 
 const K = {
   exercises: ['exercises'] as QueryKey,
@@ -13,6 +23,8 @@ const K = {
   catalog: ['catalog'] as QueryKey,
   links: ['links'] as QueryKey,
   invite: ['invite'] as QueryKey,
+  programs: ['programs'] as QueryKey,
+  programItems: ['program-items'] as QueryKey,
 };
 
 /** Chiave di una query sui dati di un utente: quelli propri e quelli di un atleta non si mescolano in cache. */
@@ -67,7 +79,7 @@ export function useData() {
 }
 
 /** `dbMessage`: in caso d'errore mostra il messaggio del database (le funzioni dei collegamenti spiegano cosa non va). */
-function useRepoMutation<A>(fn: (repo: Repo, args: A) => Promise<unknown>, keys: QueryKey[], okMsg?: string, dbMessage = false) {
+function useRepoMutation<A, R>(fn: (repo: Repo, args: A) => Promise<R>, keys: QueryKey[], okMsg?: string, dbMessage = false) {
   const repo = useRepo();
   const qc = useQueryClient();
   const toast = useToast();
@@ -159,6 +171,59 @@ export const useSetPlanScheme = () =>
   useRepoMutation((r, a: { id: string; scheme: Scheme }) => r.setPlanScheme(a.id, a.scheme), [K.plan], 'Schema del giorno salvato');
 
 export const useRemovePlanItem = () => useRepoMutation((r, id: string) => r.removePlanItem(id), [K.plan]);
+
+export const useSetPlanNote = () =>
+  useRepoMutation((r, a: { id: string; note: string | null }) => r.setPlanNote(a.id, a.note), [K.plan]);
+
+/** Il trainer aggiunge un esercizio al calendario dell'atleta che sta guardando. */
+export const useCoachAddPlanItem = () =>
+  useRepoMutation(
+    (r, a: { date: string; ref: ExerciseRef; scheme: Scheme; note: string | null }) => r.coachAddPlanItem(a.date, a.ref, a.scheme, a.note),
+    [K.plan, K.exercises],
+    undefined,
+    true,
+  );
+
+// Schede modello: sono del trainer collegato, non dell'utente che le viste stanno mostrando.
+
+export function usePrograms() {
+  const repo = useRepo();
+  return useQuery({ queryKey: K.programs, queryFn: () => repo.listPrograms() });
+}
+
+export function useProgramItems(programId: string) {
+  const repo = useRepo();
+  return useQuery({ queryKey: [...K.programItems, programId], queryFn: () => repo.listProgramItems(programId) });
+}
+
+export const useCreateProgram = () =>
+  useRepoMutation((r, a: { name: string; weeks: number }) => r.createProgram(a), [K.programs]);
+
+export const useUpdateProgram = (okMsg?: string) =>
+  useRepoMutation((r, a: { id: string; patch: { name?: string; weeks?: number } }) => r.updateProgram(a.id, a.patch), [K.programs], okMsg);
+
+export const useDeleteProgram = () => useRepoMutation((r, id: string) => r.deleteProgram(id), [K.programs], 'Scheda eliminata');
+
+export const useAddProgramItems = (okMsg?: string) =>
+  useRepoMutation((r, items: ProgramItemInput[]) => r.addProgramItems(items), [K.programItems, K.programs], okMsg);
+
+export const useUpdateProgramItem = () =>
+  useRepoMutation(
+    (r, a: { id: string; patch: { scheme?: Scheme; note?: string | null } }) => r.updateProgramItem(a.id, a.patch),
+    [K.programItems, K.programs],
+  );
+
+export const useRemoveProgramItems = () =>
+  useRepoMutation((r, ids: string[]) => r.removeProgramItems(ids), [K.programItems, K.programs]);
+
+/** Restituisce quante righe sono finite nel calendario dell'atleta. */
+export const useAssignProgram = () =>
+  useRepoMutation(
+    (r, a: { programId: string; athleteId: string; startMonday: string }) => r.assignProgram(a.programId, a.athleteId, a.startMonday),
+    [K.plan, K.exercises],
+    undefined,
+    true,
+  );
 
 export const useApplyPlanChanges = (okMsg?: string) =>
   useRepoMutation((r, a: PlanChanges) => r.applyPlanChanges(a), [K.plan], okMsg);

@@ -1,6 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Repo } from './repo';
-import type { CatalogExercise, CoachLink, Entry, EntryInput, Exercise, ExerciseInput, PlanItem, PlanItemInput, Profile, Scheme } from './types';
+import type {
+  CatalogExercise,
+  CoachLink,
+  Entry,
+  EntryInput,
+  Exercise,
+  ExerciseInput,
+  PlanItem,
+  PlanItemInput,
+  Profile,
+  Program,
+  ProgramItem,
+  ProgramItemInput,
+  Scheme,
+} from './types';
 
 interface LinkRow {
   id: string;
@@ -50,6 +64,7 @@ interface EntryRow {
   kind: Entry['kind'];
   sets: Entry['sets'];
   difficulty: Entry['difficulty'];
+  note: string | null;
   created_at: string;
 }
 
@@ -62,9 +77,47 @@ interface PlanRow {
   reps: number;
   weight: number;
   rest_seconds: number;
+  assigned_by: string | null;
+  note: string | null;
+}
+
+interface ProgramRow {
+  id: string;
+  name: string;
+  weeks: number;
+  updated_at: string;
+}
+
+interface ProgramItemRow {
+  id: string;
+  program_id: string;
+  week: number;
+  weekday: number;
+  catalog_id: string | null;
+  custom_name: string | null;
+  sort_order: number;
+  sets: number;
+  reps: number;
+  weight: number;
+  rest_seconds: number;
+  note: string | null;
 }
 
 const PAGE = 1000;
+
+const toProgram = (r: ProgramRow): Program => ({ id: r.id, name: r.name, weeks: r.weeks, updatedAt: r.updated_at });
+
+const toProgramItem = (r: ProgramItemRow): ProgramItem => ({
+  id: r.id,
+  programId: r.program_id,
+  week: r.week,
+  weekday: r.weekday,
+  catalogId: r.catalog_id,
+  customName: r.custom_name,
+  sortOrder: r.sort_order,
+  scheme: { sets: r.sets, reps: r.reps, weight: Number(r.weight), rest: r.rest_seconds },
+  note: r.note,
+});
 
 /** Colonne di un esercizio, con il nome della voce del catalogo. */
 const EXERCISE_COLS = '*, catalog:catalog_exercises(name)';
@@ -94,6 +147,7 @@ const toEntry = (r: EntryRow): Entry => ({
   kind: r.kind,
   sets: r.sets.map((s) => ({ weight: Number(s.weight), reps: Number(s.reps) })),
   difficulty: r.difficulty,
+  note: r.note,
   createdAt: r.created_at,
 });
 
@@ -103,6 +157,8 @@ const toPlan = (r: PlanRow): PlanItem => ({
   exerciseId: r.exercise_id,
   sortOrder: r.sort_order,
   scheme: { sets: r.sets, reps: r.reps, weight: Number(r.weight), rest: r.rest_seconds },
+  assignedBy: r.assigned_by,
+  note: r.note,
 });
 
 function exercisePatch(p: Partial<ExerciseInput>) {
@@ -117,7 +173,18 @@ function exercisePatch(p: Partial<ExerciseInput>) {
 
 const schemeRow = (s: Scheme) => ({ sets: s.sets, reps: s.reps, weight: s.weight, rest_seconds: s.rest });
 
-const planRow = (p: PlanItemInput) => ({ date: p.date, exercise_id: p.exerciseId, sort_order: p.sortOrder, ...schemeRow(p.scheme) });
+const planRow = (p: PlanItemInput) => ({ date: p.date, exercise_id: p.exerciseId, sort_order: p.sortOrder, note: p.note, ...schemeRow(p.scheme) });
+
+const programItemRow = (p: ProgramItemInput) => ({
+  program_id: p.programId,
+  week: p.week,
+  weekday: p.weekday,
+  catalog_id: p.catalogId,
+  custom_name: p.customName,
+  sort_order: p.sortOrder,
+  note: p.note,
+  ...schemeRow(p.scheme),
+});
 
 function entryPatch(p: Partial<EntryInput>) {
   const row: Record<string, unknown> = {};
@@ -126,6 +193,7 @@ function entryPatch(p: Partial<EntryInput>) {
   if (p.kind !== undefined) row.kind = p.kind;
   if (p.sets !== undefined) row.sets = p.sets;
   if (p.difficulty !== undefined) row.difficulty = p.difficulty;
+  if (p.note !== undefined) row.note = p.note;
   return row;
 }
 
@@ -272,10 +340,28 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
       const last = must(
         await select('plan_items', 'sort_order').eq('date', date).order('sort_order', { ascending: false }).limit(1),
       ) as { sort_order: number }[];
-      must(await insert('plan_items', [planRow({ date, exerciseId, sortOrder: (last[0]?.sort_order ?? 0) + 1, scheme })]));
+      must(await insert('plan_items', [planRow({ date, exerciseId, sortOrder: (last[0]?.sort_order ?? 0) + 1, scheme, note: null })]));
     },
     async setPlanScheme(id, scheme) {
       must(await update('plan_items', schemeRow(scheme)).eq('id', id));
+    },
+    async setPlanNote(id, note) {
+      must(await update('plan_items', { note }).eq('id', id));
+    },
+    async coachAddPlanItem(date, ref, scheme, note) {
+      must(
+        await sb.rpc('coach_add_plan_item', {
+          p_athlete: userId,
+          p_date: date,
+          p_catalog: ref.catalogId,
+          p_custom: ref.customName,
+          p_sets: scheme.sets,
+          p_reps: scheme.reps,
+          p_weight: scheme.weight,
+          p_rest: scheme.rest,
+          p_note: note,
+        }),
+      );
     },
     async removePlanItem(id) {
       must(await remove('plan_items').eq('id', id));
@@ -283,6 +369,40 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
     async applyPlanChanges({ remove: gone, add }) {
       if (gone.length) must(await remove('plan_items').in('id', gone));
       if (add.length) must(await insert('plan_items', add.map(planRow)));
+    },
+
+    async listPrograms() {
+      const rows = must(await sb.from('programs').select('id, name, weeks, updated_at').order('updated_at', { ascending: false }));
+      return (rows as ProgramRow[]).map(toProgram);
+    },
+    async createProgram({ name, weeks }) {
+      const row = must(await sb.from('programs').insert({ name, weeks }).select('id, name, weeks, updated_at').single());
+      return toProgram(row as ProgramRow);
+    },
+    async updateProgram(id, patch) {
+      must(await sb.from('programs').update(patch).eq('id', id));
+    },
+    async deleteProgram(id) {
+      must(await sb.from('programs').delete().eq('id', id));
+    },
+    async listProgramItems(programId) {
+      const rows = must(await sb.from('program_items').select('*').eq('program_id', programId).order('week').order('weekday').order('sort_order'));
+      return (rows as ProgramItemRow[]).map(toProgramItem);
+    },
+    async addProgramItems(items) {
+      if (items.length) must(await sb.from('program_items').insert(items.map(programItemRow)));
+    },
+    async updateProgramItem(id, patch) {
+      const row: Record<string, unknown> = {};
+      if (patch.scheme) Object.assign(row, schemeRow(patch.scheme));
+      if (patch.note !== undefined) row.note = patch.note;
+      must(await sb.from('program_items').update(row).eq('id', id));
+    },
+    async removeProgramItems(ids) {
+      if (ids.length) must(await sb.from('program_items').delete().in('id', ids));
+    },
+    async assignProgram(programId, athleteId, startMonday) {
+      return must(await sb.rpc('assign_program', { p_program: programId, p_athlete: athleteId, start_monday: startMonday })) as number;
     },
   };
 }
