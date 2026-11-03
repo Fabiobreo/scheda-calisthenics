@@ -2,8 +2,18 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../app/toast';
 import { Field, Seg, Select, TypeChip } from '../../components/ui';
-import { useAddPlanItem, useApplyPlanChanges, useData, useRemovePlanItem, useSetPlanScheme, useUpdateExercise } from '../../data/hooks';
-import { DIFFICULTY_LABEL, type PlanChanges, type PlanItem, type Scheme } from '../../data/types';
+import {
+  useAddCatalogToPlan,
+  useAddPlanItem,
+  useApplyPlanChanges,
+  useCatalog,
+  useData,
+  useRemovePlanItem,
+  useSetPlanScheme,
+  useUpdateExercise,
+} from '../../data/hooks';
+import { CATEGORY_LABEL, DIFFICULTY_LABEL, type PlanChanges, type PlanItem, type Scheme } from '../../data/types';
+import { byCategory } from '../../lib/catalog';
 import { DAY_SHORT, addDays, inWeek, longDate, mondayOf, parseDate, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
 import { fmt, fmtSets, numInput, parseNum } from '../../lib/format';
 import { byDay, copyWeek, weekItems, type CopyMode } from '../../lib/plan';
@@ -121,9 +131,11 @@ function Records() {
 }
 
 function Programma() {
-  const { active, entries, done, plan } = useData();
+  const { exercises, active, entries, done, plan } = useData();
   const openLogger = useLogger();
   const addItem = useAddPlanItem();
+  const addCatalog = useAddCatalogToPlan();
+  const catalog = useCatalog().data ?? [];
   const removeItem = useRemovePlanItem();
   const setScheme = useSetPlanScheme();
   // qui e non nel pannello: il pannello si chiude subito e i callback di mutate non arriverebbero
@@ -144,8 +156,18 @@ function Programma() {
   const date = addDays(monday, day);
   const items = visible.filter((p) => p.date === date).sort(byDay);
   const weekCount = visible.filter((p) => inWeek(p.date, monday)).length;
+  // si aggiunge uno dei propri esercizi, oppure una voce del catalogo che diventa un esercizio al volo
   const avail = active.filter((e) => !items.some((p) => p.exerciseId === e.id));
-  const addId = avail.some((e) => e.id === adding) ? adding : (avail[0]?.id ?? '');
+  const activeCatalog = new Set(active.map((e) => e.catalogId));
+  const fromCatalog = byCategory(catalog.filter((c) => !activeCatalog.has(c.id)));
+  const addOptions = [
+    ...avail.map((e) => ({ v: e.id, l: e.name, group: 'I tuoi esercizi' })),
+    ...fromCatalog.map((c) => ({ v: `cat:${c.id}`, l: c.name, group: `Catalogo · ${CATEGORY_LABEL[c.category]}` })),
+  ];
+  const addId = addOptions.some((o) => o.v === adding) ? adding : (addOptions[0]?.v ?? '');
+  const addCatalogItem = addId.startsWith('cat:') ? catalog.find((c) => `cat:${c.id}` === addId) : undefined;
+  // una voce del catalogo archiviata dall'utente si ripristina: lo storico resta suo
+  const archivedTwin = addCatalogItem && exercises.find((e) => e.archivedAt && e.catalogId === addCatalogItem.id);
   const future = date > today;
   const title = longDate(date);
   const dayName = title.split(' ')[0];
@@ -280,9 +302,9 @@ function Programma() {
         })}
       </div>
 
-      {avail.length > 0 ? (
+      {addOptions.length > 0 && (
         <div className="addrow">
-          <Select label="Aggiungi esercizio" hideLabel value={addId} options={avail.map((e) => ({ v: e.id, l: e.name }))} onChange={setAdding} />
+          <Select label="Aggiungi esercizio" hideLabel value={addId} options={addOptions} onChange={setAdding} />
           {!addOpen && (
             <button className="btn" disabled={!addId} onClick={() => setAddOpen(true)}>
               Aggiungi
@@ -291,23 +313,18 @@ function Programma() {
           {addOpen && addId && (
             <SchemeForm
               key={addId}
-              initial={suggestScheme(plan, done, addId)}
+              initial={suggestScheme(plan, done, archivedTwin?.id ?? addId)}
               hint={`Per ${title}: poi puoi cambiarlo quando vuoi.`}
               saveLabel="Aggiungi"
               onSave={(scheme) => {
-                addItem.mutate({ date, exerciseId: addId, scheme });
+                if (addCatalogItem) addCatalog.mutate({ item: addCatalogItem, archived: archivedTwin, date, scheme });
+                else addItem.mutate({ date, exerciseId: addId, scheme });
                 setAddOpen(false);
               }}
               onCancel={() => setAddOpen(false)}
             />
           )}
         </div>
-      ) : (
-        active.length === 0 && (
-          <p className="hint" style={{ marginTop: 12 }}>
-            Il catalogo è vuoto: crea gli esercizi in <Link to="/esercizi">Esercizi</Link>.
-          </p>
-        )
       )}
 
       {weekCount > 0 && !copyOpen && (

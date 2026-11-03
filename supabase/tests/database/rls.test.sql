@@ -9,7 +9,9 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'anna@test.local'),
   ('00000000-0000-0000-0000-00000000000b', 'bruno@test.local');
 
-select is((select count(*)::int from public.profiles), 2, 'ogni nuovo utente ha un profilo');
+select is(
+  (select count(*)::int from public.profiles where id in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b')),
+  2, 'ogni nuovo utente ha un profilo');
 
 -- Agisce come l'utente indicato, con il ruolo che usa l'app.
 create function pg_temp.as_user(uid uuid) returns void language sql as $$

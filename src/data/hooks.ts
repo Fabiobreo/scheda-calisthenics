@@ -3,14 +3,21 @@ import { useRepo } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
 import { todayStr } from '../lib/dates';
-import type { EntryInput, ExerciseInput, PlanChanges, Profile, Scheme } from './types';
+import type { CatalogExercise, EntryInput, Exercise, ExerciseInput, PlanChanges, Profile, Scheme } from './types';
 
 const K = {
   exercises: ['exercises'] as QueryKey,
   entries: ['entries'] as QueryKey,
   plan: ['plan'] as QueryKey,
   profile: ['profile'] as QueryKey,
+  catalog: ['catalog'] as QueryKey,
 };
+
+/** Catalogo comune: cambia solo con un deploy, non serve rileggerlo durante la sessione. */
+export function useCatalog() {
+  const repo = useRepo();
+  return useQuery({ queryKey: K.catalog, queryFn: () => repo.listCatalog(), staleTime: Infinity });
+}
 
 export function useProfile() {
   const repo = useRepo();
@@ -94,6 +101,21 @@ export const useArchiveExercise = () =>
 
 export const useDeleteExercise = () =>
   useRepoMutation((r, id: string) => r.deleteExercise(id), [K.exercises, K.entries, K.plan], 'Esercizio eliminato');
+
+/**
+ * Aggiunge al programma una voce del catalogo che l'utente non ha tra i suoi esercizi attivi:
+ * la crea (o la ripristina, se era archiviata) e la mette nel giorno.
+ */
+export const useAddCatalogToPlan = () =>
+  useRepoMutation(
+    async (r, a: { item: CatalogExercise; archived?: Exercise; date: string; scheme: Scheme }) => {
+      let id = a.archived?.id;
+      if (id) await r.setExerciseArchived(id, false);
+      else id = (await r.createExercise({ catalogId: a.item.id, name: a.item.name, type: a.item.defaultType, inRecords: false })).id;
+      await r.addPlanItem(a.date, id, a.scheme);
+    },
+    [K.exercises, K.plan],
+  );
 
 export const useCreateEntry = (okMsg = 'Salvato') =>
   useRepoMutation((r, a: EntryInput) => r.createEntry(a), [K.entries], okMsg);

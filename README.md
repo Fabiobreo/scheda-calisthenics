@@ -22,9 +22,11 @@ Copia `.env.example` in `.env.local` e inserisci `API URL` e `anon key` (o *publ
 npm run dev
 ```
 
+- **Account di prova** (dal seed [`supabase/seed.sql`](supabase/seed.sql), solo in locale): `atleta@scheda.test`
+  con esercizi, storico e programma, e `trainer@scheda.test`. La password è scritta nel file di seed.
 - **Studio** (tabelle, utenti, SQL): http://127.0.0.1:54323
 - **Email** di conferma e reset password: http://127.0.0.1:54324 (nessuna mail esce davvero)
-- `npx supabase db reset` ricrea il database da zero con tutte le migration: è anche il modo di provarle prima del deploy.
+- `npx supabase db reset` ricrea il database da zero con tutte le migration e il seed: è anche il modo di provarle prima del deploy.
 - `npx supabase stop` ferma tutto (i dati restano per il prossimo `start`).
 
 ## Test
@@ -95,9 +97,14 @@ supabase/migrations/  schema SQL
 
 - **profiles**: uno per utente, creato dal trigger alla registrazione; per ora il nome visualizzato.
   L'utente può eliminare il proprio account (`delete_own_account()`), e con lui spariscono tutti i suoi dati.
-- **exercises**: catalogo dei movimenti, senza serie né ripetizioni: nome (unico per utente, maiuscole a parte),
-  tipo (forza/volume/tecnico), flag `in_records` e archiviazione (archiviare conserva lo storico, eliminare lo cancella).
-  Così "Trazioni" è un solo esercizio nei grafici, qualunque schema si usi.
+- **catalog_exercises**: catalogo comune a tutti gli utenti, in sola lettura (cambia solo con le migration).
+  Id stabili e leggibili (`trazioni`, `dip`…), categoria (tirata, spinta, gambe, core, skill), tipo predefinito e sinonimi
+  ("pull up", "chin up"…) per riconoscere i nomi scritti a mano.
+- **exercises**: gli esercizi dell'utente, senza serie né ripetizioni. Ognuno è collegato a una voce del catalogo
+  (`catalog_id`, al massimo una volta per utente; il nome viene dal catalogo) oppure è personalizzato (`name` proprio,
+  unico per utente, maiuscole a parte). In più tipo (forza/volume/tecnico), flag `in_records` e archiviazione
+  (archiviare conserva lo storico, eliminare lo cancella). Così "Trazioni" è un solo esercizio nei grafici, qualunque
+  schema si usi, e lo stesso esercizio per atleti e trainer.
 - **entries**: un esercizio svolto in una data, con `sets` = `[{ weight, reps }, ...]`, difficoltà e `kind`
   (`training` o `attempt` per i tentativi di record). Una data futura vuol dire allenamento in programma:
   compare nello storico come "In programma" ed entra in record e grafici solo quando arriva quel giorno.

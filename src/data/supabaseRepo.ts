@@ -1,10 +1,21 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Repo } from './repo';
-import type { Entry, EntryInput, Exercise, ExerciseInput, PlanItem, PlanItemInput, Profile, Scheme } from './types';
+import type { CatalogExercise, Entry, EntryInput, Exercise, ExerciseInput, PlanItem, PlanItemInput, Profile, Scheme } from './types';
+
+interface CatalogRow {
+  id: string;
+  name: string;
+  category: CatalogExercise['category'];
+  default_type: CatalogExercise['defaultType'];
+  aliases: string[];
+}
 
 interface ExerciseRow {
   id: string;
-  name: string;
+  catalog_id: string | null;
+  name: string | null;
+  /** nome della voce del catalogo collegata */
+  catalog: { name: string } | null;
   type: Exercise['type'];
   in_records: boolean;
   sort_order: number;
@@ -34,9 +45,21 @@ interface PlanRow {
 
 const PAGE = 1000;
 
-const toExercise = (r: ExerciseRow): Exercise => ({
+/** Colonne di un esercizio, con il nome della voce del catalogo. */
+const EXERCISE_COLS = '*, catalog:catalog_exercises(name)';
+
+const toCatalog = (r: CatalogRow): CatalogExercise => ({
   id: r.id,
   name: r.name,
+  category: r.category,
+  defaultType: r.default_type,
+  aliases: r.aliases,
+});
+
+const toExercise = (r: ExerciseRow): Exercise => ({
+  id: r.id,
+  catalogId: r.catalog_id,
+  name: r.catalog?.name ?? r.name ?? '',
   type: r.type,
   inRecords: r.in_records,
   sortOrder: r.sort_order,
@@ -63,7 +86,9 @@ const toPlan = (r: PlanRow): PlanItem => ({
 
 function exercisePatch(p: Partial<ExerciseInput>) {
   const row: Record<string, unknown> = {};
-  if (p.name !== undefined) row.name = p.name;
+  if (p.catalogId !== undefined) row.catalog_id = p.catalogId;
+  // il nome di un esercizio del catalogo è quello del catalogo: non se ne salva uno proprio
+  if (p.name !== undefined) row.name = p.catalogId ? null : p.name;
   if (p.type !== undefined) row.type = p.type;
   if (p.inRecords !== undefined) row.in_records = p.inRecords;
   return row;
@@ -117,8 +142,13 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
       await sb.auth.signOut({ scope: 'local' });
     },
 
+    async listCatalog() {
+      const rows = must(await sb.from('catalog_exercises').select('id, name, category, default_type, aliases').order('sort_order'));
+      return (rows as CatalogRow[]).map(toCatalog);
+    },
+
     async listExercises() {
-      const rows = must(await select('exercises').order('sort_order').order('created_at'));
+      const rows = must(await select('exercises', EXERCISE_COLS).order('sort_order').order('created_at'));
       return (rows as ExerciseRow[]).map(toExercise);
     },
     async createExercise(input) {
@@ -127,7 +157,7 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
       ) as { sort_order: number }[];
       const row = must(
         await insert('exercises', [{ ...exercisePatch(input), sort_order: (last[0]?.sort_order ?? 0) + 1 }])
-          .select()
+          .select(EXERCISE_COLS)
           .single(),
       );
       return toExercise(row as ExerciseRow);

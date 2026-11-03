@@ -126,23 +126,41 @@ export function PasswordField({ label, aside, hint, error, ...input }: FieldProp
   );
 }
 
+type SelectOption<T> = { v: T; l: string; /** opzioni consecutive con lo stesso gruppo finiscono in un optgroup */ group?: string };
+
 export function Select<T extends string>({ label, value, options, onChange, hideLabel }: {
   label: string;
   value: T;
-  options: { v: T; l: string }[];
+  options: SelectOption<T>[];
   onChange: (v: T) => void;
   hideLabel?: boolean;
 }) {
   const id = useId();
+  const opt = (o: SelectOption<T>) => (
+    <option key={o.v} value={o.v}>
+      {o.l}
+    </option>
+  );
+  // raggruppa le opzioni consecutive con lo stesso `group`; senza gruppo restano libere
+  const blocks: { group?: string; items: SelectOption<T>[] }[] = [];
+  for (const o of options) {
+    const last = blocks[blocks.length - 1];
+    if (last && last.group === o.group) last.items.push(o);
+    else blocks.push({ group: o.group, items: [o] });
+  }
   return (
     <label className="fld" htmlFor={id}>
       <span className={hideLabel ? 'sr-only' : undefined}>{label}</span>
       <select id={id} value={value} onChange={(e) => onChange(e.target.value as T)}>
-        {options.map((o) => (
-          <option key={o.v} value={o.v}>
-            {o.l}
-          </option>
-        ))}
+        {blocks.map((b, i) =>
+          b.group ? (
+            <optgroup key={`${b.group}-${i}`} label={b.group}>
+              {b.items.map(opt)}
+            </optgroup>
+          ) : (
+            b.items.map(opt)
+          ),
+        )}
       </select>
     </label>
   );

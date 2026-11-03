@@ -13,8 +13,28 @@ export const DIFFICULTIES: Difficulty[] = ['facile', 'medio', 'difficile'];
 export const TYPE_LABEL: Record<ExerciseType, string> = { forza: 'Forza', volume: 'Volume', tecnico: 'Tecnico' };
 export const DIFFICULTY_LABEL: Record<Difficulty, string> = { facile: 'Facile', medio: 'Medio', difficile: 'Difficile' };
 
+export type Category = 'tirata' | 'spinta' | 'gambe' | 'core' | 'skill';
+
+export const CATEGORIES: Category[] = ['tirata', 'spinta', 'gambe', 'core', 'skill'];
+export const CATEGORY_LABEL: Record<Category, string> = { tirata: 'Tirata', spinta: 'Spinta', gambe: 'Gambe', core: 'Core', skill: 'Skill' };
+
+/** Voce del catalogo esercizi comune a tutti gli utenti. */
+export interface CatalogExercise {
+  /** slug stabile, es. "trazioni" */
+  id: string;
+  name: string;
+  category: Category;
+  defaultType: ExerciseType;
+  /** altri nomi, in minuscolo */
+  aliases: string[];
+}
+
+/** Esercizio dell'utente: collegato a una voce del catalogo oppure personalizzato. */
 export interface Exercise {
   id: string;
+  /** voce del catalogo; null = esercizio personalizzato */
+  catalogId: string | null;
+  /** il nome del catalogo, oppure quello scelto dall'utente */
   name: string;
   type: ExerciseType;
   inRecords: boolean;

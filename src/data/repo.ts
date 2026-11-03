@@ -1,4 +1,4 @@
-import type { Entry, EntryInput, Exercise, ExerciseInput, PlanChanges, PlanItem, Profile, Scheme } from './types';
+import type { CatalogExercise, Entry, EntryInput, Exercise, ExerciseInput, PlanChanges, PlanItem, Profile, Scheme } from './types';
 
 /** Accesso ai dati di un utente. */
 export interface Repo {
@@ -7,7 +7,11 @@ export interface Repo {
   /** Elimina l'account con tutti i suoi dati. Non si torna indietro. */
   deleteAccount(): Promise<void>;
 
+  /** catalogo comune, in ordine di categoria */
+  listCatalog(): Promise<CatalogExercise[]>;
+
   listExercises(): Promise<Exercise[]>;
+  /** con `catalogId` il nome viene dal catalogo e `name` è ignorato */
   createExercise(input: ExerciseInput): Promise<Exercise>;
   updateExercise(id: string, patch: Partial<ExerciseInput>): Promise<void>;
   setExerciseArchived(id: string, archived: boolean): Promise<void>;

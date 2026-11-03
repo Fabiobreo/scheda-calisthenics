@@ -1,22 +1,41 @@
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
-import { ConfirmButton, Field, Select, TypeChip } from '../../components/ui';
-import { useArchiveExercise, useCreateExercise, useData, useDeleteExercise, useUpdateExercise } from '../../data/hooks';
-import { EXERCISE_TYPES, TYPE_LABEL, type Exercise, type ExerciseType } from '../../data/types';
+import { ConfirmButton, Field, Seg, Select, TypeChip } from '../../components/ui';
+import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useUpdateExercise } from '../../data/hooks';
+import { CATEGORY_LABEL, EXERCISE_TYPES, TYPE_LABEL, type CatalogExercise, type Exercise, type ExerciseType } from '../../data/types';
+import { byCategory, matchCatalog } from '../../lib/catalog';
+
+type Source = 'catalog' | 'custom';
 
 interface Form {
+  /** null = nuovo esercizio */
   id: string | null;
+  source: Source;
+  catalogId: string;
   name: string;
   type: ExerciseType;
+  /** il tipo è stato scelto a mano: cambiare voce del catalogo non lo sovrascrive */
+  typeTouched: boolean;
   inRecords: boolean;
 }
 
-const blank: Form = { id: null, name: '', type: 'volume', inRecords: false };
+const blank = (first?: CatalogExercise): Form => ({
+  id: null,
+  source: first ? 'catalog' : 'custom',
+  catalogId: first?.id ?? '',
+  name: '',
+  type: first?.defaultType ?? 'volume',
+  typeTouched: false,
+  inRecords: false,
+});
 
 const toForm = (e: Exercise): Form => ({
   id: e.id,
+  source: e.catalogId ? 'catalog' : 'custom',
+  catalogId: e.catalogId ?? '',
   name: e.name,
   type: e.type,
+  typeTouched: true,
   inRecords: e.inRecords,
 });
 
@@ -25,6 +44,7 @@ const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().t
 
 export function EserciziView() {
   const { exercises, active, entries } = useData();
+  const catalog = useCatalog().data ?? [];
   const create = useCreateExercise();
   const update = useUpdateExercise('Modifiche salvate');
   const archive = useArchiveExercise();
@@ -34,18 +54,44 @@ export function EserciziView() {
   const [showArchived, setShowArchived] = useState(false);
   const archived = exercises.filter((e) => e.archivedAt);
 
+  // voci del catalogo che l'utente non ha ancora (gli archiviati contano: si ripristinano dalla lista)
+  const linked = new Set(exercises.map((e) => e.catalogId));
+  const free = byCategory(catalog.filter((c) => !linked.has(c.id)));
+  const editing = form?.id ? exercises.find((e) => e.id === form.id) : undefined;
+
   const patch = (p: Partial<Form>) => form && setForm({ ...form, ...p });
+  const pickCatalog = (id: string) => {
+    const c = catalog.find((x) => x.id === id);
+    if (form && c) patch({ catalogId: id, type: form.typeTouched ? form.type : c.defaultType });
+  };
 
   const save = () => {
     if (!form) return;
+    if (form.source === 'catalog') {
+      if (form.id) {
+        update.mutate({ id: form.id, patch: { type: form.type, inRecords: form.inRecords } });
+        return setForm(null);
+      }
+      const c = catalog.find((x) => x.id === form.catalogId);
+      if (!c) return toast('Scegli un esercizio dal catalogo');
+      create.mutate({ catalogId: c.id, name: c.name, type: form.type, inRecords: form.inRecords });
+      return setForm(null);
+    }
     const name = form.name.trim();
     if (!name) return toast("Scrivi il nome dell'esercizio");
     if (name.length > 80) return toast('Nome troppo lungo');
     const twin = exercises.find((e) => e.id !== form.id && sameName(e.name, name));
     if (twin) return toast(twin.archivedAt ? `"${twin.name}" esiste già tra gli archiviati: ripristinalo` : `"${twin.name}" esiste già`);
-    const body = { name, type: form.type, inRecords: form.inRecords };
-    if (form.id) update.mutate({ id: form.id, patch: body });
-    else create.mutate(body);
+    // un nome del catalogo va preso dal catalogo: stesso esercizio per tutti, grafici confrontabili
+    const known = !form.id && matchCatalog(catalog, name);
+    const mine = known && exercises.find((e) => e.catalogId === known.id);
+    if (mine) return toast(mine.archivedAt ? `"${mine.name}" ce l'hai già tra gli archiviati: ripristinalo` : `"${mine.name}" ce l'hai già`);
+    if (known) {
+      setForm({ ...form, source: 'catalog', catalogId: known.id, type: form.typeTouched ? form.type : known.defaultType });
+      return toast(`"${known.name}" è nel catalogo: l'ho scelto da lì`);
+    }
+    if (form.id) update.mutate({ id: form.id, patch: { name, type: form.type, inRecords: form.inRecords } });
+    else create.mutate({ catalogId: null, name, type: form.type, inRecords: form.inRecords });
     setForm(null);
   };
 
@@ -55,22 +101,69 @@ export function EserciziView() {
     <section className="card">
       <div className="card-h">
         <h2>Esercizi</h2>
-        <button className="btn small" onClick={() => setForm(blank)}>
-          + Nuovo
+        <button className="btn small" onClick={() => setForm(blank(free[0]))}>
+          + Aggiungi
         </button>
       </div>
-      <p className="sub">Solo il movimento, senza serie e ripetizioni: quelle le scegli nel programma, giorno per giorno. Così i grafici seguono l'esercizio qualunque schema usi.</p>
+      <p className="sub">
+        Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi
+        nel programma, giorno per giorno.
+      </p>
 
       {form && (
         <div className="form" id="xform">
-          <Field label="Nome" value={form.name} autoComplete="off" autoFocus maxLength={80} onChange={(e) => patch({ name: e.target.value })} />
-          <Select label="Tipo" value={form.type} options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))} onChange={(type) => patch({ type })} />
+          {!form.id && (
+            <Seg
+              label="Da dove"
+              value={form.source}
+              options={[
+                { v: 'catalog', l: 'Dal catalogo' },
+                { v: 'custom', l: 'Personalizzato' },
+              ]}
+              onChange={(source) => patch({ source })}
+            />
+          )}
+          {form.source === 'catalog' ? (
+            editing ? (
+              <p className="pname">
+                {editing.name} <span className="chip mut">Dal catalogo</span>
+              </p>
+            ) : free.length ? (
+              <>
+                <Select
+                  label="Esercizio"
+                  value={form.catalogId}
+                  options={free.map((c) => ({ v: c.id, l: c.name, group: CATEGORY_LABEL[c.category] }))}
+                  onChange={pickCatalog}
+                />
+                <p className="hint">Non c'è quello che cerchi? Crealo personalizzato.</p>
+              </>
+            ) : (
+              <p className="hint">Hai già tutti gli esercizi del catalogo. Per altri movimenti scegli "Personalizzato".</p>
+            )
+          ) : (
+            <Field
+              label="Nome"
+              value={form.name}
+              autoComplete="off"
+              autoFocus
+              maxLength={80}
+              hint={form.id ? undefined : 'Solo per movimenti che non sono nel catalogo.'}
+              onChange={(e) => patch({ name: e.target.value })}
+            />
+          )}
+          <Select
+            label="Tipo"
+            value={form.type}
+            options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))}
+            onChange={(type) => patch({ type, typeTouched: true })}
+          />
           <label className="check-row">
             <input type="checkbox" checked={form.inRecords} onChange={(e) => patch({ inRecords: e.target.checked })} />
             Mostra nei record personali
           </label>
           <div className="row">
-            <button className="btn" onClick={save}>
+            <button className="btn" onClick={save} disabled={form.source === 'catalog' && !form.id && !free.length}>
               {form.id ? 'Salva modifiche' : 'Aggiungi esercizio'}
             </button>
             <button className="btn ghost" onClick={() => setForm(null)}>
@@ -80,13 +173,14 @@ export function EserciziView() {
         </div>
       )}
 
-      {!active.length && !form && <p className="empty">Il catalogo è vuoto. Aggiungi il tuo primo esercizio.</p>}
+      {!active.length && !form && <p className="empty">Non hai ancora esercizi. Aggiungili dal catalogo.</p>}
       {active.map((e) => (
         <div className="entry" key={e.id}>
           <div>
             <b>{e.name}</b>
             <div className="chips">
               <TypeChip type={e.type} />
+              {!e.catalogId && <span className="chip mut">Personalizzato</span>}
               {e.inRecords && <span className="chip mut">Nei record</span>}
             </div>
           </div>
