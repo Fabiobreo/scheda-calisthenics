@@ -4,6 +4,12 @@ const nf = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 });
 
 export const fmt = (n: number) => nf.format(n);
 
+/** Intero tra min e max compresi. */
+export const isInt = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
+
+/** "1 esercizio", "3 esercizi". */
+export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
 /** Accetta sia "52,5" che "52.5". Restituisce NaN se non è un numero. */
 export const parseNum = (v: string) => (v.trim() === '' ? NaN : Number(v.trim().replace(',', '.')));
 

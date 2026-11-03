@@ -67,13 +67,42 @@ insert into public.catalog_exercises (id, name, category, default_type, aliases,
   ('v-sit',                'V-sit',                          'skill',  'tecnico', '{v sit}', 380),
   ('bandiera',             'Bandiera',                       'skill',  'tecnico', '{human flag}', 390);
 
--- Esercizi dell'utente: collegati al catalogo (nome dal catalogo) oppure personalizzati (nome proprio).
+-- Esercizi dell'utente: collegati al catalogo oppure personalizzati.
+-- `name` resta sempre compilato: per quelli del catalogo è una copia del nome della voce, scritta dal trigger qui sotto.
+-- Serve a chi ha ancora aperta la versione precedente dell'app, che non conosce il catalogo e legge solo `name`;
+-- e il vincolo di nome unico per utente (0003) impedisce un personalizzato "Trazioni" accanto a quelle del catalogo.
+-- L'app nuova mostra il nome del catalogo.
 alter table public.exercises
   add column catalog_id text references public.catalog_exercises on update cascade on delete restrict,
-  alter column name drop not null,
-  add constraint exercises_catalog_or_name check ((catalog_id is null) = (name is not null)),
   -- una voce del catalogo una volta sola per utente: i grafici restano su un'unica linea
   add constraint exercises_user_catalog_key unique (user_id, catalog_id);
+
+create function public.exercise_catalog_name() returns trigger
+language plpgsql set search_path = '' as $$
+declare
+  cat_name text;
+begin
+  if new.catalog_id is null then
+    return new;
+  end if;
+  select name into cat_name from public.catalog_exercises where id = new.catalog_id;
+  if cat_name is null then
+    return new; -- voce inesistente: ci pensa la foreign key
+  end if;
+  new.name := cat_name;
+  -- c'è già un suo esercizio con quel nome (personalizzato): un nome di riserva evita il conflitto sul vincolo unico
+  if exists (
+    select 1 from public.exercises x
+    where x.user_id = new.user_id and x.id <> new.id and lower(btrim(x.name)) = lower(cat_name)
+  ) then
+    new.name := left(cat_name, 69) || ' (catalogo)';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger exercises_catalog_name before insert or update of catalog_id, name on public.exercises
+  for each row execute function public.exercise_catalog_name();
 
 -- Gli esercizi che esistono già si collegano al catalogo se il nome (o un sinonimo) corrisponde.
 -- Se due esercizi dello stesso utente corrispondono alla stessa voce, si collega il più vecchio; l'altro resta personalizzato.
@@ -85,6 +114,6 @@ with m as (
     on lower(btrim(e.name)) = lower(c.name) or lower(btrim(e.name)) = any (c.aliases)
 )
 update public.exercises e
-set catalog_id = m.catalog_id, name = null
+set catalog_id = m.catalog_id
 from m
 where m.id = e.id and m.n = 1;

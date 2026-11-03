@@ -11,6 +11,7 @@ import type {
   ExerciseRef,
   PlanChanges,
   Profile,
+  PlanItem,
   ProgramItemInput,
   Scheme,
 } from './types';
@@ -105,6 +106,16 @@ export function useInviteCode() {
 }
 
 export const useRotateInvite = () => useRepoMutation((r) => r.rotateInviteCode(), [K.invite], undefined, true);
+
+/**
+ * Righe del programma scritte dal trainer che segue ora l'utente: sono del trainer, l'utente le registra ma non le
+ * modifica. Le righe di un trainer che non lo segue più sono tornate sue.
+ */
+export function useTrainerLock(): (p: PlanItem) => boolean {
+  const { userId } = useScope();
+  const trainer = useLinks().data?.find((l) => l.athleteId === userId)?.trainerId;
+  return (p) => p.assignedBy !== null && p.assignedBy === trainer;
+}
 
 export const useAcceptInvite = () => useRepoMutation((r, code: string) => r.acceptInvite(code), [K.links], 'Collegato al trainer', true);
 
@@ -212,6 +223,10 @@ export const useUpdateProgramItem = () =>
     (r, a: { id: string; patch: { scheme?: Scheme; note?: string | null } }) => r.updateProgramItem(a.id, a.patch),
     [K.programItems, K.programs],
   );
+
+/** Toglie `remove` e aggiunge `add` in un'unica operazione: non dipende dal componente che la avvia. */
+export const useReplaceProgramItems = (okMsg?: string) =>
+  useRepoMutation((r, a: { remove: string[]; add: ProgramItemInput[] }) => r.replaceProgramItems(a.remove, a.add), [K.programItems, K.programs], okMsg);
 
 export const useRemoveProgramItems = () =>
   useRepoMutation((r, ids: string[]) => r.removeProgramItems(ids), [K.programItems, K.programs]);

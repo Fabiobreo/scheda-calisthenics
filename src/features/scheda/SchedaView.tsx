@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { SchemeForm } from '../../components/SchemeForm';
+import { WeekDays } from '../../components/WeekDays';
 import { Seg, Select, TypeChip } from '../../components/ui';
 import {
   useAddCatalogToPlan,
@@ -10,14 +10,14 @@ import {
   useApplyPlanChanges,
   useCatalog,
   useData,
-  useLinks,
+  useTrainerLock,
   useRemovePlanItem,
   useSetPlanScheme,
   useUpdateExercise,
 } from '../../data/hooks';
 import { CATEGORY_LABEL, DIFFICULTY_LABEL, type PlanChanges, type PlanItem } from '../../data/types';
 import { byCategory } from '../../lib/catalog';
-import { DAY_SHORT, addDays, inWeek, longDate, mondayOf, parseDate, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
+import { addDays, inWeek, longDate, mondayOf, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
 import { fmt, fmtSets } from '../../lib/format';
 import { byDay, copyWeek, weekItems, type CopyMode } from '../../lib/plan';
 import { lastTraining, personalBest, recordEntryIds, suggestScheme } from '../../lib/stats';
@@ -144,11 +144,7 @@ function Programma() {
   // qui e non nel pannello: il pannello si chiude subito e i callback di mutate non arriverebbero
   const apply = useApplyPlanChanges();
   const toast = useToast();
-  const session = useSession();
-  const myId = session.status === 'ready' ? session.userId : '';
-  // le righe del trainer che mi segue sono sue: le registro ma non le modifico
-  const myTrainer = useLinks().data?.find((l) => l.athleteId === myId)?.trainerId;
-  const locked = (p: PlanItem) => p.assignedBy !== null && p.assignedBy === myTrainer;
+  const locked = useTrainerLock();
   const today = todayStr();
   const thisMonday = mondayOf(today);
   const [monday, setMonday] = useState(thisMonday);
@@ -158,7 +154,8 @@ function Programma() {
   const [addOpen, setAddOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
 
-  const byId = new Map(active.map((e) => [e.id, e]));
+  // anche esercizi archiviati: le righe del trainer restano finché lui non le toglie
+  const byId = new Map(exercises.map((e) => [e.id, e]));
   const visible = plan.filter((p) => byId.has(p.exerciseId));
   // il giorno scelto nella settimana mostrata: registrare da qui usa questa data, anche se futura
   const date = addDays(monday, day);
@@ -203,47 +200,18 @@ function Programma() {
       </div>
       <p className="sub">Scegli gli esercizi di ogni giorno con serie, ripetizioni, peso e recupero. Prepara una settimana e copiala in quelle dopo.</p>
 
-      <div className="weeknav">
-        <button className="x" onClick={() => goWeek(addDays(monday, -7))} aria-label="Settimana precedente">
-          ‹
-        </button>
-        <div className="weeknav-t">
-          <b>{weekLabel(monday)}</b>
-          {monday === thisMonday ? (
-            <span>Questa settimana</span>
-          ) : (
-            <button className="link small" onClick={() => goWeek(thisMonday, weekdayIndex())}>
-              Torna a oggi
-            </button>
-          )}
-        </div>
-        <button className="x" onClick={() => goWeek(addDays(monday, 7))} aria-label="Settimana successiva">
-          ›
-        </button>
-      </div>
-
-      <div className="days">
-        {DAY_SHORT.map((d, i) => {
-          const dt = addDays(monday, i);
-          const n = visible.filter((p) => p.date === dt).length;
-          return (
-            <button
-              key={d}
-              className={`day${i === day ? ' on' : ''}${dt === today ? ' today' : ''}`}
-              onClick={() => {
-                setDay(i);
-                reset();
-              }}
-              aria-label={`${longDate(dt)}, ${n} ${n === 1 ? 'esercizio' : 'esercizi'}`}
-              aria-pressed={i === day}
-            >
-              <span>{d}</span>
-              <i>{parseDate(dt).getDate()}</i>
-              <small>{n ? `${n} es.` : '–'}</small>
-            </button>
-          );
-        })}
-      </div>
+      <WeekDays
+        monday={monday}
+        day={day}
+        count={(dt) => visible.filter((p) => p.date === dt).length}
+        onChange={(m, d) => {
+          if (m !== monday) goWeek(m, d);
+          else {
+            setDay(d);
+            reset();
+          }
+        }}
+      />
       <h3 style={{ fontSize: 22, marginTop: 18 }}>{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
 
       <div className="plan">
@@ -281,7 +249,7 @@ function Programma() {
                 )}
                 {p.note && (
                   <p className="coach-note" style={{ marginTop: 8 }}>
-                    <b>Dal trainer:</b> {p.note}
+                    <b>{p.assignedBy ? 'Dal trainer:' : 'Nota:'}</b> {p.note}
                   </p>
                 )}
                 <div className="chips">

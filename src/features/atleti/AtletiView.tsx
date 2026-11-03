@@ -4,10 +4,11 @@ import { AthleteScope, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { useExercisePicker } from '../../components/ExercisePicker';
 import { SchemeForm } from '../../components/SchemeForm';
+import { WeekDays } from '../../components/WeekDays';
 import { ConfirmButton, Seg, TypeChip } from '../../components/ui';
 import { useCatalog, useCoachAddPlanItem, useData, useEndLink, useLinks, useRemovePlanItem, useSetPlanNote, useSetPlanScheme } from '../../data/hooks';
 import { DEFAULT_REST } from '../../data/types';
-import { DAY_SHORT, addDays, longDate, mondayOf, parseDate, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
+import { addDays, longDate, mondayOf, shortDate, todayStr, weekdayIndex } from '../../lib/dates';
 import { fmt, fmtSets } from '../../lib/format';
 import { byDay } from '../../lib/plan';
 import { GraficiView } from '../grafici/GraficiView';
@@ -125,7 +126,7 @@ function AthleteData({ tab }: { tab: Tab }) {
  * Il trainer aggiunge esercizi ai giorni e ritocca le righe sue; quelle dell'atleta le vede soltanto.
  */
 function AthletePlan() {
-  const { active, exercises, entries, plan } = useData();
+  const { exercises, entries, plan } = useData();
   const session = useSession();
   const myId = session.status === 'ready' ? session.userId : '';
   const catalog = useCatalog().data ?? [];
@@ -141,7 +142,8 @@ function AthletePlan() {
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const byId = new Map(exercises.map((e) => [e.id, e]));
-  const visible = plan.filter((p) => active.some((e) => e.id === p.exerciseId));
+  // anche quelli di esercizi che l'atleta ha archiviato: il trainer deve poterli vedere e togliere
+  const visible = plan.filter((p) => byId.has(p.exerciseId));
   const date = addDays(monday, day);
   const items = visible.filter((p) => p.date === date).sort(byDay);
   const title = longDate(date);
@@ -161,43 +163,7 @@ function AthletePlan() {
   return (
     <section className="card">
       <h2>Programma</h2>
-      <div className="weeknav">
-        <button className="x" onClick={() => go(addDays(monday, -7), day)} aria-label="Settimana precedente">
-          ‹
-        </button>
-        <div className="weeknav-t">
-          <b>{weekLabel(monday)}</b>
-          {monday === thisMonday ? (
-            <span>Questa settimana</span>
-          ) : (
-            <button className="link small" onClick={() => go(thisMonday, weekdayIndex())}>
-              Torna a oggi
-            </button>
-          )}
-        </div>
-        <button className="x" onClick={() => go(addDays(monday, 7), day)} aria-label="Settimana successiva">
-          ›
-        </button>
-      </div>
-      <div className="days">
-        {DAY_SHORT.map((d, i) => {
-          const dt = addDays(monday, i);
-          const n = visible.filter((p) => p.date === dt).length;
-          return (
-            <button
-              key={d}
-              className={`day${i === day ? ' on' : ''}${dt === today ? ' today' : ''}`}
-              onClick={() => go(monday, i)}
-              aria-label={`${longDate(dt)}, ${n} ${n === 1 ? 'esercizio' : 'esercizi'}`}
-              aria-pressed={i === day}
-            >
-              <span>{d}</span>
-              <i>{parseDate(dt).getDate()}</i>
-              <small>{n ? `${n} es.` : '–'}</small>
-            </button>
-          );
-        })}
-      </div>
+      <WeekDays monday={monday} day={day} count={(dt) => visible.filter((p) => p.date === dt).length} onChange={go} />
       <h3 style={{ fontSize: 22, marginTop: 18 }}>{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
       <div className="plan">
         {items.length === 0 && <p className="empty">Niente in programma.</p>}
@@ -222,7 +188,7 @@ function AthletePlan() {
                 {saved?.note && <div className="pmeta">Nota dell'atleta: {saved.note}</div>}
                 {p.note && (
                   <p className="coach-note" style={{ marginTop: 8 }}>
-                    <b>La tua nota:</b> {p.note}
+                    <b>{mine ? 'La tua nota:' : p.assignedBy ? 'Nota di un altro trainer:' : "Nota dell'atleta:"}</b> {p.note}
                   </p>
                 )}
                 <div className="chips">

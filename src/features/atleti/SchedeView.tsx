@@ -15,15 +15,13 @@ import {
   useProgramItems,
   usePrograms,
   useRemoveProgramItems,
+  useReplaceProgramItems,
   useUpdateProgram,
   useUpdateProgramItem,
 } from '../../data/hooks';
 import { DEFAULT_REST, type ProgramItem, type ProgramItemInput } from '../../data/types';
 import { DAY_LONG, DAY_SHORT, addDays, mondayOf, shortDate, todayStr, weekLabel } from '../../lib/dates';
-import { fmt } from '../../lib/format';
-
-const isInt = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+import { fmt, isInt, plural } from '../../lib/format';
 
 /** Le schede modello del trainer, nella pagina Atleti. */
 export function SchedeCard() {
@@ -96,6 +94,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
   const addItems = useAddProgramItems();
   const editItem = useUpdateProgramItem();
   const removeItems = useRemoveProgramItems();
+  const replaceItems = useReplaceProgramItems('Settimana copiata nelle successive');
   const toast = useToast();
   const navigate = useNavigate();
   const [title, setTitle] = useState(name);
@@ -130,9 +129,8 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
     for (let w = shownWeek + 1; w <= weeks; w++)
       for (const i of weekItems)
         copies.push({ programId: i.programId, week: w, weekday: i.weekday, catalogId: i.catalogId, customName: i.customName, sortOrder: i.sortOrder, scheme: i.scheme, note: i.note });
-    // prima si tolgono le settimane successive, poi si scrivono le copie
-    removeItems.mutate(later, { onSuccess: () => addItems.mutate(copies) });
-    toast(`Settimana ${shownWeek} copiata nelle ${plural(weeks - shownWeek, 'settimana successiva', 'settimane successive')}`);
+    // un'unica operazione: prima le copie, poi via le righe vecchie (se le copie falliscono non si perde niente)
+    replaceItems.mutate({ remove: later, add: copies });
   };
 
   const headDirty = title.trim() !== name || weeksText !== String(weeks);

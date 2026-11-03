@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
 import { ConfirmButton, Field, Seg, Select, TypeChip } from '../../components/ui';
-import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useUpdateExercise } from '../../data/hooks';
+import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useTrainerLock, useUpdateExercise } from '../../data/hooks';
+import { todayStr } from '../../lib/dates';
 import { CATEGORY_LABEL, EXERCISE_TYPES, TYPE_LABEL, type CatalogExercise, type Exercise, type ExerciseType } from '../../data/types';
 import { byCategory, matchCatalog } from '../../lib/catalog';
 
@@ -43,7 +44,8 @@ const toForm = (e: Exercise): Form => ({
 const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 export function EserciziView() {
-  const { exercises, active, entries } = useData();
+  const { exercises, active, entries, plan } = useData();
+  const locked = useTrainerLock();
   const catalog = useCatalog().data ?? [];
   const create = useCreateExercise();
   const update = useUpdateExercise('Modifiche salvate');
@@ -194,13 +196,21 @@ export function EserciziView() {
             >
               Modifica
             </button>
-            <ConfirmButton confirmLabel="Archivia?" onConfirm={() => archive.mutate({ id: e.id, archived: true })}>
+            <ConfirmButton
+              confirmLabel="Archivia?"
+              onConfirm={() =>
+                // il trainer lo ha in programma nei prossimi giorni: archiviarlo lo nasconderebbe senza toglierlo
+                plan.some((p) => p.exerciseId === e.id && p.date >= todayStr() && locked(p))
+                  ? toast(`"${e.name}" è nel programma del tuo trainer: chiedigli di toglierlo prima di archiviarlo`)
+                  : archive.mutate({ id: e.id, archived: true })
+              }
+            >
               Archivia
             </ConfirmButton>
           </div>
         </div>
       ))}
-      {active.length > 0 && <p className="hint" style={{ marginTop: 12 }}>Archiviare toglie l'esercizio da programma e liste, ma conserva lo storico e i grafici.</p>}
+      {active.length > 0 && <p className="hint" style={{ marginTop: 12 }}>Archiviare toglie l'esercizio da programma e liste, ma conserva lo storico e i grafici. Quelli che il tuo trainer ha in programma li toglie lui.</p>}
 
       {archived.length > 0 && (
         <>

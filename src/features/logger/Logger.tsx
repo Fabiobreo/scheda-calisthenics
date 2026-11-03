@@ -73,7 +73,7 @@ function startingRows(entries: Entry[], exerciseId: string, kind: EntryKind, sch
 }
 
 export function LoggerProvider({ children }: { children: ReactNode }) {
-  const { active, done, plan } = useData();
+  const { exercises, active, done, plan } = useData();
   // la bozza sopravvive al ricaricamento della pagina: un allenamento a metà non va perso
   const [draft, setDraftState] = useState<Draft | null>(readDraft);
 
@@ -101,7 +101,9 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
       }
       const kind = o.kind ?? 'training';
       const pool = kind === 'attempt' ? active.filter((e) => e.inRecords) : active;
-      const ex = pool.find((e) => e.id === o.exerciseId) ?? pool[0];
+      // un esercizio chiesto per id si cerca anche tra gli archiviati: una riga del trainer può restare su uno di questi
+      const asked = o.exerciseId ? exercises.find((e) => e.id === o.exerciseId) : undefined;
+      const ex = (asked && (kind !== 'attempt' || asked.inRecords) ? asked : undefined) ?? pool[0];
       if (!ex) return;
       const date = o.date ?? todayStr();
       const saved = readDraft();
@@ -122,7 +124,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
         coachNote: o.coachNote ?? null,
       });
     },
-    [active, done, plan, setDraft],
+    [exercises, active, done, plan, setDraft],
   );
 
   return (
@@ -142,7 +144,9 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
   const ex = exercises.find((e) => e.id === draft.exerciseId);
   const editing = draft.entryId !== null;
   const attempt = draft.kind === 'attempt';
-  const choices = attempt ? active.filter((e) => e.inRecords) : active;
+  const pool = attempt ? active.filter((e) => e.inRecords) : active;
+  // l'esercizio aperto resta tra le scelte anche se è archiviato
+  const choices = ex && !pool.includes(ex) ? [ex, ...pool] : pool;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();

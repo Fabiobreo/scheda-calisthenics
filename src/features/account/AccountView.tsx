@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { useSession } from '../../app/session';
+import { useRepo, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { Field } from '../../components/ui';
 import { useData, useDeleteAccount, useProfile, useUpdateProfile } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
+import { plural } from '../../lib/format';
 import { MyTrainerCard, TrainerModeCard } from './CoachingCards';
 
 const CONFIRM_WORD = 'ELIMINA';
-
-const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /** `inviteCode`: arrivando da un link d'invito, il codice è già compilato. */
 export function AccountView({ inviteCode }: { inviteCode?: string }) {
@@ -68,8 +67,20 @@ function ProfileCard() {
 function ExportCard() {
   const { exercises, entries, plan } = useData();
   const profile = useProfile();
+  const repo = useRepo();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
 
-  const download = () => {
+  const download = async () => {
+    setBusy(true);
+    let coaching: Record<string, unknown[]>;
+    try {
+      coaching = await repo.exportCoaching();
+    } catch {
+      setBusy(false);
+      return toast('Non riesco a leggere tutti i dati. Riprova.');
+    }
+    setBusy(false);
     const name = new Map(exercises.map((e) => [e.id, e.name]));
     const data = {
       exportedAt: new Date().toISOString(),
@@ -78,6 +89,8 @@ function ExportCard() {
       // il nome accanto all'id: il file si legge anche senza l'app
       entries: entries.map((e) => ({ ...e, exercise: name.get(e.exerciseId) ?? null })),
       plan: plan.map((p) => ({ ...p, exercise: name.get(p.exerciseId) ?? null })),
+      // schede (come trainer), assegnazioni e collegamenti, anche quelli chiusi
+      ...coaching,
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
@@ -91,12 +104,12 @@ function ExportCard() {
     <section className="card">
       <h2>I tuoi dati</h2>
       <p className="sub">
-        Scarica tutto in un file JSON: {count(exercises.length, 'esercizio', 'esercizi')}, {count(entries.length, 'registrazione', 'registrazioni')},{' '}
-        {count(plan.length, 'esercizio', 'esercizi')} in programma.
+        Scarica tutto in un file JSON: {plural(exercises.length, 'esercizio', 'esercizi')}, {plural(entries.length, 'registrazione', 'registrazioni')},{' '}
+        {plural(plan.length, 'esercizio', 'esercizi')} in programma, più schede e collegamenti con i trainer.
       </p>
       <div className="row" style={{ marginTop: 14 }}>
-        <button className="btn small ghost" onClick={download}>
-          Esporta i dati
+        <button className="btn small ghost" disabled={busy} onClick={download}>
+          {busy ? 'Preparo il file…' : 'Esporta i dati'}
         </button>
       </div>
     </section>

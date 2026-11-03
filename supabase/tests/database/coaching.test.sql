@@ -1,7 +1,7 @@
 -- Trainer e atleti: inviti, collegamento, cosa può leggere il trainer e cosa no, chiusura del collegamento.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(30);
 
 -- Tina trainer, Andrea atleta, Carla estranea, Teo altro trainer.
 insert into auth.users (id, email) values
@@ -41,7 +41,7 @@ select throws_ok(
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2');
 select is((select trainer_name from public.preview_invite((select lower(code) from codes where who = 'tina'))), 'Tina', 'l''anteprima mostra il nome del trainer, maiuscole a parte');
 select is((select count(*)::int from public.preview_invite((select code from codes where who = 'tina-vecchio'))), 0, 'il codice vecchio non vale più');
-select throws_ok(format('select public.accept_invite(%L)', (select code from codes where who = 'tina-vecchio')), 'P0002', null, 'accettare un codice vecchio fallisce');
+select is(public.accept_invite((select code from codes where who = 'tina-vecchio')), null, 'accettare un codice vecchio non collega nessuno');
 select lives_ok(format('select public.accept_invite(%L)', (select code from codes where who = 'tina')), 'Andrea accetta l''invito di Tina');
 select lives_ok(format('select public.accept_invite(%L)', (select code from codes where who = 'tina')), 'accettare di nuovo lo stesso invito non dà errore');
 select is((select count(*)::int from public.coach_links), 1, 'un solo collegamento');
@@ -89,6 +89,13 @@ select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
 select is((select count(*)::int from public.exercises where user_id = '00000000-0000-0000-0000-0000000000a2'), 0, 'dopo la chiusura il trainer non vede più gli esercizi');
 select is((select count(*)::int from public.profiles where id = '00000000-0000-0000-0000-0000000000a2'), 0, 'né il nome dell''atleta');
 select is((select status from public.coach_links), 'ended', 'il collegamento resta, chiuso');
+
+-- Troppi codici sbagliati bloccano gli inviti per un'ora (Carla ne ha già sbagliati 0).
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a3');
+select count(*) from generate_series(1, 10) as g, lateral public.preview_invite(left('ZZZZZZZZ' || g, 8));
+select is((select count(*)::int from public.invite_failures), 0, 'i tentativi falliti non sono leggibili dal client');
+select throws_ok($$ select * from public.preview_invite('ZZZZZZZZ') $$, 'P0001', null, 'dopo 10 codici sbagliati l''anteprima si blocca');
+select throws_ok(format('select public.accept_invite(%L)', (select code from codes where who = 'teo')), 'P0001', null, 'e anche l''accettazione, pure con un codice giusto');
 
 select * from finish();
 rollback;

@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useToast } from '../app/toast';
 import type { Scheme } from '../data/types';
-import { numInput, parseNum } from '../lib/format';
+import { isInt, numInput, parseNum } from '../lib/format';
 import { Field } from './ui';
-
-const isInt = (n: number, min: number, max: number) => Number.isInteger(n) && n >= min && n <= max;
 
 /**
  * Serie, ripetizioni, peso e recupero di un esercizio in un giorno (del calendario o di una scheda).

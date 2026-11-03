@@ -1,7 +1,7 @@
 -- Catalogo esercizi comune: contenuto coerente, sola lettura per gli utenti, collegamento con gli esercizi dell'utente.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(14);
 
 -- Ogni nome o sinonimo porta a una sola voce: altrimenti l'abbinamento per nome sarebbe ambiguo.
 select is(
@@ -35,21 +35,27 @@ select throws_ok(
   $$ insert into public.catalog_exercises (id, name, category, default_type) values ('nuovo', 'Nuovo', 'core', 'volume') $$,
   '42501', null, 'gli utenti non aggiungono voci al catalogo');
 
--- Esercizi dell'utente: dal catalogo senza nome proprio, oppure personalizzati con nome.
+-- Esercizi dell'utente: dal catalogo (nome copiato dalla voce) oppure personalizzati (nome proprio).
 select lives_ok(
   $$ insert into public.exercises (catalog_id, type) values ('trazioni', 'forza') $$,
-  'un esercizio dal catalogo non ha nome proprio');
+  'un esercizio dal catalogo si crea senza nome');
+select is((select name from public.exercises where catalog_id = 'trazioni'), 'Trazioni',
+  'il nome viene copiato dal catalogo (lo legge la versione precedente dell''app)');
 select throws_ok(
   $$ insert into public.exercises (catalog_id, type) values ('trazioni', 'volume') $$,
   '23505', null, 'una voce del catalogo una volta sola per utente');
-select throws_ok(
-  $$ insert into public.exercises (catalog_id, name, type) values ('dip', 'Dip', 'forza') $$,
-  '23514', null, 'un esercizio dal catalogo non ha anche un nome proprio');
+insert into public.exercises (catalog_id, name, type) values ('dip', 'Nome a caso', 'forza');
+select is((select name from public.exercises where catalog_id = 'dip'), 'Dip alle parallele', 'un esercizio dal catalogo prende sempre il nome del catalogo');
+update public.exercises set name = 'Rinominato' where catalog_id = 'dip';
+select is((select name from public.exercises where catalog_id = 'dip'), 'Dip alle parallele', 'e non si rinomina');
 select throws_ok(
   $$ insert into public.exercises (type) values ('forza') $$,
-  '23514', null, 'un esercizio personalizzato ha sempre un nome');
+  '23502', null, 'un esercizio personalizzato ha sempre un nome');
+insert into public.exercises (name, type) values ('Squat', 'volume');
+insert into public.exercises (catalog_id, type) values ('squat', 'volume');
+select is((select name from public.exercises where catalog_id = 'squat'), 'Squat (catalogo)', 'con un personalizzato omonimo il nome del catalogo prende un suffisso');
 select throws_ok(
-  $$ insert into public.exercises (catalog_id, type) values ('inesistente', 'forza') $$,
+  $$ insert into public.exercises (catalog_id, name, type) values ('inesistente', 'Inesistente', 'forza') $$,
   '23503', null, 'solo voci che esistono nel catalogo');
 
 select * from finish();

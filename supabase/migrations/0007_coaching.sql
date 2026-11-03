@@ -28,8 +28,17 @@ create table public.trainer_invites (
   created_at timestamptz not null default now()
 );
 
+-- Codici sbagliati provati da ogni utente: oltre una soglia all'ora gli inviti si bloccano, così i codici non si
+-- indovinano a forza di tentativi. Nessuna policy: ci scrivono e leggono solo le funzioni qui sotto.
+create table public.invite_failures (
+  user_id uuid not null references auth.users on delete cascade,
+  at      timestamptz not null default now()
+);
+create index invite_failures_user_idx on public.invite_failures (user_id, at desc);
+
 alter table public.coach_links enable row level security;
 alter table public.trainer_invites enable row level security;
+alter table public.invite_failures enable row level security;
 
 -- Lettura sola: collegamenti e codici cambiano soltanto tramite le funzioni qui sotto.
 create policy "links: read own" on public.coach_links
@@ -52,6 +61,16 @@ language sql stable security definer set search_path = '' as $$
   );
 $$;
 
+-- Gli atleti che l'utente corrente segue ora come trainer. Nelle policy si usa come `user_id in (select my_athletes())`:
+-- il sottoinsieme si calcola una volta per query, non riga per riga come farebbe is_coach_of(user_id).
+create function public.my_athletes() returns setof uuid
+language sql stable security definer set search_path = '' as $$
+  select l.athlete_id
+  from public.coach_links l
+  join public.profiles t on t.id = l.trainer_id
+  where l.trainer_id = auth.uid() and l.status = 'active' and t.is_trainer;
+$$;
+
 -- true se l'utente corrente e `other` sono collegati (in un verso o nell'altro): servono i nomi a vicenda.
 create function public.is_linked_with(other uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
@@ -64,15 +83,26 @@ $$;
 
 -- Il trainer legge (solo legge) i dati dei suoi atleti. Le scritture restano quelle delle policy "own ...".
 create policy "trainer reads athlete exercises" on public.exercises
-  for select to authenticated using (public.is_coach_of(user_id));
+  for select to authenticated using (user_id in (select public.my_athletes()));
 create policy "trainer reads athlete entries" on public.entries
-  for select to authenticated using (public.is_coach_of(user_id));
+  for select to authenticated using (user_id in (select public.my_athletes()));
 create policy "trainer reads athlete plan" on public.plan_items
-  for select to authenticated using (public.is_coach_of(user_id));
+  for select to authenticated using (user_id in (select public.my_athletes()));
 create policy "linked profiles: read" on public.profiles
   for select to authenticated using (public.is_linked_with(id));
 
--- Codice nuovo per il trainer corrente: 8 caratteri senza quelli che si confondono (0/O, 1/I/L).
+-- Controlla il limite dei tentativi sbagliati (10 all'ora) dell'utente corrente.
+create function public.check_invite_attempts() returns void
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  if (select count(*) from public.invite_failures where user_id = auth.uid() and at > now() - interval '1 hour') >= 10 then
+    raise exception 'Troppi codici sbagliati: riprova tra un''ora' using errcode = 'P0001';
+  end if;
+end;
+$$;
+
+-- Codice nuovo per il trainer corrente: 8 caratteri senza quelli che si confondono (0/O, 1/I/L),
+-- da byte casuali crittografici (random() è prevedibile).
 create function public.rotate_invite_code() returns text
 language plpgsql volatile security definer set search_path = '' as $$
 declare
@@ -83,8 +113,9 @@ begin
     raise exception 'Attiva la modalità trainer per invitare atleti' using errcode = 'P0001';
   end if;
   loop
-    select string_agg(substr(alphabet, 1 + floor(random() * length(alphabet))::int, 1), '')
-      into new_code from generate_series(1, 8);
+    select string_agg(substr(alphabet, 1 + get_byte(r.b, i) % length(alphabet), 1), '' order by i)
+      into new_code
+      from (select extensions.gen_random_bytes(8) as b) r, generate_series(0, 7) as i;
     exit when not exists (select 1 from public.trainer_invites where code = new_code);
   end loop;
   insert into public.trainer_invites (trainer_id, code) values (auth.uid(), new_code)
@@ -94,15 +125,24 @@ end;
 $$;
 
 -- Chi c'è dietro un codice, per far confermare l'atleta prima di collegarsi. Mostra solo il nome.
+-- Un codice sbagliato non dà errore (niente righe) ma conta come tentativo fallito.
 create function public.preview_invite(invite_code text) returns table (trainer_id uuid, trainer_name text)
-language sql stable security definer set search_path = '' as $$
-  select p.id, p.display_name
-  from public.trainer_invites i
-  join public.profiles p on p.id = i.trainer_id
-  where i.code = upper(btrim(invite_code)) and p.is_trainer and p.id <> auth.uid();
+language plpgsql volatile security definer set search_path = '' as $$
+begin
+  perform public.check_invite_attempts();
+  return query
+    select p.id, p.display_name
+    from public.trainer_invites i
+    join public.profiles p on p.id = i.trainer_id
+    where i.code = upper(btrim(invite_code)) and p.is_trainer and p.id <> auth.uid();
+  if not found then
+    insert into public.invite_failures (user_id) values (auth.uid());
+  end if;
+end;
 $$;
 
--- L'atleta corrente si collega al trainer del codice. Restituisce l'id del collegamento.
+-- L'atleta corrente si collega al trainer del codice. Restituisce l'id del collegamento,
+-- oppure null se il codice non vale (senza errore: il tentativo fallito deve restare registrato).
 create function public.accept_invite(invite_code text) returns uuid
 language plpgsql volatile security definer set search_path = '' as $$
 declare
@@ -110,12 +150,14 @@ declare
   current_link public.coach_links;
   link_id uuid;
 begin
+  perform public.check_invite_attempts();
   select i.trainer_id into t_id
   from public.trainer_invites i
   join public.profiles p on p.id = i.trainer_id
   where i.code = upper(btrim(invite_code)) and p.is_trainer;
   if t_id is null then
-    raise exception 'Codice non valido o scaduto' using errcode = 'P0002';
+    insert into public.invite_failures (user_id) values (auth.uid());
+    return null;
   end if;
   if t_id = auth.uid() then
     raise exception 'Non puoi allenare te stesso' using errcode = 'P0001';
@@ -147,7 +189,8 @@ begin
 end;
 $$;
 
-revoke execute on function public.is_coach_of(uuid), public.is_linked_with(uuid), public.rotate_invite_code(),
+revoke execute on function public.is_coach_of(uuid), public.my_athletes(), public.is_linked_with(uuid), public.rotate_invite_code(),
   public.preview_invite(text), public.accept_invite(text), public.end_coach_link(uuid) from public, anon;
-grant execute on function public.is_coach_of(uuid), public.is_linked_with(uuid), public.rotate_invite_code(),
+grant execute on function public.is_coach_of(uuid), public.my_athletes(), public.is_linked_with(uuid), public.rotate_invite_code(),
   public.preview_invite(text), public.accept_invite(text), public.end_coach_link(uuid) to authenticated;
+revoke execute on function public.check_invite_attempts() from public, anon, authenticated;

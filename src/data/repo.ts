@@ -67,6 +67,10 @@ export interface Repo {
   addProgramItems(items: ProgramItemInput[]): Promise<void>;
   updateProgramItem(id: string, patch: { scheme?: Scheme; note?: string | null }): Promise<void>;
   removeProgramItems(ids: string[]): Promise<void>;
+  /** aggiunge e poi toglie: se l'aggiunta fallisce non si perde niente */
+  replaceProgramItems(remove: string[], add: ProgramItemInput[]): Promise<void>;
+  /** schede, assegnazioni e collegamenti (anche chiusi) dell'utente, per l'export dei dati */
+  exportCoaching(): Promise<Record<string, unknown[]>>;
   /** scrive la scheda nel calendario dell'atleta dal lunedì indicato; restituisce quante righe */
   assignProgram(programId: string, athleteId: string, startMonday: string): Promise<number>;
   removePlanItem(id: string): Promise<void>;

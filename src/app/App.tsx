@@ -23,22 +23,25 @@ const TABS = [
 
 /**
  * Codice d'invito aperto da chi non ha ancora un account: la mail di conferma riporta alla home,
- * quindi lo ricordo e, dopo l'accesso, riapro la pagina dell'invito.
+ * quindi lo ricordo e, dopo l'accesso, riapro la pagina dell'invito. Vale un giorno: più tardi è
+ * probabile che il codice sia cambiato, o che ad accedere da questo browser sia un'altra persona.
  */
 const PENDING_INVITE = 'scheda:pending-invite';
+const PENDING_TTL = 24 * 60 * 60 * 1000;
 const INVITE_PATH = /^\/invito\/([A-Za-z0-9]{8})\/?$/;
 
 const pendingInvite = {
-  get: () => {
+  get: (): string | null => {
     try {
-      return localStorage.getItem(PENDING_INVITE);
+      const saved = JSON.parse(localStorage.getItem(PENDING_INVITE) ?? 'null') as { code: string; at: number } | null;
+      return saved && Date.now() - saved.at < PENDING_TTL ? saved.code : null;
     } catch {
       return null;
     }
   },
   set: (code: string | null) => {
     try {
-      if (code) localStorage.setItem(PENDING_INVITE, code);
+      if (code) localStorage.setItem(PENDING_INVITE, JSON.stringify({ code, at: Date.now() }));
       else localStorage.removeItem(PENDING_INVITE);
     } catch {
       /* ignora */
@@ -108,8 +111,8 @@ function Main() {
   // invito ricordato da prima dell'accesso: si riapre una volta sola
   useEffect(() => {
     const code = pendingInvite.get();
+    pendingInvite.set(null); // usato o scaduto, non serve più
     if (!code) return;
-    pendingInvite.set(null);
     if (!INVITE_PATH.test(location.pathname)) navigate(`/invito/${code}`, { replace: true });
   }, [location.pathname, navigate]);
   const trainer = useProfile().data?.isTrainer;

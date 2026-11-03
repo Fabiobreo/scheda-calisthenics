@@ -258,7 +258,9 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
       return rows[0] ? { trainerName: rows[0].trainer_name } : null;
     },
     async acceptInvite(code) {
-      must(await sb.rpc('accept_invite', { invite_code: code }));
+      // un codice sbagliato non dà errore (il tentativo fallito resta registrato): restituisce null
+      const link = must(await sb.rpc('accept_invite', { invite_code: code }));
+      if (!link) throw new Error('Codice non valido o scaduto. Chiedine uno nuovo al tuo trainer.');
     },
     async endLink(id) {
       must(await sb.rpc('end_coach_link', { link: id }));
@@ -400,6 +402,25 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
     },
     async removeProgramItems(ids) {
       if (ids.length) must(await sb.from('program_items').delete().in('id', ids));
+    },
+    async replaceProgramItems(gone, add) {
+      if (add.length) must(await sb.from('program_items').insert(add.map(programItemRow)));
+      if (gone.length) must(await sb.from('program_items').delete().in('id', gone));
+    },
+    async exportCoaching() {
+      // le policy restituiscono solo le righe dell'utente (come trainer o come atleta)
+      const [programs, items, assignments, links] = await Promise.all([
+        sb.from('programs').select('*').order('created_at'),
+        sb.from('program_items').select('*').order('program_id').order('week').order('weekday').order('sort_order'),
+        sb.from('program_assignments').select('*').order('created_at'),
+        sb.from('coach_links').select('*').order('created_at'),
+      ]);
+      return {
+        programs: must(programs) as unknown[],
+        programItems: must(items) as unknown[],
+        programAssignments: must(assignments) as unknown[],
+        coachLinks: must(links) as unknown[],
+      };
     },
     async assignProgram(programId, athleteId, startMonday) {
       return must(await sb.rpc('assign_program', { p_program: programId, p_athlete: athleteId, start_monday: startMonday })) as number;

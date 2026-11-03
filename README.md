@@ -114,7 +114,7 @@ supabase/migrations/  schema SQL
   le modifica, il trainer le ritocca (schema e nota). Se il collegamento finisce, tornano dell'atleta.
   `entries.note` è la nota dell'atleta sulla sessione, che il trainer legge.
 - **exercises**: gli esercizi dell'utente, senza serie né ripetizioni. Ognuno è collegato a una voce del catalogo
-  (`catalog_id`, al massimo una volta per utente; il nome viene dal catalogo) oppure è personalizzato (`name` proprio,
+  (`catalog_id`, al massimo una volta per utente; `name` è una copia del nome del catalogo scritta da un trigger, per le versioni vecchie dell'app) oppure è personalizzato (`name` proprio,
   unico per utente, maiuscole a parte). In più tipo (forza/volume/tecnico), flag `in_records` e archiviazione
   (archiviare conserva lo storico, eliminare lo cancella). Così "Trazioni" è un solo esercizio nei grafici, qualunque
   schema si usi, e lo stesso esercizio per atleti e trainer.

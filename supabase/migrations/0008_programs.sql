@@ -78,15 +78,14 @@ create policy "assignments: read own" on public.program_assignments
   for select to authenticated
   using ((select auth.uid()) in (trainer_id, athlete_id));
 
--- true se l'utente corrente è seguito ora da `trainer`: finché è così, le righe di quel trainer non sono sue da modificare.
-create function public.is_coached_by(trainer uuid) returns boolean
+-- I trainer che seguono ora l'utente corrente (uno, per ora): le loro righe non sono sue da modificare.
+-- Come my_athletes(), nelle policy si calcola una volta per query.
+create function public.my_trainers() returns setof uuid
 language sql stable security definer set search_path = '' as $$
-  select exists (
-    select 1
-    from public.coach_links l
-    join public.profiles t on t.id = l.trainer_id
-    where l.athlete_id = auth.uid() and l.trainer_id = trainer and l.status = 'active' and t.is_trainer
-  );
+  select l.trainer_id
+  from public.coach_links l
+  join public.profiles t on t.id = l.trainer_id
+  where l.athlete_id = auth.uid() and l.status = 'active' and t.is_trainer;
 $$;
 
 -- Programma: l'atleta modifica le righe sue; quelle del trainer che lo segue sono del trainer.
@@ -102,21 +101,21 @@ create policy "plan: owner inserts" on public.plan_items
 
 create policy "plan: owner updates" on public.plan_items
   for update to authenticated
-  using (user_id = (select auth.uid()) and (assigned_by is null or not public.is_coached_by(assigned_by)))
-  with check (user_id = (select auth.uid()) and (assigned_by is null or not public.is_coached_by(assigned_by)));
+  using (user_id = (select auth.uid()) and (assigned_by is null or assigned_by not in (select public.my_trainers())))
+  with check (user_id = (select auth.uid()) and (assigned_by is null or assigned_by not in (select public.my_trainers())));
 
 create policy "plan: owner deletes" on public.plan_items
   for delete to authenticated
-  using (user_id = (select auth.uid()) and (assigned_by is null or not public.is_coached_by(assigned_by)));
+  using (user_id = (select auth.uid()) and (assigned_by is null or assigned_by not in (select public.my_trainers())));
 
 create policy "plan: coach updates" on public.plan_items
   for update to authenticated
-  using (assigned_by = (select auth.uid()) and public.is_coach_of(user_id))
-  with check (assigned_by = (select auth.uid()) and public.is_coach_of(user_id));
+  using (assigned_by = (select auth.uid()) and user_id in (select public.my_athletes()))
+  with check (assigned_by = (select auth.uid()) and user_id in (select public.my_athletes()));
 
 create policy "plan: coach deletes" on public.plan_items
   for delete to authenticated
-  using (assigned_by = (select auth.uid()) and public.is_coach_of(user_id));
+  using (assigned_by = (select auth.uid()) and user_id in (select public.my_athletes()));
 
 -- Esercizio dell'atleta per una voce del catalogo o un nome personalizzato: lo trova (ripristinandolo se archiviato)
 -- o lo crea. Uso interno delle funzioni del trainer: non è chiamabile dal client.
@@ -228,7 +227,7 @@ end;
 $$;
 
 revoke execute on function public.ensure_athlete_exercise(uuid, text, text) from public, anon, authenticated;
-revoke execute on function public.is_coached_by(uuid), public.assign_program(uuid, uuid, date),
+revoke execute on function public.my_trainers(), public.assign_program(uuid, uuid, date),
   public.coach_add_plan_item(uuid, date, text, text, int, int, numeric, int, text) from public, anon;
-grant execute on function public.is_coached_by(uuid), public.assign_program(uuid, uuid, date),
+grant execute on function public.my_trainers(), public.assign_program(uuid, uuid, date),
   public.coach_add_plan_item(uuid, date, text, text, int, int, numeric, int, text) to authenticated;
