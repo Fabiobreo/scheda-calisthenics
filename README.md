@@ -7,22 +7,43 @@ Stack: React 19 + TypeScript + Vite, TanStack Query, Supabase (Postgres + Auth +
 
 ## Avvio in locale
 
+Lo sviluppo usa una copia di Supabase sul tuo computer: database, login e API, separati dalla produzione.
+Serve [Docker Desktop](https://www.docker.com/products/docker-desktop/) avviato.
+
 ```bash
 npm install
+npx supabase start      # la prima volta scarica le immagini; stampa URL e chiavi
+```
+
+Copia `.env.example` in `.env.local` e inserisci `API URL` e `anon key` (o *publishable key*) stampati da `supabase start`
+(li rivedi con `npx supabase status`). Poi:
+
+```bash
 npm run dev
 ```
 
-Senza configurazione l'app parte in **modalità locale**: tutto funziona, ma i dati restano nel `localStorage` del browser.
+- **Studio** (tabelle, utenti, SQL): http://127.0.0.1:54323
+- **Email** di conferma e reset password: http://127.0.0.1:54324 (nessuna mail esce davvero)
+- `npx supabase db reset` ricrea il database da zero con tutte le migration: è anche il modo di provarle prima del deploy.
+- `npx supabase stop` ferma tutto (i dati restano per il prossimo `start`).
 
-## Collegare Supabase
+## Test
+
+```bash
+npm test                 # test unitari (record, grafici, date, copia della settimana)
+npx supabase test db     # test del database: isolamento tra utenti (RLS), vincoli, eliminazione account
+```
+
+I test del database stanno in [`supabase/tests/database/`](supabase/tests/database/) (pgTAP) e girano sul Supabase locale.
+Ogni migration nuova va provata con `npx supabase db reset` e `npx supabase test db` prima del push:
+in produzione viene applicata dal deploy.
+
+## Progetto Supabase di produzione
 
 1. Crea un progetto gratuito su [supabase.com](https://supabase.com).
-2. Lo schema (tabelle `exercises`, `entries`, `plan_items` con Row Level Security: ognuno vede solo i propri dati) sta in
-   [`supabase/migrations/`](supabase/migrations/) e lo applica il deploy (vedi "Migration automatiche").
-   Per un database solo di sviluppo puoi anche eseguire i file, in ordine, nel **SQL Editor**.
-3. Copia `.env.example` in `.env.local` e inserisci URL e anon key (Project Settings → API).
-4. In **Authentication → URL Configuration** imposta il *Site URL* all'indirizzo dove pubblichi l'app
-   (per lo sviluppo anche `http://localhost:5173` tra i *Redirect URLs*): serve per i link di conferma e reset password.
+2. Lo schema sta in [`supabase/migrations/`](supabase/migrations/) e lo applica il deploy (vedi "Migration automatiche").
+3. In **Authentication → URL Configuration** imposta il *Site URL* all'indirizzo dove pubblichi l'app:
+   serve per i link di conferma e reset password.
 
 ## Pubblicazione (Vercel)
 
@@ -54,7 +75,8 @@ Dal telefono: apri il sito → menu del browser → **Aggiungi a schermata Home*
 | Comando | Cosa fa |
 | --- | --- |
 | `npm run dev` | server di sviluppo |
-| `npm test` | test unitari (calcolo record, serie per grafici, formattazione) |
+| `npm test` | test unitari |
+| `npx supabase test db` | test del database (serve `supabase start`) |
 | `npm run build` | type-check + build di produzione con service worker |
 | `npm run generate-pwa-assets` | rigenera le icone da `public/icon.svg` |
 
@@ -71,6 +93,8 @@ supabase/migrations/  schema SQL
 
 ## Modello dati
 
+- **profiles**: uno per utente, creato dal trigger alla registrazione; per ora il nome visualizzato.
+  L'utente può eliminare il proprio account (`delete_own_account()`), e con lui spariscono tutti i suoi dati.
 - **exercises**: catalogo dei movimenti, senza serie né ripetizioni: nome (unico per utente, maiuscole a parte),
   tipo (forza/volume/tecnico), flag `in_records` e archiviazione (archiviare conserva lo storico, eliminare lo cancella).
   Così "Trazioni" è un solo esercizio nei grafici, qualunque schema si usi.

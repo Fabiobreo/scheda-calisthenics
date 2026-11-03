@@ -1,7 +1,12 @@
-import type { Entry, EntryInput, Exercise, ExerciseInput, PlanChanges, PlanItem, Scheme } from './types';
+import type { Entry, EntryInput, Exercise, ExerciseInput, PlanChanges, PlanItem, Profile, Scheme } from './types';
 
-/** Accesso ai dati. Due implementazioni: Supabase (cloud) e localStorage (modalità locale). */
+/** Accesso ai dati di un utente. */
 export interface Repo {
+  getProfile(): Promise<Profile>;
+  updateProfile(patch: Partial<Profile>): Promise<void>;
+  /** Elimina l'account con tutti i suoi dati. Non si torna indietro. */
+  deleteAccount(): Promise<void>;
+
   listExercises(): Promise<Exercise[]>;
   createExercise(input: ExerciseInput): Promise<Exercise>;
   updateExercise(id: string, patch: Partial<ExerciseInput>): Promise<void>;

@@ -1,6 +1,7 @@
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useData } from '../data/hooks';
+import { AccountView } from '../features/account/AccountView';
 import { AuthScreen, NewPasswordScreen, usePasswordRecovery } from '../features/auth/AuthScreen';
 import { EserciziView } from '../features/esercizi/EserciziView';
 import { GraficiView } from '../features/grafici/GraficiView';
@@ -34,10 +35,15 @@ export function App() {
       <header className="hero">
         <div className="hero-top">
           <p className="eyebrow">Registro allenamenti</p>
-          {session.status === 'ready' && session.mode === 'cloud' && (
-            <button className="link" onClick={() => supabase?.auth.signOut()} title={session.email ?? undefined}>
-              Esci
-            </button>
+          {session.status === 'ready' && (
+            <span className="row">
+              <Link className="link" to="/account" title={session.email ?? undefined}>
+                Account
+              </Link>
+              <button className="link" onClick={() => supabase.auth.signOut()}>
+                Esci
+              </button>
+            </span>
           )}
         </div>
         <h1>
@@ -53,14 +59,14 @@ export function App() {
           <NewPasswordScreen email={session.email} />
         ) : (
           <LoggerProvider>
-            <Main local={session.mode === 'local'} />
+            <Main />
           </LoggerProvider>
         ))}
     </div>
   );
 }
 
-function Main({ local }: { local: boolean }) {
+function Main() {
   const { isLoading, error } = useData();
   return (
     <>
@@ -73,7 +79,6 @@ function Main({ local }: { local: boolean }) {
           ))}
         </div>
       </nav>
-      {local && <div className="banner">Modalità locale: i dati restano solo in questo browser. Configura Supabase per salvarli nel cloud.</div>}
       {error && <div className="banner">Non riesco a leggere i dati. Controlla la connessione e riprova.</div>}
       <main>
         {isLoading ? (
@@ -84,6 +89,7 @@ function Main({ local }: { local: boolean }) {
             <Route path="/grafici" element={<GraficiView />} />
             <Route path="/registro" element={<RegistroView />} />
             <Route path="/esercizi" element={<EserciziView />} />
+            <Route path="/account" element={<AccountView />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}

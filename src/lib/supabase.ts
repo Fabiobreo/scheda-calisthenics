@@ -5,18 +5,18 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 const RECOVERY_KEY = 'scheda:password-recovery';
 
-/** null = Supabase non configurato: l'app gira in modalità locale. */
-export const supabase = url && key ? createClient(url, key) : null;
+if (!url || !key)
+  throw new Error('Supabase non configurato: copia .env.example in .env.local (vedi README, "Avvio in locale")');
+
+export const supabase = createClient(url, key);
 
 // Il client legge il link di reset dall'URL appena creato: il listener va registrato qui,
 // non in un effect React che arriverebbe dopo l'evento. Il flag sopravvive al ricaricamento.
-if (supabase) {
-  if (/type=recovery/.test(location.hash)) setRecovery(true);
-  supabase.auth.onAuthStateChange((event) => {
-    if (event === 'PASSWORD_RECOVERY') setRecovery(true);
-    if (event === 'SIGNED_OUT') setRecovery(false);
-  });
-}
+if (/type=recovery/.test(location.hash)) setRecovery(true);
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+  if (event === 'SIGNED_OUT') setRecovery(false);
+});
 
 const listeners = new Set<() => void>();
 

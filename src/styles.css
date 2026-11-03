@@ -74,6 +74,7 @@ main { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
 .btn[aria-busy='true'] { opacity: .8; cursor: progress; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
 .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+a.link { text-decoration: none; }
 .link { background: none; border: 0; padding: 4px 0; color: var(--accent); font-weight: 600; font-size: 15px; }
 .link:disabled { color: var(--muted); cursor: not-allowed; }
 /* area di tocco di 44px senza spostare il layout */

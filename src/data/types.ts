@@ -1,3 +1,8 @@
+export interface Profile {
+  /** nome mostrato agli altri (es. al trainer); null = non ancora scelto */
+  displayName: string | null;
+}
+
 export type ExerciseType = 'forza' | 'volume' | 'tecnico';
 export type Difficulty = 'facile' | 'medio' | 'difficile';
 export type EntryKind = 'training' | 'attempt';

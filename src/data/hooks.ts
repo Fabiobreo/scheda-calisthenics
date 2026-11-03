@@ -3,13 +3,19 @@ import { useRepo } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
 import { todayStr } from '../lib/dates';
-import type { EntryInput, ExerciseInput, PlanChanges, Scheme } from './types';
+import type { EntryInput, ExerciseInput, PlanChanges, Profile, Scheme } from './types';
 
 const K = {
   exercises: ['exercises'] as QueryKey,
   entries: ['entries'] as QueryKey,
   plan: ['plan'] as QueryKey,
+  profile: ['profile'] as QueryKey,
 };
+
+export function useProfile() {
+  const repo = useRepo();
+  return useQuery({ queryKey: K.profile, queryFn: () => repo.getProfile() });
+}
 
 export function useExercises() {
   const repo = useRepo();
@@ -55,6 +61,18 @@ function useRepoMutation<A>(fn: (repo: Repo, args: A) => Promise<unknown>, keys:
     onSuccess: () => okMsg && toast(okMsg),
     onError: () => toast('Non riesco a salvare. Riprova.'),
     onSettled: () => Promise.all(keys.map((queryKey) => qc.invalidateQueries({ queryKey }))),
+  });
+}
+
+export const useUpdateProfile = () =>
+  useRepoMutation((r, a: Partial<Profile>) => r.updateProfile(a), [K.profile], 'Profilo salvato');
+
+export function useDeleteAccount() {
+  const repo = useRepo();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: () => repo.deleteAccount(),
+    onError: () => toast('Non riesco a eliminare l’account. Riprova.'),
   });
 }
 

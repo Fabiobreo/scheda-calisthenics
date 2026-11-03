@@ -75,7 +75,7 @@ export function AuthScreen() {
   };
 
   const resend = async () => {
-    if (!supabase || cooldown) return;
+    if (cooldown) return;
     setBusy(true);
     const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: location.origin } });
     setBusy(false);
@@ -86,7 +86,7 @@ export function AuthScreen() {
 
   const submit = async (ev: FormEvent) => {
     ev.preventDefault();
-    if (!supabase || busy || !validate()) return;
+    if (busy || !validate()) return;
     const addr = email.trim();
     setBusy(true);
     setMsg(null);
@@ -256,7 +256,7 @@ export function NewPasswordScreen({ email }: { email: string | null }) {
 
   const submit = async (ev: FormEvent) => {
     ev.preventDefault();
-    if (!supabase || busy) return;
+    if (busy) return;
     if (password.length < 8) return setError('Almeno 8 caratteri.');
     setBusy(true);
     setError('');

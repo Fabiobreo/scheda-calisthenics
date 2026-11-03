@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Repo } from './repo';
-import type { Entry, EntryInput, Exercise, ExerciseInput, PlanItem, PlanItemInput, Scheme } from './types';
+import type { Entry, EntryInput, Exercise, ExerciseInput, PlanItem, PlanItemInput, Profile, Scheme } from './types';
 
 interface ExerciseRow {
   id: string;
@@ -89,35 +89,59 @@ function must(res: { data: unknown; error: { message: string } | null }): unknow
   return res.data;
 }
 
-export function createSupabaseRepo(sb: SupabaseClient): Repo {
+type Table = 'exercises' | 'entries' | 'plan_items';
+
+/**
+ * Repo dei dati di `userId`. Ogni query filtra per utente in modo esplicito: le policy RLS non bastano a
+ * delimitare i dati, perché un trainer può leggere anche quelli dei suoi atleti.
+ */
+export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
+  const select = (t: Table, cols = '*') => sb.from(t).select(cols).eq('user_id', userId);
+  const update = (t: Table, patch: Record<string, unknown>) => sb.from(t).update(patch).eq('user_id', userId);
+  const remove = (t: Table) => sb.from(t).delete().eq('user_id', userId);
+  const insert = (t: Table, rows: Record<string, unknown>[]) => sb.from(t).insert(rows.map((r) => ({ ...r, user_id: userId })));
+
   return {
+    async getProfile() {
+      const row = must(await sb.from('profiles').select('display_name').eq('id', userId).single()) as { display_name: string | null };
+      return { displayName: row.display_name };
+    },
+    async updateProfile(patch: Partial<Profile>) {
+      const row: Record<string, unknown> = {};
+      if (patch.displayName !== undefined) row.display_name = patch.displayName;
+      must(await sb.from('profiles').update(row).eq('id', userId));
+    },
+    async deleteAccount() {
+      must(await sb.rpc('delete_own_account'));
+      // la sessione punta a un utente che non c'è più: la chiudo solo su questo dispositivo
+      await sb.auth.signOut({ scope: 'local' });
+    },
+
     async listExercises() {
-      const rows = must(await sb.from('exercises').select('*').order('sort_order').order('created_at'));
+      const rows = must(await select('exercises').order('sort_order').order('created_at'));
       return (rows as ExerciseRow[]).map(toExercise);
     },
     async createExercise(input) {
       const last = must(
-        await sb.from('exercises').select('sort_order').order('sort_order', { ascending: false }).limit(1),
+        await select('exercises', 'sort_order').order('sort_order', { ascending: false }).limit(1),
       ) as { sort_order: number }[];
       const row = must(
-        await sb
-          .from('exercises')
-          .insert({ ...exercisePatch(input), sort_order: (last[0]?.sort_order ?? 0) + 1 })
+        await insert('exercises', [{ ...exercisePatch(input), sort_order: (last[0]?.sort_order ?? 0) + 1 }])
           .select()
           .single(),
       );
       return toExercise(row as ExerciseRow);
     },
     async updateExercise(id, patch) {
-      must(await sb.from('exercises').update(exercisePatch(patch)).eq('id', id));
+      must(await update('exercises', exercisePatch(patch)).eq('id', id));
     },
     async setExerciseArchived(id, archived) {
-      must(await sb.from('exercises').update({ archived_at: archived ? new Date().toISOString() : null }).eq('id', id));
+      must(await update('exercises', { archived_at: archived ? new Date().toISOString() : null }).eq('id', id));
       // un esercizio archiviato non resta nel programma
-      if (archived) must(await sb.from('plan_items').delete().eq('exercise_id', id));
+      if (archived) must(await remove('plan_items').eq('exercise_id', id));
     },
     async deleteExercise(id) {
-      must(await sb.from('exercises').delete().eq('id', id));
+      must(await remove('exercises').eq('id', id));
     },
 
     async listEntries() {
@@ -125,9 +149,7 @@ export function createSupabaseRepo(sb: SupabaseClient): Repo {
       const out: Entry[] = [];
       for (let from = 0; ; from += PAGE) {
         const rows = must(
-          await sb
-            .from('entries')
-            .select('*')
+          await select('entries')
             .order('date', { ascending: false })
             .order('created_at', { ascending: false })
             .range(from, from + PAGE - 1),
@@ -137,14 +159,14 @@ export function createSupabaseRepo(sb: SupabaseClient): Repo {
       }
     },
     async createEntry(input) {
-      const row = must(await sb.from('entries').insert(entryPatch(input)).select().single());
+      const row = must(await insert('entries', [entryPatch(input)]).select().single());
       return toEntry(row as EntryRow);
     },
     async updateEntry(id, patch) {
-      must(await sb.from('entries').update(entryPatch(patch)).eq('id', id));
+      must(await update('entries', entryPatch(patch)).eq('id', id));
     },
     async deleteEntry(id) {
-      must(await sb.from('entries').delete().eq('id', id));
+      must(await remove('entries').eq('id', id));
     },
 
     async listPlan() {
@@ -152,9 +174,7 @@ export function createSupabaseRepo(sb: SupabaseClient): Repo {
       const out: PlanItem[] = [];
       for (let from = 0; ; from += PAGE) {
         const rows = must(
-          await sb
-            .from('plan_items')
-            .select('*')
+          await select('plan_items')
             .order('date')
             .order('sort_order')
             .order('created_at')
@@ -166,28 +186,19 @@ export function createSupabaseRepo(sb: SupabaseClient): Repo {
     },
     async addPlanItem(date, exerciseId, scheme) {
       const last = must(
-        await sb
-          .from('plan_items')
-          .select('sort_order')
-          .eq('date', date)
-          .order('sort_order', { ascending: false })
-          .limit(1),
+        await select('plan_items', 'sort_order').eq('date', date).order('sort_order', { ascending: false }).limit(1),
       ) as { sort_order: number }[];
-      must(
-        await sb
-          .from('plan_items')
-          .insert(planRow({ date, exerciseId, sortOrder: (last[0]?.sort_order ?? 0) + 1, scheme })),
-      );
+      must(await insert('plan_items', [planRow({ date, exerciseId, sortOrder: (last[0]?.sort_order ?? 0) + 1, scheme })]));
     },
     async setPlanScheme(id, scheme) {
-      must(await sb.from('plan_items').update(schemeRow(scheme)).eq('id', id));
+      must(await update('plan_items', schemeRow(scheme)).eq('id', id));
     },
     async removePlanItem(id) {
-      must(await sb.from('plan_items').delete().eq('id', id));
+      must(await remove('plan_items').eq('id', id));
     },
-    async applyPlanChanges({ remove, add }) {
-      if (remove.length) must(await sb.from('plan_items').delete().in('id', remove));
-      if (add.length) must(await sb.from('plan_items').insert(add.map(planRow)));
+    async applyPlanChanges({ remove: gone, add }) {
+      if (gone.length) must(await remove('plan_items').in('id', gone));
+      if (add.length) must(await insert('plan_items', add.map(planRow)));
     },
   };
 }
