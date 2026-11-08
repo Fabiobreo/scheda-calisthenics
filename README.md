@@ -98,7 +98,7 @@ supabase/migrations/  schema SQL
 - **profiles**: uno per utente, creato dal trigger alla registrazione; per ora il nome visualizzato.
   L'utente può eliminare il proprio account (`delete_own_account()`), e con lui spariscono tutti i suoi dati.
 - **catalog_exercises**: catalogo comune a tutti gli utenti, in sola lettura (cambia solo con le migration).
-  Id stabili e leggibili (`trazioni`, `dip`…), categoria (tirata, spinta, gambe, core, skill), tipo predefinito (proposto quando l'esercizio entra in scheda) e sinonimi
+  Id stabili e leggibili (`trazioni`, `dip`…), categoria (tirata, spinta, gambe, core, skill), misura (`reps` o `time`, secondi di tenuta), tipo predefinito (proposto quando l'esercizio entra in scheda) e sinonimi
   ("pull up", "chin up"…) per riconoscere i nomi scritti a mano.
 - **coach_links** e **trainer_invites**: trainer e atleti. La modalità trainer è un flag del profilo (`is_trainer`),
   attivabile da chiunque. Il trainer genera un codice d'invito (uno per volta: rigenerarlo invalida il vecchio);

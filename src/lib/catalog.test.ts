@@ -8,6 +8,7 @@ const c = (id: string, name: string, category: CatalogExercise['category'], alia
   category,
   defaultType: 'forza',
   aliases,
+  measure: 'reps',
 });
 
 const catalog = [c('plank', 'Plank', 'core'), c('trazioni', 'Trazioni', 'tirata', ['pull up', 'pull-up']), c('dip', 'Dip alle parallele', 'spinta', ['dip'])];

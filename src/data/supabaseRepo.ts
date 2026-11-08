@@ -43,6 +43,7 @@ interface CatalogRow {
   category: CatalogExercise['category'];
   default_type: CatalogExercise['defaultType'];
   aliases: string[];
+  measure: CatalogExercise['measure'];
 }
 
 interface ExerciseRow {
@@ -138,6 +139,7 @@ const toCatalog = (r: CatalogRow): CatalogExercise => ({
   category: r.category,
   defaultType: r.default_type,
   aliases: r.aliases,
+  measure: r.measure,
 });
 
 const toExercise = (r: ExerciseRow): Exercise => ({
@@ -277,7 +279,7 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
     },
 
     async listCatalog() {
-      const rows = must(await sb.from('catalog_exercises').select('id, name, category, default_type, aliases').order('sort_order'));
+      const rows = must(await sb.from('catalog_exercises').select('id, name, category, default_type, aliases, measure').order('sort_order'));
       return (rows as CatalogRow[]).map(toCatalog);
     },
 

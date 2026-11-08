@@ -25,6 +25,9 @@ export const DIFFICULTIES: Difficulty[] = ['facile', 'medio', 'difficile'];
 export const TYPE_LABEL: Record<ExerciseType, string> = { forza: 'Forza', volume: 'Volume', tecnico: 'Tecnico' };
 export const DIFFICULTY_LABEL: Record<Difficulty, string> = { facile: 'Facile', medio: 'Medio', difficile: 'Difficile' };
 
+/** Come si misura un esercizio: ripetizioni o secondi di tenuta. */
+export type Measure = 'reps' | 'time';
+
 export type Category = 'tirata' | 'spinta' | 'gambe' | 'core' | 'skill';
 
 export const CATEGORIES: Category[] = ['tirata', 'spinta', 'gambe', 'core', 'skill'];
@@ -39,6 +42,8 @@ export interface CatalogExercise {
   defaultType: ExerciseType;
   /** altri nomi, in minuscolo */
   aliases: string[];
+  /** si misura in ripetizioni o in secondi (tenute: planche, front lever, verticale…) */
+  measure: Measure;
 }
 
 /** Esercizio dell'utente: collegato a una voce del catalogo oppure personalizzato. */

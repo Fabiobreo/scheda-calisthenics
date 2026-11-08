@@ -19,8 +19,8 @@ Ogni file ha la stessa struttura:
 
 | # | Ticket | Punto PDF | Figura principale | Stima |
 |---|--------|-----------|-------------------|-------|
-| 01 | [Tipo (Forza/Volume/Tecnico) dalla scheda, non dall'esercizio](01-tipo-esercizio-nella-scheda.md) | 2 | Full-stack (React + Postgres) | M |
-| 02 | [Nuovo catalogo esercizi](02-nuovo-catalogo-esercizi.md) | 1 | Coach di calisthenics + backend | M |
+| 01 | [Tipo (Forza/Volume/Tecnico) dalla scheda, non dall'esercizio](01-tipo-esercizio-nella-scheda.md) — fatto 8/11 | 2 | Full-stack (React + Postgres) | M |
+| 02 | [Nuovo catalogo esercizi](02-nuovo-catalogo-esercizi.md) — fatto 9/11 | 1 | Coach di calisthenics + backend | M |
 | 03 | [Esercizi a tempo (secondi) oltre a ripetizioni e peso](03-esercizi-a-tempo.md) | 1, 5 (implicito) | Full-stack | L |
 | 04 | [Eliminare il Registro senza perdere funzioni](04-eliminare-registro.md) | 4 | UX designer + frontend | M |
 | 05 | [Specifica del sistema di livelli](05-specifica-livelli.md) — domande chiuse l'8/11, restano definizioni da rivedere | 5, 6 | Product owner + coach di calisthenics | S (ma bloccante) |

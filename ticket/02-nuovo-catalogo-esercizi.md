@@ -55,19 +55,29 @@ Confronto con l'attuale:
 - Le schede modello dei trainer che usano voci rinominate o ritirate continuano ad aprirsi e ad assegnarsi.
 - `npx supabase db reset` e `npx supabase test db` passano.
 
-## Domande aperte
+## Stato
 
-1. **Bloccante** — Voci tolte già usate da qualcuno: le teniamo "ritirate" (consigliato) o le trasformiamo in esercizi
-   personalizzati di quell'utente?
-2. **Bloccante** — Le progressioni (Tuck, Tuck ADV, One leg, Straddle, Half lay, Full) devono essere **esercizi distinti**
-   (come nella lista) o **un esercizio con la progressione come dettaglio** della serie? Distinti è più semplice e coerente
-   col PDF; con la progressione come dettaglio il grafico "Planche" mostrerebbe un'unica linea di crescita. Cambia molto i
-   grafici (13) e il collegamento con i record di livello (09).
-3. Mancano voci che il sistema di livelli usa: **Planche push up, Planche press, Front lever pull up, Front lever touch,
-   Hand stand push up, Verticale mono braccio, Wide planche, Maltese, Victorian, OAP assistito**. Vanno nel catalogo (per
-   poterle allenare e programmare) o restano solo nei record di livello?
-4. "Piegamenti in verticale" e "Hand stand push up" (dei livelli) sono lo stesso esercizio? Se sì, unico nome.
-5. "Rematore" e "Lat machine" sono con attrezzi da palestra: confermiamo che l'app non è solo corpo libero? (vale anche per
-   Military e Panca piana, che entrano nel punteggio).
-6. "Tuck ADV" — scriviamo "Advanced tuck" (come nelle tabelle del documento) o "Tuck ADV"? Serve un nome unico.
-7. Gambe e Core restano come sono: confermato anche che non entrano nel livello (le 5 macro categorie non le contano)?
+**Fatto il 9 novembre 2026** (migration `0010_catalog_v2.sql`, test in `supabase/tests/database/catalog.test.sql`).
+
+Decisioni:
+
+1. Voci tolte già usate: **diventano esercizi personalizzati** con lo stesso nome e tutto lo storico; nelle schede
+   modello dei trainer diventano nomi personalizzati.
+2. Progressioni di planche e front lever: **esercizi distinti**.
+3. Gli esercizi del sistema di livelli **entrano nel catalogo** (categoria Skill, OAP assistito in Tirata).
+4. "Piegamenti in verticale" e "Hand stand push up" sono **lo stesso esercizio** (HSPU è un sinonimo); le progressioni
+   si chiamano **Advanced tuck** (con "Tuck ADV" come sinonimo).
+5. Attrezzi da palestra (Rematore, Lat machine, Military, Panca piana): sì, sono nella lista concordata.
+6. Gambe e Core invariate e fuori dal livello (deciso nel 05).
+
+Scelte fatte durante il lavoro (da rivedere se non vanno bene):
+
+- Aggiunto anche **Wide front lever**, per simmetria con Wide planche. Non aggiunti Wide front lever pull up e Wide
+  front lever touch: per ora restano solo nei record di livello.
+- **OAP assistito** è una voce unica: il punto di presa (gomito, bicipite, spalla) conta per i livelli, non per
+  l'allenamento.
+- Verticale mono braccio divisa in **straddle** e **full**, come nei livelli.
+- Gli esercizi personalizzati che ora sono nel catalogo (es. "Panca piana", "Lento avanti") si collegano alla voce;
+  se un utente ne ha più d'uno per la stessa voce vince il nome esatto, poi il più vecchio.
+- Nuova colonna `measure` (`reps` o `time`): le tenute (progressioni, verticale, bandiera, back lever, plank, L-sit,
+  hollow, front lever touch) sono a tempo. L'app la legge ma la usa solo dal ticket 03.
