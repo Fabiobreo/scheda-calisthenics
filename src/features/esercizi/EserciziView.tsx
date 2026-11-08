@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
-import { ConfirmButton, Field, Seg, Select, TypeChip } from '../../components/ui';
+import { ConfirmButton, Field, Seg, Select } from '../../components/ui';
 import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useTrainerLock, useUpdateExercise } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
-import { CATEGORY_LABEL, EXERCISE_TYPES, TYPE_LABEL, type CatalogExercise, type Exercise, type ExerciseType } from '../../data/types';
+import { CATEGORY_LABEL, type CatalogExercise, type Exercise } from '../../data/types';
 import { byCategory, matchCatalog } from '../../lib/catalog';
 
 type Source = 'catalog' | 'custom';
@@ -14,9 +14,6 @@ interface Form {
   source: Source;
   catalogId: string;
   name: string;
-  type: ExerciseType;
-  /** il tipo è stato scelto a mano: cambiare voce del catalogo non lo sovrascrive */
-  typeTouched: boolean;
   inRecords: boolean;
 }
 
@@ -25,8 +22,6 @@ const blank = (first?: CatalogExercise): Form => ({
   source: first ? 'catalog' : 'custom',
   catalogId: first?.id ?? '',
   name: '',
-  type: first?.defaultType ?? 'volume',
-  typeTouched: false,
   inRecords: false,
 });
 
@@ -35,8 +30,6 @@ const toForm = (e: Exercise): Form => ({
   source: e.catalogId ? 'catalog' : 'custom',
   catalogId: e.catalogId ?? '',
   name: e.name,
-  type: e.type,
-  typeTouched: true,
   inRecords: e.inRecords,
 });
 
@@ -63,20 +56,19 @@ export function EserciziView() {
 
   const patch = (p: Partial<Form>) => form && setForm({ ...form, ...p });
   const pickCatalog = (id: string) => {
-    const c = catalog.find((x) => x.id === id);
-    if (form && c) patch({ catalogId: id, type: form.typeTouched ? form.type : c.defaultType });
+    if (catalog.some((x) => x.id === id)) patch({ catalogId: id });
   };
 
   const save = () => {
     if (!form) return;
     if (form.source === 'catalog') {
       if (form.id) {
-        update.mutate({ id: form.id, patch: { type: form.type, inRecords: form.inRecords } });
+        update.mutate({ id: form.id, patch: { inRecords: form.inRecords } });
         return setForm(null);
       }
       const c = catalog.find((x) => x.id === form.catalogId);
       if (!c) return toast('Scegli un esercizio dal catalogo');
-      create.mutate({ catalogId: c.id, name: c.name, type: form.type, inRecords: form.inRecords });
+      create.mutate({ catalogId: c.id, name: c.name, inRecords: form.inRecords });
       return setForm(null);
     }
     const name = form.name.trim();
@@ -89,11 +81,11 @@ export function EserciziView() {
     const mine = known && exercises.find((e) => e.catalogId === known.id);
     if (mine) return toast(mine.archivedAt ? `"${mine.name}" ce l'hai già tra gli archiviati: ripristinalo` : `"${mine.name}" ce l'hai già`);
     if (known) {
-      setForm({ ...form, source: 'catalog', catalogId: known.id, type: form.typeTouched ? form.type : known.defaultType });
+      setForm({ ...form, source: 'catalog', catalogId: known.id });
       return toast(`"${known.name}" è nel catalogo: l'ho scelto da lì`);
     }
-    if (form.id) update.mutate({ id: form.id, patch: { name, type: form.type, inRecords: form.inRecords } });
-    else create.mutate({ catalogId: null, name, type: form.type, inRecords: form.inRecords });
+    if (form.id) update.mutate({ id: form.id, patch: { name, inRecords: form.inRecords } });
+    else create.mutate({ catalogId: null, name, inRecords: form.inRecords });
     setForm(null);
   };
 
@@ -154,12 +146,6 @@ export function EserciziView() {
               onChange={(e) => patch({ name: e.target.value })}
             />
           )}
-          <Select
-            label="Tipo"
-            value={form.type}
-            options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))}
-            onChange={(type) => patch({ type, typeTouched: true })}
-          />
           <label className="check-row">
             <input type="checkbox" checked={form.inRecords} onChange={(e) => patch({ inRecords: e.target.checked })} />
             Mostra nei record personali
@@ -181,7 +167,6 @@ export function EserciziView() {
           <div>
             <b>{e.name}</b>
             <div className="chips">
-              <TypeChip type={e.type} />
               {!e.catalogId && <span className="chip mut">Personalizzato</span>}
               {e.inRecords && <span className="chip mut">Nei record</span>}
             </div>

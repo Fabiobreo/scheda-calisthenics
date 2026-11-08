@@ -51,7 +51,6 @@ interface ExerciseRow {
   name: string | null;
   /** nome della voce del catalogo collegata */
   catalog: { name: string } | null;
-  type: Exercise['type'];
   in_records: boolean;
   sort_order: number;
   archived_at: string | null;
@@ -62,6 +61,7 @@ interface EntryRow {
   exercise_id: string;
   date: string;
   kind: Entry['kind'];
+  type: Entry['type'];
   sets: Entry['sets'];
   difficulty: Entry['difficulty'];
   note: string | null;
@@ -77,6 +77,7 @@ interface PlanRow {
   reps: number;
   weight: number;
   rest_seconds: number;
+  type: Scheme['type'];
   assigned_by: string | null;
   note: string | null;
 }
@@ -100,10 +101,19 @@ interface ProgramItemRow {
   reps: number;
   weight: number;
   rest_seconds: number;
+  type: Scheme['type'];
   note: string | null;
 }
 
 const PAGE = 1000;
+
+const toScheme = (r: { type: Scheme['type']; sets: number; reps: number; weight: number; rest_seconds: number }): Scheme => ({
+  type: r.type,
+  sets: r.sets,
+  reps: r.reps,
+  weight: Number(r.weight),
+  rest: r.rest_seconds,
+});
 
 const toProgram = (r: ProgramRow): Program => ({ id: r.id, name: r.name, weeks: r.weeks, updatedAt: r.updated_at });
 
@@ -115,7 +125,7 @@ const toProgramItem = (r: ProgramItemRow): ProgramItem => ({
   catalogId: r.catalog_id,
   customName: r.custom_name,
   sortOrder: r.sort_order,
-  scheme: { sets: r.sets, reps: r.reps, weight: Number(r.weight), rest: r.rest_seconds },
+  scheme: toScheme(r),
   note: r.note,
 });
 
@@ -134,7 +144,6 @@ const toExercise = (r: ExerciseRow): Exercise => ({
   id: r.id,
   catalogId: r.catalog_id,
   name: r.catalog?.name ?? r.name ?? '',
-  type: r.type,
   inRecords: r.in_records,
   sortOrder: r.sort_order,
   archivedAt: r.archived_at,
@@ -145,6 +154,7 @@ const toEntry = (r: EntryRow): Entry => ({
   exerciseId: r.exercise_id,
   date: r.date,
   kind: r.kind,
+  type: r.type,
   sets: r.sets.map((s) => ({ weight: Number(s.weight), reps: Number(s.reps) })),
   difficulty: r.difficulty,
   note: r.note,
@@ -156,7 +166,7 @@ const toPlan = (r: PlanRow): PlanItem => ({
   date: r.date,
   exerciseId: r.exercise_id,
   sortOrder: r.sort_order,
-  scheme: { sets: r.sets, reps: r.reps, weight: Number(r.weight), rest: r.rest_seconds },
+  scheme: toScheme(r),
   assignedBy: r.assigned_by,
   note: r.note,
 });
@@ -166,12 +176,11 @@ function exercisePatch(p: Partial<ExerciseInput>) {
   if (p.catalogId !== undefined) row.catalog_id = p.catalogId;
   // il nome di un esercizio del catalogo è quello del catalogo: non se ne salva uno proprio
   if (p.name !== undefined) row.name = p.catalogId ? null : p.name;
-  if (p.type !== undefined) row.type = p.type;
   if (p.inRecords !== undefined) row.in_records = p.inRecords;
   return row;
 }
 
-const schemeRow = (s: Scheme) => ({ sets: s.sets, reps: s.reps, weight: s.weight, rest_seconds: s.rest });
+const schemeRow = (s: Scheme) => ({ type: s.type, sets: s.sets, reps: s.reps, weight: s.weight, rest_seconds: s.rest });
 
 const planRow = (p: PlanItemInput) => ({ date: p.date, exercise_id: p.exerciseId, sort_order: p.sortOrder, note: p.note, ...schemeRow(p.scheme) });
 
@@ -191,6 +200,7 @@ function entryPatch(p: Partial<EntryInput>) {
   if (p.exerciseId !== undefined) row.exercise_id = p.exerciseId;
   if (p.date !== undefined) row.date = p.date;
   if (p.kind !== undefined) row.kind = p.kind;
+  if (p.type !== undefined) row.type = p.type;
   if (p.sets !== undefined) row.sets = p.sets;
   if (p.difficulty !== undefined) row.difficulty = p.difficulty;
   if (p.note !== undefined) row.note = p.note;
@@ -362,6 +372,7 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
           p_weight: scheme.weight,
           p_rest: scheme.rest,
           p_note: note,
+          p_type: scheme.type,
         }),
       );
     },

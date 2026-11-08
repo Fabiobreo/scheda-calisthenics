@@ -1,4 +1,4 @@
-import { DEFAULT_REST, type Entry, type Exercise, type ExerciseType, type PlanItem, type Scheme, type WorkSet } from '../data/types';
+import { DEFAULT_REST, type Entry, type ExerciseType, type PlanItem, type Scheme, type WorkSet } from '../data/types';
 
 export type Metric = 'peso' | 'reps' | 'volume';
 
@@ -77,15 +77,15 @@ export function series(entries: Entry[], exerciseId: string, metric: Metric): Po
 
 export type TypeTotals = { date: string } & Record<ExerciseType, number>;
 
-/** Ripetizioni per tipo di esercizio, per data, sulle ultime `limit` sessioni. */
-export function repsByType(entries: Entry[], exercises: Exercise[], limit = 10): TypeTotals[] {
-  const typeOf = new Map(exercises.map((e) => [e.id, e.type]));
+/**
+ * Ripetizioni per tipo, per data, sulle ultime `limit` sessioni. Il tipo è quello della registrazione:
+ * le stesse Trazioni contano in forza un giorno e in volume un altro.
+ */
+export function repsByType(entries: Entry[], limit = 10): TypeTotals[] {
   const byDate = new Map<string, TypeTotals>();
   for (const e of entries) {
-    const t = typeOf.get(e.exerciseId);
-    if (!t) continue;
     const d = byDate.get(e.date) ?? { date: e.date, forza: 0, volume: 0, tecnico: 0 };
-    d[t] += totalReps(e.sets);
+    d[e.type] += totalReps(e.sets);
     byDate.set(e.date, d);
   }
   return [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1)).slice(-limit);
@@ -101,15 +101,27 @@ const lastInPlan = (plan: PlanItem[], exerciseId: string) => [...plan].reverse()
 export const suggestedRest = (plan: PlanItem[], exerciseId: string) => lastInPlan(plan, exerciseId)?.scheme.rest ?? DEFAULT_REST;
 
 /**
- * Schema da proporre quando si aggiunge un esercizio a un giorno: quello che ha già nel programma,
- * altrimenti l'ultimo allenamento registrato, altrimenti 3 × 8 a corpo libero.
+ * Tipo da proporre per un esercizio nel giorno `date`: quello del programma di quel giorno o, se non c'è, dell'ultima
+ * volta in programma prima di quel giorno; poi quello dell'ultimo allenamento registrato; poi della prossima volta in
+ * programma; altrimenti `fallback` (di solito il tipo predefinito del catalogo).
+ * Un giorno futuro in programma non deve decidere il tipo di oggi: il giovedì di volume non fa del lunedì un volume.
  */
-export function suggestScheme(plan: PlanItem[], entries: Entry[], exerciseId: string): Scheme {
+export function suggestType(plan: PlanItem[], entries: Entry[], exerciseId: string, date: string, fallback: ExerciseType): ExerciseType {
+  const rows = plan.filter((p) => p.exerciseId === exerciseId).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const upTo = rows.filter((p) => p.date <= date).pop();
+  return upTo?.scheme.type ?? lastTraining(entries, exerciseId)?.type ?? rows[0]?.scheme.type ?? fallback;
+}
+
+/**
+ * Schema da proporre quando si aggiunge un esercizio a un giorno: quello che ha già nel programma,
+ * altrimenti l'ultimo allenamento registrato, altrimenti 3 × 8 a corpo libero (di tipo `fallbackType`).
+ */
+export function suggestScheme(plan: PlanItem[], entries: Entry[], exerciseId: string, fallbackType: ExerciseType = 'volume'): Scheme {
   const inPlan = lastInPlan(plan, exerciseId);
   if (inPlan) return inPlan.scheme;
   const last = lastTraining(entries, exerciseId);
-  if (last) return { sets: last.sets.length, reps: last.sets[0].reps, weight: maxWeight(last.sets), rest: DEFAULT_REST };
-  return { sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST };
+  if (last) return { type: last.type, sets: last.sets.length, reps: last.sets[0].reps, weight: maxWeight(last.sets), rest: DEFAULT_REST };
+  return { type: fallbackType, sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST };
 }
 
 /** Scala "tonda" per l'asse Y: 4 tacche circa. */

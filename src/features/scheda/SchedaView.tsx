@@ -16,7 +16,7 @@ import {
   useUpdateExercise,
 } from '../../data/hooks';
 import { CATEGORY_LABEL, DIFFICULTY_LABEL, type PlanChanges, type PlanItem } from '../../data/types';
-import { byCategory } from '../../lib/catalog';
+import { byCategory, defaultType } from '../../lib/catalog';
 import { addDays, inWeek, longDate, mondayOf, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
 import { fmt, fmtSets } from '../../lib/format';
 import { byDay, copyWeek, weekItems, type CopyMode } from '../../lib/plan';
@@ -253,7 +253,7 @@ function Programma() {
                   </p>
                 )}
                 <div className="chips">
-                  <TypeChip type={ex.type} />
+                  <TypeChip type={sc.type} />
                   {fromTrainer && <span className="chip mut">Dal trainer</span>}
                 </div>
               </div>
@@ -298,7 +298,7 @@ function Programma() {
           {addOpen && addId && (
             <SchemeForm
               key={addId}
-              initial={suggestScheme(plan, done, archivedTwin?.id ?? addId)}
+              initial={suggestScheme(plan, done, archivedTwin?.id ?? addId, addCatalogItem?.defaultType ?? defaultType(catalog, byId.get(addId)))}
               hint={`Per ${title}: poi puoi cambiarlo quando vuoi.`}
               saveLabel="Aggiungi"
               onSave={(scheme) => {

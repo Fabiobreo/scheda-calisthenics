@@ -4,7 +4,7 @@ import { useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { refName, useExercisePicker } from '../../components/ExercisePicker';
 import { SchemeForm } from '../../components/SchemeForm';
-import { ConfirmButton, Field, Select } from '../../components/ui';
+import { ConfirmButton, Field, Select, TypeChip } from '../../components/ui';
 import {
   useAddProgramItems,
   useAssignProgram,
@@ -22,6 +22,7 @@ import {
 import { DEFAULT_REST, type ProgramItem, type ProgramItemInput } from '../../data/types';
 import { DAY_LONG, DAY_SHORT, addDays, mondayOf, shortDate, todayStr, weekLabel } from '../../lib/dates';
 import { fmt, isInt, plural } from '../../lib/format';
+import { defaultType } from '../../lib/catalog';
 
 /** Le schede modello del trainer, nella pagina Atleti. */
 export function SchedeCard() {
@@ -220,6 +221,9 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
                   )}
                 </div>
                 {i.note && <p className="coach-note" style={{ marginTop: 8 }}>{i.note}</p>}
+                <div className="chips">
+                  <TypeChip type={i.scheme.type} />
+                </div>
               </div>
               <div className="pact">
                 <button className="x" onClick={() => removeItems.mutate([i.id])} aria-label={`Togli ${refName(catalog, i)}`}>
@@ -254,7 +258,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
           ) : (
             <SchemeForm
               key={picker.key}
-              initial={{ sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST }}
+              initial={{ type: defaultType(catalog, picker.ref() ?? undefined), sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST }}
               note={null}
               hint={`Settimana ${shownWeek}, ${DAY_LONG[day].toLowerCase()}.`}
               saveLabel="Aggiungi"

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useToast } from '../app/toast';
-import type { Scheme } from '../data/types';
+import { EXERCISE_TYPES, TYPE_LABEL, type ExerciseType, type Scheme } from '../data/types';
 import { isInt, numInput, parseNum } from '../lib/format';
-import { Field } from './ui';
+import { Field, Seg } from './ui';
 
 /**
- * Serie, ripetizioni, peso e recupero di un esercizio in un giorno (del calendario o di una scheda).
+ * Tipo, serie, ripetizioni, peso e recupero di un esercizio in un giorno (del calendario o di una scheda).
  * `note`: mostra anche il campo della nota del trainer, partendo da questo valore.
  */
 export function SchemeForm({
@@ -24,6 +24,7 @@ export function SchemeForm({
   note?: string | null;
 }) {
   const toast = useToast();
+  const [type, setType] = useState<ExerciseType>(initial.type);
   const [weight, setWeight] = useState(numInput(initial.weight));
   const [sets, setSets] = useState(String(initial.sets));
   const [reps, setReps] = useState(String(initial.reps));
@@ -32,7 +33,7 @@ export function SchemeForm({
   const withNote = note !== undefined;
 
   const save = () => {
-    const scheme = { weight: parseNum(weight || '0'), sets: Number(sets), reps: Number(reps), rest: Number(rest || '0') };
+    const scheme = { type, weight: parseNum(weight || '0'), sets: Number(sets), reps: Number(reps), rest: Number(rest || '0') };
     if (!(scheme.weight >= 0 && scheme.weight < 10000) || !isInt(scheme.sets, 1, 50) || !isInt(scheme.reps, 1, 1000))
       return toast('Controlla peso, serie e ripetizioni');
     if (!isInt(scheme.rest, 0, 3600)) return toast('Recupero tra 0 e 3600 secondi');
@@ -42,6 +43,10 @@ export function SchemeForm({
 
   return (
     <div className="form" style={{ gridColumn: '1 / -1', marginTop: 8 }}>
+      <div className="fld">
+        <span>Tipo</span>
+        <Seg label="Tipo" value={type} options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))} onChange={setType} />
+      </div>
       <div className="grid3">
         <Field label="Peso (kg)" inputMode="decimal" value={weight} autoFocus onChange={(e) => setWeight(e.target.value)} />
         <Field label="Serie" inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} />

@@ -98,7 +98,7 @@ supabase/migrations/  schema SQL
 - **profiles**: uno per utente, creato dal trigger alla registrazione; per ora il nome visualizzato.
   L'utente può eliminare il proprio account (`delete_own_account()`), e con lui spariscono tutti i suoi dati.
 - **catalog_exercises**: catalogo comune a tutti gli utenti, in sola lettura (cambia solo con le migration).
-  Id stabili e leggibili (`trazioni`, `dip`…), categoria (tirata, spinta, gambe, core, skill), tipo predefinito e sinonimi
+  Id stabili e leggibili (`trazioni`, `dip`…), categoria (tirata, spinta, gambe, core, skill), tipo predefinito (proposto quando l'esercizio entra in scheda) e sinonimi
   ("pull up", "chin up"…) per riconoscere i nomi scritti a mano.
 - **coach_links** e **trainer_invites**: trainer e atleti. La modalità trainer è un flag del profilo (`is_trainer`),
   attivabile da chiunque. Il trainer genera un codice d'invito (uno per volta: rigenerarlo invalida il vecchio);
@@ -115,13 +115,15 @@ supabase/migrations/  schema SQL
   `entries.note` è la nota dell'atleta sulla sessione, che il trainer legge.
 - **exercises**: gli esercizi dell'utente, senza serie né ripetizioni. Ognuno è collegato a una voce del catalogo
   (`catalog_id`, al massimo una volta per utente; `name` è una copia del nome del catalogo scritta da un trigger, per le versioni vecchie dell'app) oppure è personalizzato (`name` proprio,
-  unico per utente, maiuscole a parte). In più tipo (forza/volume/tecnico), flag `in_records` e archiviazione
+  unico per utente, maiuscole a parte). In più flag `in_records` e archiviazione
   (archiviare conserva lo storico, eliminare lo cancella). Così "Trazioni" è un solo esercizio nei grafici, qualunque
-  schema si usi, e lo stesso esercizio per atleti e trainer.
-- **entries**: un esercizio svolto in una data, con `sets` = `[{ weight, reps }, ...]`, difficoltà e `kind`
+  schema si usi, e lo stesso esercizio per atleti e trainer. Il tipo (forza/volume/tecnico) non è dell'esercizio ma del
+  giorno: sta in `plan_items`, `program_items` ed `entries` (0009). `exercises.type` resta solo per le versioni vecchie
+  dell'app, e i trigger completano il tipo delle righe che quelle scrivono senza.
+- **entries**: un esercizio svolto in una data, con `sets` = `[{ weight, reps }, ...]`, tipo, difficoltà e `kind`
   (`training` o `attempt` per i tentativi di record). Una data futura vuol dire allenamento in programma:
   compare nello storico come "In programma" ed entra in record e grafici solo quando arriva quel giorno.
-- **plan_items**: esercizi programmati in una data del calendario (`date`), con `sets`/`reps`/`weight`/`rest_seconds`
+- **plan_items**: esercizi programmati in una data del calendario (`date`), con `type`/`sets`/`reps`/`weight`/`rest_seconds`
   del giorno (obbligatori: lo schema sta solo qui). Un esercizio al massimo una volta per giorno. Nell'app si scorre
   settimana per settimana e una settimana si può copiare nelle successive.
 

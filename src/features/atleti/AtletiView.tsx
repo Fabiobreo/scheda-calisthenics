@@ -7,9 +7,11 @@ import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
 import { ConfirmButton, Seg, TypeChip } from '../../components/ui';
 import { useCatalog, useCoachAddPlanItem, useData, useEndLink, useLinks, useRemovePlanItem, useSetPlanNote, useSetPlanScheme } from '../../data/hooks';
-import { DEFAULT_REST } from '../../data/types';
+import { DEFAULT_REST, type ExerciseRef } from '../../data/types';
 import { addDays, longDate, mondayOf, shortDate, todayStr, weekdayIndex } from '../../lib/dates';
 import { fmt, fmtSets } from '../../lib/format';
+import { suggestType } from '../../lib/stats';
+import { defaultType } from '../../lib/catalog';
 import { byDay } from '../../lib/plan';
 import { GraficiView } from '../grafici/GraficiView';
 import { RegistroView } from '../registro/RegistroView';
@@ -126,7 +128,7 @@ function AthleteData({ tab }: { tab: Tab }) {
  * Il trainer aggiunge esercizi ai giorni e ritocca le righe sue; quelle dell'atleta le vede soltanto.
  */
 function AthletePlan() {
-  const { exercises, entries, plan } = useData();
+  const { exercises, entries, done, plan } = useData();
   const session = useSession();
   const myId = session.status === 'ready' ? session.userId : '';
   const catalog = useCatalog().data ?? [];
@@ -152,6 +154,13 @@ function AthletePlan() {
   const picker = useExercisePicker(catalog, (r) =>
     inDay.some((e) => (r.catalogId ? e.catalogId === r.catalogId : !e.catalogId && e.name.toLowerCase() === r.customName?.toLowerCase())),
   );
+
+  // tipo da proporre: come l'atleta fa quell'esercizio in quel periodo, altrimenti il predefinito del catalogo
+  const typeFor = (ref: ExerciseRef | null) => {
+    const ex = ref && exercises.find((e) => (ref.catalogId ? e.catalogId === ref.catalogId : !e.catalogId && e.name.toLowerCase() === ref.customName?.toLowerCase()));
+    const fallback = defaultType(catalog, ref ?? undefined);
+    return ex ? suggestType(plan, done, ex.id, date, fallback) : fallback;
+  };
 
   const go = (m: string, d: number) => {
     setMonday(m);
@@ -192,7 +201,7 @@ function AthletePlan() {
                   </p>
                 )}
                 <div className="chips">
-                  <TypeChip type={ex.type} />
+                  <TypeChip type={sc.type} />
                   {!mine && <span className="chip mut">{p.assignedBy ? 'Da un altro trainer' : "Dell'atleta"}</span>}
                 </div>
               </div>
@@ -232,7 +241,7 @@ function AthletePlan() {
         ) : (
           <SchemeForm
             key={picker.key}
-            initial={{ sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST }}
+            initial={{ type: typeFor(picker.ref()), sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST }}
             note={null}
             hint={`Per ${title}.`}
             saveLabel="Aggiungi"

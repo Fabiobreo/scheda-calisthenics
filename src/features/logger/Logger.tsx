@@ -2,11 +2,26 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { useRestTimer } from '../../app/restTimer';
 import { useToast } from '../../app/toast';
 import { Field, Select, Seg } from '../../components/ui';
-import { useCreateEntry, useData, useUpdateEntry } from '../../data/hooks';
-import { DEFAULT_REST, DIFFICULTIES, DIFFICULTY_LABEL, type Difficulty, type Entry, type EntryKind, type Scheme } from '../../data/types';
+import { useCatalog, useCreateEntry, useData, useUpdateEntry } from '../../data/hooks';
+import {
+  DEFAULT_REST,
+  DIFFICULTIES,
+  DIFFICULTY_LABEL,
+  EXERCISE_TYPES,
+  TYPE_LABEL,
+  type CatalogExercise,
+  type Difficulty,
+  type Entry,
+  type EntryKind,
+  type Exercise,
+  type ExerciseType,
+  type PlanItem,
+  type Scheme,
+} from '../../data/types';
+import { defaultType } from '../../lib/catalog';
 import { shortDate, todayStr } from '../../lib/dates';
 import { fmtSets, numInput, parseNum } from '../../lib/format';
-import { lastTraining, personalBest, suggestedRest } from '../../lib/stats';
+import { lastTraining, personalBest, suggestedRest, suggestType } from '../../lib/stats';
 
 const DRAFT_KEY = 'scheda:logger-draft';
 
@@ -21,6 +36,11 @@ interface Draft {
   entryId: string | null;
   exerciseId: string;
   kind: EntryKind;
+  /**
+   * forza, volume o tecnico: dalla scheda del giorno, altrimenti scelto qui.
+   * null solo nelle bozze di versioni precedenti: se non lo sceglie l'utente, lo completa il database.
+   */
+  type: ExerciseType | null;
   date: string;
   rows: Row[];
   difficulty: Difficulty | null;
@@ -45,7 +65,7 @@ function readDraft(): Draft | null {
   try {
     const d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null') as Draft | null;
     // le bozze salvate da versioni precedenti non hanno tutti i campi
-    return d && { ...d, rest: d.rest ?? DEFAULT_REST, note: d.note ?? '', coachNote: d.coachNote ?? null };
+    return d && { ...d, rest: d.rest ?? DEFAULT_REST, note: d.note ?? '', coachNote: d.coachNote ?? null, type: d.type ?? null };
   } catch {
     return null;
   }
@@ -72,8 +92,14 @@ function startingRows(entries: Entry[], exerciseId: string, kind: EntryKind, sch
   return [{ weight: '0', reps: '', done: false }];
 }
 
+/** Tipo di partenza senza uno schema da cui si apre: i tentativi di record sono forza, il resto come in programma quel giorno. */
+function startingType(plan: PlanItem[], entries: Entry[], catalog: CatalogExercise[], ex: Exercise, kind: EntryKind, date: string): ExerciseType {
+  return kind === 'attempt' ? 'forza' : suggestType(plan, entries, ex.id, date, defaultType(catalog, ex));
+}
+
 export function LoggerProvider({ children }: { children: ReactNode }) {
   const { exercises, active, done, plan } = useData();
+  const catalog = useCatalog().data ?? [];
   // la bozza sopravvive al ricaricamento della pagina: un allenamento a metà non va perso
   const [draft, setDraftState] = useState<Draft | null>(readDraft);
 
@@ -90,6 +116,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
           entryId: e.id,
           exerciseId: e.exerciseId,
           kind: e.kind,
+          type: e.type,
           date: e.date,
           rows: e.sets.map((s) => ({ weight: numInput(s.weight), reps: String(s.reps), done: true })),
           difficulty: e.difficulty,
@@ -116,6 +143,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
         entryId: null,
         exerciseId: ex.id,
         kind,
+        type: o.scheme?.type ?? startingType(plan, done, catalog, ex, kind, date),
         date,
         rows: startingRows(done, ex.id, kind, o.scheme),
         difficulty: null,
@@ -124,7 +152,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
         coachNote: o.coachNote ?? null,
       });
     },
-    [exercises, active, done, plan, setDraft],
+    [exercises, active, done, plan, catalog, setDraft],
   );
 
   return (
@@ -137,6 +165,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
 
 function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | null) => void }) {
   const { active, exercises, done, plan, isLoading } = useData();
+  const catalog = useCatalog().data ?? [];
   const timer = useRestTimer();
   const toast = useToast();
   const create = useCreateEntry(draft.kind === 'attempt' ? 'Tentativo salvato' : 'Allenamento salvato');
@@ -175,7 +204,13 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
 
   const switchExercise = (id: string) => {
     const next = active.find((e) => e.id === id);
-    if (next) patch({ exerciseId: id, rows: startingRows(done, id, draft.kind), rest: suggestedRest(plan, id) });
+    if (next)
+      patch({
+        exerciseId: id,
+        type: startingType(plan, done, catalog, next, draft.kind, draft.date),
+        rows: startingRows(done, id, draft.kind),
+        rest: suggestedRest(plan, id),
+      });
   };
 
   const toggleDone = (i: number) => {
@@ -197,7 +232,7 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
       return toast('Controlla peso e ripetizioni di ogni serie');
     const note = draft.note.trim();
     if (note.length > 500) return toast('Nota troppo lunga (massimo 500 caratteri)');
-    const body = { exerciseId: draft.exerciseId, kind: draft.kind, date: draft.date || todayStr(), sets, difficulty: draft.difficulty, note: note || null };
+    const body = { exerciseId: draft.exerciseId, kind: draft.kind, type: draft.type ?? undefined, date: draft.date || todayStr(), sets, difficulty: draft.difficulty, note: note || null };
     if (draft.entryId) update.mutate({ id: draft.entryId, patch: body });
     else create.mutate(body);
     setDraft(null);
@@ -226,6 +261,10 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
               {rest > 0 && `recupero ${rest} s`}
             </p>
           )}
+          <div className="fld">
+            <span>Tipo</span>
+            <Seg label="Tipo" value={draft.type} options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))} onChange={(type) => patch({ type })} />
+          </div>
           {draft.coachNote && (
             <p className="coach-note">
               <b>Dal trainer:</b> {draft.coachNote}

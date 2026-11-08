@@ -30,7 +30,7 @@ export function GraficiView() {
   const pts = series(entries, ex.id, metric);
   const last = pts[pts.length - 1];
   const readout = selected && pts.some((p) => p.date === selected.date) ? selected : null;
-  const types = repsByType(entries, exercises);
+  const types = repsByType(entries);
 
   return (
     <>

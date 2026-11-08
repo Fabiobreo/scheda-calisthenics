@@ -158,7 +158,7 @@ export const useAddCatalogToPlan = () =>
     async (r, a: { item: CatalogExercise; archived?: Exercise; date: string; scheme: Scheme }) => {
       let id = a.archived?.id;
       if (id) await r.setExerciseArchived(id, false);
-      else id = (await r.createExercise({ catalogId: a.item.id, name: a.item.name, type: a.item.defaultType, inRecords: false })).id;
+      else id = (await r.createExercise({ catalogId: a.item.id, name: a.item.name, inRecords: false })).id;
       await r.addPlanItem(a.date, id, a.scheme);
     },
     [K.exercises, K.plan],

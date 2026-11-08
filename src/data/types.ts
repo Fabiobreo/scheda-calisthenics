@@ -48,7 +48,6 @@ export interface Exercise {
   catalogId: string | null;
   /** il nome del catalogo, oppure quello scelto dall'utente */
   name: string;
-  type: ExerciseType;
   inRecords: boolean;
   sortOrder: number;
   archivedAt: string | null;
@@ -67,6 +66,8 @@ export interface Entry {
   /** YYYY-MM-DD, data locale */
   date: string;
   kind: EntryKind;
+  /** forza, volume o tecnico: quello della scheda di quel giorno, o scelto registrando */
+  type: ExerciseType;
   sets: WorkSet[];
   difficulty: Difficulty | null;
   /** nota dell'atleta, letta anche dal trainer */
@@ -74,10 +75,13 @@ export interface Entry {
   createdAt: string;
 }
 
-export type EntryInput = Omit<Entry, 'id' | 'createdAt'>;
+/** Senza `type` lo completa il database: dal programma di quel giorno, poi dall'esercizio. */
+export type EntryInput = Omit<Entry, 'id' | 'createdAt' | 'type'> & { type?: ExerciseType };
 
-/** Serie × ripetizioni × peso e recupero di un esercizio in un giorno del programma. */
+/** Tipo, serie × ripetizioni × peso e recupero di un esercizio in un giorno del programma. */
 export interface Scheme {
+  /** lo stesso esercizio può essere di forza un giorno e di volume un altro */
+  type: ExerciseType;
   sets: number;
   reps: number;
   weight: number;
