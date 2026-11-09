@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { LevelStrip } from '../components/LevelStrip';
 import { IconAtleti, IconEsercizi, IconGrafici, IconLivello, IconScheda } from '../components/icons';
 import { useData, useProfile } from '../data/hooks';
 import { AccountView } from '../features/account/AccountView';
@@ -21,6 +22,9 @@ const TABS: { to: string; label: string; icon: ReactNode }[] = [
   { to: '/esercizi', label: 'Esercizi', icon: <IconEsercizi /> },
 ];
 const ATLETI_TAB = { to: '/atleti', label: 'Atleti', icon: <IconAtleti /> };
+
+/** Sezioni con il riepilogo del livello in alto (ticket 12); altrove (Home, Account, Atleti) resta il nome dell'app. */
+const STRIP_PATHS = ['/scheda', '/grafici', '/esercizi'];
 
 /** Cerchio con l'iniziale del nome (o dell'email): porta ad Account, dove si esce. Lo sostituirà l'avatar (ticket 11–12). */
 function AccountBadge({ email }: { email: string | null }) {
@@ -83,9 +87,13 @@ export function App() {
     <div className="wrap">
       {/* intestazione corta: le sezioni sono nella barra in basso, l'account nel cerchio a destra */}
       <header className="top">
-        <Link className="brand" to="/">
-          Scheda Calisthenics
-        </Link>
+        {session.status === 'ready' && !recovery && STRIP_PATHS.includes(location.pathname) ? (
+          <LevelStrip />
+        ) : (
+          <Link className="brand" to="/">
+            Scheda Calisthenics
+          </Link>
+        )}
         {session.status === 'ready' && !recovery && <AccountBadge email={session.email} />}
       </header>
       <UpdateBanner />

@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { Avatar } from '../../components/Avatar';
 import { Pentagon } from '../../components/Pentagon';
 import { IconFondSpinta, IconFondTirata, IconHandbalance, IconSkillSpinta, IconSkillTirata } from '../../components/icons';
 import { useLevel, useProfile, useSetBodyWeight } from '../../data/hooks';
 import { fmt, numInput, parseNum } from '../../lib/format';
 import { shortDate } from '../../lib/dates';
-import { subRule, validateBodyweight, LIMITS, type CategoryId, type CategoryScore, type SubId, type SubScore } from '../../lib/levels';
+import { subRule, validateBodyweight, LIMITS, type AvatarStage, type CategoryId, type CategoryScore, type SubId, type SubScore } from '../../lib/levels';
 import { AXES, categoryName, recordText, subPercentText } from './levelView';
 import { RecordSheet } from './RecordSheet';
 import type { LevelRecordRow } from '../../data/types';
@@ -44,7 +45,7 @@ export function HomeView() {
   return (
     <>
       {level.error && <div className="banner">Non riesco a leggere livello e record. Controlla la connessione e riprova.</div>}
-      <Profile level={summary.level} elite={summary.zone === 'elite'} stage={summary.avatar.stage} aura={summary.avatar.aura} bodyweight={bodyweight} />
+      <Profile level={summary.level} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} />
 
       <div className="party-slot" role="status" aria-live="polite">
         {party.length > 0 && (
@@ -98,13 +99,11 @@ export function HomeView() {
 }
 
 /** Intestazione: avatar (segnaposto finché non c'è il ticket 11), nome, livello, peso con modifica rapida. */
-function Profile({ level, elite, stage, aura, bodyweight }: { level: number; elite: boolean; stage: number; aura: number; bodyweight: { date: string; kg: number } | null }) {
+function Profile({ level, elite, avatar, bodyweight }: { level: number; elite: boolean; avatar: AvatarStage; bodyweight: { date: string; kg: number } | null }) {
   const name = useProfile().data?.displayName;
   return (
     <section className="card hero" aria-label="Profilo">
-      <div className={`avatar${elite ? ' elite' : ''}`} style={{ ['--aura' as string]: aura }} aria-hidden="true" title={`Stadio ${stage + 1}`}>
-        <span>{(name || '?').trim().charAt(0).toUpperCase()}</span>
-      </div>
+      <Avatar name={name} avatar={avatar} elite={elite} />
       <div className="hero-txt">
         {name ? (
           <p className="hero-name">{name}</p>

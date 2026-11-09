@@ -421,3 +421,23 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .rec-list li > span:first-child { flex: 1 1 150px; min-width: 0; }
 .rec-list b { font-weight: 600; }
 .rec-list small { display: block; color: var(--muted); font-size: 14px; }
+
+/* riepilogo compatto in cima a Scheda, Grafici, Esercizi (ticket 12): altezza fissa, porta alla Home */
+.strip {
+  flex: 1 1 auto; min-width: 0; height: 56px; display: flex; align-items: center; gap: 12px; color: var(--fg); text-decoration: none;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 0 8px 0 7px;
+}
+.avatar.sm { width: 40px; height: 40px; font-size: 19px; border-width: 1.5px; box-shadow: 0 0 calc(var(--aura, 0) * 10px) color-mix(in srgb, var(--accent) 55%, transparent); }
+.avatar.sm.elite { box-shadow: 0 0 10px color-mix(in srgb, var(--elite) 60%, transparent); }
+.strip-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
+.strip-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip-level { color: var(--muted); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+.strip-level b { font-family: var(--f-display); font-size: 20px; color: var(--fg); letter-spacing: 0; margin-left: 2px; }
+.strip-level b.elite { color: var(--elite); }
+.penta-mini { flex: none; width: 46px; height: 46px; margin: 0; }
+.penta-mini .penta-grid { stroke-width: 6; }
+.penta-mini .penta-100 { stroke-width: 7; }
+.penta-mini .penta-edge { stroke-width: 10; }
+.penta-mini .penta-dot { stroke-width: 0; }
+.penta-mini .penta-dot.elite { filter: none; }
+@media (hover: hover) { .strip:hover { border-color: var(--accent); } }

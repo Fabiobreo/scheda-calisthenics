@@ -30,7 +30,7 @@ Ogni file ha la stessa struttura:
 | 09 | [Dati: peso corporeo e record di livello](09-dati-peso-e-record.md) — fatto 9/11 | 5 | Backend (Postgres/Supabase, RLS) | M |
 | 10 | [Home "Livello": profilo, pentagono, barre, record](10-home-livello.md) — fatto 9/11 | 5 | Frontend + UI designer | L |
 | 11 | [Avatar che evolve con il livello](11-avatar.md) | 5, 6 | Illustratore / character designer + motion designer | XL |
-| 12 | [Riepilogo compatto (avatar + livello) nelle altre sezioni](12-riepilogo-compatto.md) | 7 | Frontend + UI designer | S |
+| 12 | [Riepilogo compatto (avatar + livello) nelle altre sezioni](12-riepilogo-compatto.md) — fatto 9/11 | 7 | Frontend + UI designer | S |
 | 13 | [Grafici: periodo selezionabile](13-grafici-periodo.md) | 3 | Frontend + data-viz | M |
 | 14 | [Grafici: restyling coerente col pentagono](14-grafici-restyling.md) | 10 | Data-viz designer + frontend | M |
 | 15 | [Il trainer vede il livello dell'atleta](15-trainer-vede-livello.md) | — (coerenza) | Product owner + full-stack | S |
