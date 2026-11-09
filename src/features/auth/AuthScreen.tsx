@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import { useToast } from '../../app/toast';
-import { Field, PasswordField, Seg } from '../../components/ui';
+import { Field, PageTitle, PasswordField, Seg, usePageTitle } from '../../components/ui';
 import { recovery, supabase } from '../../lib/supabase';
 import { authMessage } from './errors';
 
@@ -34,6 +34,7 @@ function SubmitButton({ busy, disabled, children }: { busy: boolean; disabled?: 
 
 export function AuthScreen() {
   const [mode, setMode] = useState<Mode>('signin');
+  usePageTitle(mode === 'signup' ? 'Registrati' : mode === 'signin' ? 'Accedi' : 'Recupero password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -215,7 +216,7 @@ export function AuthScreen() {
                     onChange={(e) => (setPassword(e.target.value), errors.password && setErrors({ ...errors, password: undefined }))}
                     aside={
                       mode === 'signin' && (
-                        <button type="button" className="link small tap" onClick={() => go('reset')}>
+                        <button type="button" className="link small" onClick={() => go('reset')}>
                           Password dimenticata?
                         </button>
                       )
@@ -231,7 +232,7 @@ export function AuthScreen() {
 
             {mode === 'reset' && (
               <div className="auth-foot">
-                <button className="link tap" onClick={() => go('signin')}>
+                <button className="link" onClick={() => go('signin')}>
                   ← Torna all'accesso
                 </button>
               </div>
@@ -274,6 +275,7 @@ export function NewPasswordScreen({ email }: { email: string | null }) {
 
   return (
     <div className="auth-page">
+      <PageTitle title="Nuova password" />
       <section className="card auth-card">
         <h2>Nuova password</h2>
         <p className="sub">Scegline una di almeno 8 caratteri.</p>

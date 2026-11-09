@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useScope } from '../../app/session';
 import { EntryItem } from '../../components/EntryItem';
 import { LineChart, TypeChart } from '../../components/charts';
-import { Seg, Select } from '../../components/ui';
+import { PageTitle, Seg, Select } from '../../components/ui';
 import { useData } from '../../data/hooks';
 import { EXERCISE_TYPES, TYPE_LABEL, type Measure } from '../../data/types';
 import { todayStr } from '../../lib/dates';
@@ -123,6 +123,7 @@ export function GraficiView() {
 
   return (
     <>
+      <PageTitle title="Grafici" />
       <section className="card">
         <h2>Andamento</h2>
         <p className="sub">
@@ -195,7 +196,7 @@ export function GraficiView() {
               </p>
             )}
             <div className="sessions">
-              <h4>{readout ? `Sessioni: ${bucketLabel(readout.date, grain)}` : 'Sessioni'}</h4>
+              <h3 className="h-sub">{readout ? `Sessioni: ${bucketLabel(readout.date, grain)}` : 'Sessioni'}</h3>
               {sessions.slice(0, readout ? undefined : limit).map((e) => (
                 <EntryItem key={e.id} entry={e} record={prIds.has(e.id)} showDate onOpen={readOnly ? undefined : () => openLogger({ entry: e })} />
               ))}

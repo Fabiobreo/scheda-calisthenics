@@ -7,7 +7,7 @@ import { useExercisePicker } from '../../components/ExercisePicker';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
-import { ConfirmButton, Seg, TypeChip } from '../../components/ui';
+import { ConfirmButton, NestedView, PageTitle, Seg, TypeChip } from '../../components/ui';
 import {
   useCatalog,
   useCoachAddPlanItem,
@@ -45,6 +45,7 @@ export function AtletiView() {
 
   return (
     <>
+      <PageTitle title="Atleti" />
       {athletes.length > 0 && (
         <section className="card">
           <h2>Da guardare</h2>
@@ -197,6 +198,7 @@ export function AtletaView() {
 
   return (
     <>
+      <PageTitle title={link.athleteName || 'Atleta'} />
       <section className="card">
         <div className="card-h">
           <h2>{nameOf(link.athleteName)}</h2>
@@ -228,10 +230,20 @@ export function AtletaView() {
 function AthleteData({ tab }: { tab: Tab }) {
   const { isLoading, error } = useData();
   // il livello ha i suoi dati (record e peso): non aspetta registrazioni e programma
-  if (tab === 'livello') return <HomeView />;
+  if (tab === 'livello')
+    return (
+      <NestedView>
+        <HomeView />
+      </NestedView>
+    );
   if (isLoading) return <p className="empty">Caricamento…</p>;
   if (error) return <div className="banner">Non riesco a leggere i dati dell'atleta. Riprova.</div>;
-  if (tab === 'grafici') return <GraficiView />;
+  if (tab === 'grafici')
+    return (
+      <NestedView>
+        <GraficiView />
+      </NestedView>
+    );
   return <AthletePlan />;
 }
 
@@ -348,7 +360,26 @@ function AthletePlan() {
               </div>
               {mine && (
                 <div className="pact">
-                  <button className="x" onClick={() => removeItem.mutate(p.id)} aria-label={`Togli ${ex.name}`}>
+                  <button
+                    className="x"
+                    aria-label={`Togli ${ex.name}`}
+                    onClick={() =>
+                      removeItem.mutate(p.id, {
+                        // annulla: il trainer riscrive la riga con la sua funzione (in fondo al giorno)
+                        onSuccess: () =>
+                          toast(`${ex.name} tolto`, {
+                            label: 'Annulla',
+                            run: () =>
+                              addItem.mutate({
+                                date: p.date,
+                                ref: ex.catalogId ? { catalogId: ex.catalogId, customName: null } : { catalogId: null, customName: ex.name },
+                                scheme: p.scheme,
+                                note: p.note,
+                              }),
+                          }),
+                      })
+                    }
+                  >
                     ×
                   </button>
                 </div>
@@ -374,7 +405,7 @@ function AthletePlan() {
       </div>
       {extra.length > 0 && (
         <div className="extra">
-          <h4>Fatto fuori programma</h4>
+          <h3 className="h-sub">Fatto fuori programma</h3>
           {extra.map((e) => (
             <EntryItem key={e.id} entry={e} name={byId.get(e.exerciseId)?.name ?? 'Esercizio rimosso'} record={prIds.has(e.id)} noteLabel="Nota dell'atleta" />
           ))}

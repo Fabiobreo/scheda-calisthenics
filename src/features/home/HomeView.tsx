@@ -1,3 +1,4 @@
+import { PageTitle } from '../../components/ui';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useScope } from '../../app/session';
@@ -49,6 +50,7 @@ export function HomeView() {
 
   return (
     <>
+      <PageTitle title="Livello" />
       {level.error && <div className="banner">Non riesco a leggere livello e record. Controlla la connessione e riprova.</div>}
       <Profile level={summary.level} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} readOnly={readOnly} />
 
@@ -171,7 +173,7 @@ function Weight({ current }: { current: { date: string; kg: number } | null }) {
       <div className="weight">
         <span className="fld-l">Peso</span>
         <b>{current ? `${fmt(current.kg)} kg` : '—'}</b>
-        <button type="button" className="link tap" onClick={() => setDraft(current ? numInput(current.kg) : '')} aria-label={current ? 'Modifica peso corporeo' : 'Inserisci peso corporeo'}>
+        <button type="button" className="link" onClick={() => setDraft(current ? numInput(current.kg) : '')} aria-label={current ? 'Modifica peso corporeo' : 'Inserisci peso corporeo'}>
           {current ? 'Modifica' : 'Inserisci'}
         </button>
         {current && <span className="hint">dal {shortDate(current.date)}</span>}

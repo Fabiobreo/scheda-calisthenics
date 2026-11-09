@@ -4,7 +4,7 @@ import { useToast } from '../../app/toast';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
-import { Seg, Select, TypeChip } from '../../components/ui';
+import { PageTitle, Seg, Select, TypeChip } from '../../components/ui';
 import {
   useAddCatalogToPlan,
   useAddPlanItem,
@@ -28,6 +28,7 @@ import { useLogger } from '../logger/Logger';
 export function SchedaView() {
   return (
     <>
+      <PageTitle title="Scheda" />
       <Records />
       <Programma />
     </>
@@ -38,6 +39,7 @@ function Records() {
   const { active, done: entries } = useData();
   const openLogger = useLogger();
   const setInRecords = useUpdateExercise();
+  const toast = useToast();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [adding, setAdding] = useState('');
 
@@ -89,7 +91,19 @@ function Records() {
                   <button className="btn small ghost" onClick={() => openLogger({ kind: 'attempt', exerciseId: ex.id })}>
                     Tentativo
                   </button>
-                  <button className="x" aria-label={`Togli ${ex.name} dai record`} onClick={() => setInRecords.mutate({ id: ex.id, patch: { inRecords: false } })}>
+                  <button className="x" aria-label={`Togli ${ex.name} dai record`} onClick={() =>
+                      setInRecords.mutate(
+                        { id: ex.id, patch: { inRecords: false } },
+                        {
+                          onSuccess: () =>
+                            toast(`${ex.name} tolto dai record`, {
+                              label: 'Annulla',
+                              run: () => setInRecords.mutate({ id: ex.id, patch: { inRecords: true } }),
+                            }),
+                        },
+                      )
+                    }
+                  >
                     ×
                   </button>
                 </span>
@@ -297,7 +311,24 @@ function Programma() {
                   {saved ? 'Apri' : future ? 'Programma' : 'Registra'}
                 </button>
                 {!fromTrainer && (
-                  <button className="x" onClick={() => removeItem.mutate(p.id)} aria-label={`Togli ${ex.name} da ${dayName}`}>
+                  <button
+                    className="x"
+                    aria-label={`Togli ${ex.name} da ${dayName}`}
+                    onClick={() =>
+                      removeItem.mutate(p.id, {
+                        // annulla: la riga torna com'era, anche nella stessa posizione del giorno
+                        onSuccess: () =>
+                          toast(`${ex.name} tolto da ${dayName}`, {
+                            label: 'Annulla',
+                            run: () =>
+                              apply.mutate({
+                                remove: [],
+                                add: [{ date: p.date, exerciseId: p.exerciseId, sortOrder: p.sortOrder, scheme: p.scheme, note: p.note }],
+                              }),
+                          }),
+                      })
+                    }
+                  >
                     ×
                   </button>
                 )}
@@ -321,7 +352,7 @@ function Programma() {
       </div>
       {extra.length > 0 && (
         <div className="extra">
-          <h4>{future ? 'Fuori programma' : 'Registrato fuori programma'}</h4>
+          <h3 className="h-sub">{future ? 'Fuori programma' : 'Registrato fuori programma'}</h3>
           {extra.map((e) => (
             <EntryItem key={e.id} entry={e} name={byId.get(e.exerciseId)?.name ?? 'Esercizio rimosso'} record={prIds.has(e.id)} onOpen={() => openLogger({ entry: e })} />
           ))}

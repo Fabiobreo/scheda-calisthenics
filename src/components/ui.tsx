@@ -1,5 +1,27 @@
-import { useEffect, useId, useState, type InputHTMLAttributes, type ReactNode, type Ref } from 'react';
+import { createContext, useContext, useEffect, useId, useState, type InputHTMLAttributes, type ReactNode, type Ref } from 'react';
 import { TYPE_LABEL, type ExerciseType } from '../data/types';
+
+/**
+ * Titolo della schermata (audit A02): un `h1` per gli screen reader (la testata mostra già nome dell'app o riepilogo)
+ * e il titolo della scheda del browser, diverso per ogni schermata.
+ */
+export function PageTitle({ title }: { title: string }) {
+  const nested = useContext(Nested);
+  usePageTitle(nested ? null : title);
+  return nested ? null : <h1 className="sr-only">{title}</h1>;
+}
+
+/** Una schermata mostrata dentro un'altra (Livello e Grafici dell'atleta nella vista del trainer): il titolo resta quello di fuori. */
+const Nested = createContext(false);
+export const NestedView = ({ children }: { children: ReactNode }) => <Nested.Provider value>{children}</Nested.Provider>;
+
+/** Solo il titolo della scheda del browser, per le schermate che hanno già un `h1` visibile. */
+export function usePageTitle(title: string | null) {
+  useEffect(() => {
+    if (title === null) return;
+    document.title = title ? `${title} · Scheda Calisthenics` : 'Scheda Calisthenics';
+  }, [title]);
+}
 
 export function Seg<T extends string>({
   value,

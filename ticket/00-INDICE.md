@@ -67,3 +67,51 @@ Ogni file ha la stessa struttura:
    Va bene così (è come si parla in palestra) o vogliamo una regola? (02, 05)
 3. **Trainer**: tutto ciò che è nuovo (livello, record, peso) il trainer lo vede in sola lettura come il resto? (15)
 4. **Il piano "rispetto del piano e notifiche"** deciso il 3 novembre passa dopo questi lavori? (16)
+
+---
+
+# Backlog — Audit di prodotto (9 novembre 2026)
+
+Fonte: [`audit/AUDIT.md`](../audit/AUDIT.md), con le metriche, le soglie e il modo di rifarlo. Punteggio al 9/11:
+**36,7 / 100** (prodotto; **53,7** dopo il ticket 17) e **5,4 / 10** (valutazione da coach). Ogni riga qui sotto è un intervento della lista
+"Cosa migliorerei" dell'audit: la colonna **Voci** dice quali misure dell'audit sposta, **Punti** quanto vale.
+Quando un intervento è fatto si aggiorna la colonna Stato e, a fine blocco, si rifà l'audit e si scrive il nuovo
+punteggio nello storico in fondo ad AUDIT.md.
+
+| # | Intervento | Voci | Punti | Fatica | Ticket | Stato |
+|---|---|---|---:|---|---|---|
+| A01 | Bersagli di tocco ≥ 44 px | B3 | +5 | S | [17](17-audit-rapidi.md) | fatto 9/11 |
+| A02 | Un `h1` e un titolo della pagina per schermata | B2, B5 | +5 | XS | [17](17-audit-rapidi.md) | fatto 9/11 |
+| A03 | "Oggi" in cima alla Home, in Scheda il programma prima dei record | C1 | +5 | M | — | da fare |
+| A04 | Annulla nel toast dopo le × (Archivia e Scollega hanno già la conferma) | C4 | +2 | S | [17](17-audit-rapidi.md) | fatto 9/11 |
+| A05 | Account completo: cambio password ed email, privacy e termini, supporto e versione | E1, E2, E3, E8 | +6 | M | — | da fare |
+| A06 | Vista desktop per il trainer | F1, D6 | +5 | L | — | da fare |
+| A07 | Modalità sessione (prossimo esercizio, recupero automatico, riepilogo) | C3 | +3 | L | — | da fare |
+| A08 | Editor di schede veloce (griglia, aggiunta multipla, duplica giorno) | F2, F3 | +4 | L | — | da fare |
+| A09 | Offline vero (cache persistita e coda dei salvataggi) | A6 | +3 | L | — | da fare |
+| A10 | Invito con il nome del trainer prima del login | C7 | +3 | S | — | da fare |
+| A11 | Testata con un solo avatar | D4 | +2 | XS | [17](17-audit-rapidi.md) | fatto 9/11 |
+| A12 | Code splitting e `robots.txt` | A4, A3 | +2,1 | S | — | da fare |
+| A13 | Scheletri di caricamento | C5 | +2 | S | — | da fare |
+| A14 | Primo accesso guidato | C6 | +2 | M | — | da fare |
+| A15 | Progressione automatica nelle schede modello | F6 | +2 | M | — | da fare |
+| A16 | Etichette dei grafici a 12 px | B4 | +2 | XS | [17](17-audit-rapidi.md) | fatto 9/11 |
+| A17 | Ricerca e gruppi nel catalogo | E7 | +1,5 | S | — | da fare |
+| A18 | Storico del peso con mini-grafico | E10 | +1,5 | S | — | da fare |
+| A19 | Notifiche push | E6 | +1,5 | L | — | da fare |
+| A20 | Accesso con magic link | E9 | +1,5 | S | — | da fare |
+| A21 | Risposta del trainer alla nota della sessione | F5 | +1 | M | — | da fare |
+| A22 | Libreria di schede pronte | F7 | +1 | M | — | da fare |
+| A23 | Pulizia stile (`style={{}}` in classi, regola CSS duplicata) | D2, D3 | +2 | S | — | regola duplicata tolta nel 17 (D3 +1); restano gli `style={{}}` |
+
+### Dalla valutazione da coach (G)
+
+Non spostano il punteggio A–F ma il voto da coach; vanno decisi con l'utente prima del codice (toccano il ticket 05).
+
+| # | Intervento | Area G | Stato |
+|---|---|---|---|
+| C01 | Ritarare la fase base dei fondamentali con le ripetizioni a corpo libero; panca e military facoltativi | Livelli | da decidere |
+| C02 | RPE/RIR per serie, elastico come assistenza, lato sinistro/destro negli unilaterali | Registrazione | da fare |
+| C03 | Superserie/circuiti, riscaldamento e mobilità, scarico, giorni di test | Programmazione | da fare |
+| C04 | Progressioni mancanti nel catalogo (back lever, bandiera, archer, pseudo planche lean, preparazione spalle e polsi…) | Catalogo | da fare |
+| C05 | Video di controllo tecnica allegato alla registrazione; segnale di dolore strutturato | Coach–atleta | da fare |

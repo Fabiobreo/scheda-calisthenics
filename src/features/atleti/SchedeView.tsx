@@ -4,7 +4,7 @@ import { useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { refName, useExercisePicker } from '../../components/ExercisePicker';
 import { SchemeForm } from '../../components/SchemeForm';
-import { ConfirmButton, Field, Select, TypeChip } from '../../components/ui';
+import { ConfirmButton, Field, PageTitle, Select, TypeChip } from '../../components/ui';
 import {
   useAddProgramItems,
   useAssignProgram,
@@ -147,6 +147,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
 
   return (
     <>
+      <PageTitle title={name || 'Scheda modello'} />
       <section className="card">
         <div className="card-h">
           <h2>Scheda</h2>
@@ -235,7 +236,18 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
                 </div>
               </div>
               <div className="pact">
-                <button className="x" onClick={() => removeItems.mutate([i.id])} aria-label={`Togli ${refName(catalog, i)}`}>
+                <button
+                  className="x"
+                  aria-label={`Togli ${refName(catalog, i)}`}
+                  onClick={() =>
+                    removeItems.mutate([i.id], {
+                      onSuccess: () => {
+                        const { id: _gone, ...back } = i;
+                        toast(`${refName(catalog, i)} tolto`, { label: 'Annulla', run: () => addItems.mutate([back]) });
+                      },
+                    })
+                  }
+                >
                   ×
                 </button>
               </div>

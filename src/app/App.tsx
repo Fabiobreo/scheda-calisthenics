@@ -3,7 +3,8 @@ import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, usePa
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { LevelStrip } from '../components/LevelStrip';
 import { IconAtleti, IconEsercizi, IconGrafici, IconLivello, IconScheda } from '../components/icons';
-import { useData, useProfile } from '../data/hooks';
+import { Avatar } from '../components/Avatar';
+import { useData, useLevel, useProfile } from '../data/hooks';
 import { AccountView } from '../features/account/AccountView';
 import { AtletaView, AtletiView } from '../features/atleti/AtletiView';
 import { SchedaModelloView } from '../features/atleti/SchedeView';
@@ -26,13 +27,17 @@ const ATLETI_TAB = { to: '/atleti', label: 'Atleti', icon: <IconAtleti /> };
 /** Sezioni con il riepilogo del livello in alto (ticket 12); altrove (Home, Account, Atleti) resta il nome dell'app. */
 const STRIP_PATHS = ['/scheda', '/grafici', '/esercizi'];
 
-/** Cerchio con l'iniziale del nome (o dell'email): porta ad Account, dove si esce. Lo sostituirà l'avatar (ticket 11–12). */
+/**
+ * Avatar dell'utente in alto a destra: è l'unico elemento d'identità della testata (audit A11) e porta ad Account,
+ * dove si esce. Accanto, nelle sezioni con il riepilogo, ci sono nome e livello: insieme fanno "avatar + livello" (12).
+ */
 function AccountBadge({ email }: { email: string | null }) {
-  const name = useProfile().data?.displayName;
-  const initial = (name || email || '?').trim().charAt(0).toUpperCase();
+  const profile = useProfile().data;
+  const { summary } = useLevel();
+  const name = profile?.displayName;
   return (
     <NavLink to="/account" className={({ isActive }) => `badge${isActive ? ' on' : ''}`} aria-label="Account" title={name || email || 'Account'}>
-      {initial}
+      <Avatar name={name || email} avatar={summary.avatar} elite={summary.zone === 'elite'} small body={profile?.avatarBody} />
     </NavLink>
   );
 }

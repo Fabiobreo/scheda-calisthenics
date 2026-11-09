@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
-import { ConfirmButton, Field, Seg, Select } from '../../components/ui';
+import { ConfirmButton, Field, PageTitle, Seg, Select } from '../../components/ui';
 import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useTrainerLock, useUpdateExercise } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
 import { CATEGORY_LABEL, MEASURE_LABEL, MEASURES, type CatalogExercise, type Exercise, type Measure } from '../../data/types';
@@ -100,158 +100,161 @@ export function EserciziView() {
 
 
   return (
-    <section className="card">
-      <div className="card-h">
-        <h2>Esercizi</h2>
-        <button className="btn small" onClick={() => setForm(blank(free[0]))}>
-          + Aggiungi
-        </button>
-      </div>
-      <p className="sub">
-        Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi
-        nel programma, giorno per giorno.
-      </p>
-
-      {form && (
-        <div className="form" id="xform">
-          {!form.id && (
-            <Seg
-              label="Da dove"
-              value={form.source}
-              options={[
-                { v: 'catalog', l: 'Dal catalogo' },
-                { v: 'custom', l: 'Personalizzato' },
-              ]}
-              onChange={(source) => patch({ source })}
-            />
-          )}
-          {form.source === 'catalog' ? (
-            editing ? (
-              <p className="pname">
-                {editing.name} <span className="chip mut">Dal catalogo</span>
-                {editing.measure === 'time' && <span className="chip mut">A tempo</span>}
-              </p>
-            ) : free.length ? (
-              <>
-                <Select
-                  label="Esercizio"
-                  value={form.catalogId}
-                  options={free.map((c) => ({ v: c.id, l: c.name, group: CATEGORY_LABEL[c.category] }))}
-                  onChange={pickCatalog}
-                />
-                <p className="hint">
-                  {pickedCatalog?.measure === 'time' && 'Si misura in secondi di tenuta. '}Non c'è quello che cerchi? Crealo personalizzato.
-                </p>
-              </>
-            ) : (
-              <p className="hint">Hai già tutti gli esercizi del catalogo. Per altri movimenti scegli "Personalizzato".</p>
-            )
-          ) : (
-            <>
-              <Field
-                label="Nome"
-                value={form.name}
-                autoComplete="off"
-                autoFocus
-                maxLength={80}
-                hint={form.id ? undefined : 'Solo per movimenti che non sono nel catalogo.'}
-                onChange={(e) => patch({ name: e.target.value })}
-              />
-              <div className="fld">
-                <span>Si misura in</span>
-                {measureLocked ? (
-                  <>
-                    <p className="pname">{MEASURE_LABEL[form.measure]}</p>
-                    <span className="fld-hint">Ha già delle registrazioni: la misura non si cambia più, così storico e grafici restano coerenti.</span>
-                  </>
-                ) : (
-                  <>
-                    <Seg label="Si misura in" value={form.measure} options={MEASURES.map((m) => ({ v: m, l: MEASURE_LABEL[m] }))} onChange={(measure) => patch({ measure })} />
-                    <span className="fld-hint">Secondi per le tenute (plank, L-sit, verticale…). Dopo la prima registrazione non si cambia più.</span>
-                  </>
-                )}
-              </div>
-            </>
-          )}
-          <label className="check-row">
-            <input type="checkbox" checked={form.inRecords} onChange={(e) => patch({ inRecords: e.target.checked })} />
-            Mostra nei record personali
-          </label>
-          <div className="row">
-            <button className="btn" onClick={save} disabled={form.source === 'catalog' && !form.id && !free.length}>
-              {form.id ? 'Salva modifiche' : 'Aggiungi esercizio'}
-            </button>
-            <button className="btn ghost" onClick={() => setForm(null)}>
-              Annulla
-            </button>
-          </div>
+    <>
+      <PageTitle title="Esercizi" />
+      <section className="card">
+        <div className="card-h">
+          <h2>Esercizi</h2>
+          <button className="btn small" onClick={() => setForm(blank(free[0]))}>
+            + Aggiungi
+          </button>
         </div>
-      )}
+        <p className="sub">
+          Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi
+          nel programma, giorno per giorno.
+        </p>
 
-      {!active.length && !form && <p className="empty">Non hai ancora esercizi. Aggiungili dal catalogo.</p>}
-      {active.map((e) => (
-        <div className="entry" key={e.id}>
-          <div>
-            <b>{e.name}</b>
-            <div className="chips">
-              {!e.catalogId && <span className="chip mut">Personalizzato</span>}
-              {e.measure === 'time' && <span className="chip mut">A tempo</span>}
-              {e.inRecords && <span className="chip mut">Nei record</span>}
+        {form && (
+          <div className="form" id="xform">
+            {!form.id && (
+              <Seg
+                label="Da dove"
+                value={form.source}
+                options={[
+                  { v: 'catalog', l: 'Dal catalogo' },
+                  { v: 'custom', l: 'Personalizzato' },
+                ]}
+                onChange={(source) => patch({ source })}
+              />
+            )}
+            {form.source === 'catalog' ? (
+              editing ? (
+                <p className="pname">
+                  {editing.name} <span className="chip mut">Dal catalogo</span>
+                  {editing.measure === 'time' && <span className="chip mut">A tempo</span>}
+                </p>
+              ) : free.length ? (
+                <>
+                  <Select
+                    label="Esercizio"
+                    value={form.catalogId}
+                    options={free.map((c) => ({ v: c.id, l: c.name, group: CATEGORY_LABEL[c.category] }))}
+                    onChange={pickCatalog}
+                  />
+                  <p className="hint">
+                    {pickedCatalog?.measure === 'time' && 'Si misura in secondi di tenuta. '}Non c'è quello che cerchi? Crealo personalizzato.
+                  </p>
+                </>
+              ) : (
+                <p className="hint">Hai già tutti gli esercizi del catalogo. Per altri movimenti scegli "Personalizzato".</p>
+              )
+            ) : (
+              <>
+                <Field
+                  label="Nome"
+                  value={form.name}
+                  autoComplete="off"
+                  autoFocus
+                  maxLength={80}
+                  hint={form.id ? undefined : 'Solo per movimenti che non sono nel catalogo.'}
+                  onChange={(e) => patch({ name: e.target.value })}
+                />
+                <div className="fld">
+                  <span>Si misura in</span>
+                  {measureLocked ? (
+                    <>
+                      <p className="pname">{MEASURE_LABEL[form.measure]}</p>
+                      <span className="fld-hint">Ha già delle registrazioni: la misura non si cambia più, così storico e grafici restano coerenti.</span>
+                    </>
+                  ) : (
+                    <>
+                      <Seg label="Si misura in" value={form.measure} options={MEASURES.map((m) => ({ v: m, l: MEASURE_LABEL[m] }))} onChange={(measure) => patch({ measure })} />
+                      <span className="fld-hint">Secondi per le tenute (plank, L-sit, verticale…). Dopo la prima registrazione non si cambia più.</span>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+            <label className="check-row">
+              <input type="checkbox" checked={form.inRecords} onChange={(e) => patch({ inRecords: e.target.checked })} />
+              Mostra nei record personali
+            </label>
+            <div className="row">
+              <button className="btn" onClick={save} disabled={form.source === 'catalog' && !form.id && !free.length}>
+                {form.id ? 'Salva modifiche' : 'Aggiungi esercizio'}
+              </button>
+              <button className="btn ghost" onClick={() => setForm(null)}>
+                Annulla
+              </button>
             </div>
           </div>
-          <div className="pact col">
-            <button
-              className="btn small ghost"
-              onClick={() => {
-                setForm(toForm(e));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            >
-              Modifica
-            </button>
-            <ConfirmButton
-              confirmLabel="Archivia?"
-              onConfirm={() =>
-                // il trainer lo ha in programma nei prossimi giorni: archiviarlo lo nasconderebbe senza toglierlo
-                plan.some((p) => p.exerciseId === e.id && p.date >= todayStr() && locked(p))
-                  ? toast(`"${e.name}" è nel programma del tuo trainer: chiedigli di toglierlo prima di archiviarlo`)
-                  : archive.mutate({ id: e.id, archived: true })
-              }
-            >
-              Archivia
-            </ConfirmButton>
-          </div>
-        </div>
-      ))}
-      {active.length > 0 && <p className="hint" style={{ marginTop: 12 }}>Archiviare toglie l'esercizio da programma e liste, ma conserva lo storico e i grafici. Quelli che il tuo trainer ha in programma li toglie lui.</p>}
+        )}
 
-      {archived.length > 0 && (
-        <>
-          <div className="row" style={{ marginTop: 16 }}>
-            <button className="btn small ghost" onClick={() => setShowArchived(!showArchived)}>
-              {showArchived ? 'Nascondi archiviati' : `Archiviati (${archived.length})`}
-            </button>
+        {!active.length && !form && <p className="empty">Non hai ancora esercizi. Aggiungili dal catalogo.</p>}
+        {active.map((e) => (
+          <div className="entry" key={e.id}>
+            <div>
+              <b>{e.name}</b>
+              <div className="chips">
+                {!e.catalogId && <span className="chip mut">Personalizzato</span>}
+                {e.measure === 'time' && <span className="chip mut">A tempo</span>}
+                {e.inRecords && <span className="chip mut">Nei record</span>}
+              </div>
+            </div>
+            <div className="pact col">
+              <button
+                className="btn small ghost"
+                onClick={() => {
+                  setForm(toForm(e));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              >
+                Modifica
+              </button>
+              <ConfirmButton
+                confirmLabel="Archivia?"
+                onConfirm={() =>
+                  // il trainer lo ha in programma nei prossimi giorni: archiviarlo lo nasconderebbe senza toglierlo
+                  plan.some((p) => p.exerciseId === e.id && p.date >= todayStr() && locked(p))
+                    ? toast(`"${e.name}" è nel programma del tuo trainer: chiedigli di toglierlo prima di archiviarlo`)
+                    : archive.mutate({ id: e.id, archived: true })
+                }
+              >
+                Archivia
+              </ConfirmButton>
+            </div>
           </div>
-          {showArchived &&
-            archived.map((e) => {
-              const n = count(e.id);
-              return (
-                <div className="entry" key={e.id}>
-                  <div>
-                    <b>{e.name}</b>
-                    <div className="pmeta">{n ? `${n} registrazioni nello storico` : 'Nessuna registrazione'}</div>
+        ))}
+        {active.length > 0 && <p className="hint" style={{ marginTop: 12 }}>Archiviare toglie l'esercizio da programma e liste, ma conserva lo storico e i grafici. Quelli che il tuo trainer ha in programma li toglie lui.</p>}
+
+        {archived.length > 0 && (
+          <>
+            <div className="row" style={{ marginTop: 16 }}>
+              <button className="btn small ghost" onClick={() => setShowArchived(!showArchived)}>
+                {showArchived ? 'Nascondi archiviati' : `Archiviati (${archived.length})`}
+              </button>
+            </div>
+            {showArchived &&
+              archived.map((e) => {
+                const n = count(e.id);
+                return (
+                  <div className="entry" key={e.id}>
+                    <div>
+                      <b>{e.name}</b>
+                      <div className="pmeta">{n ? `${n} registrazioni nello storico` : 'Nessuna registrazione'}</div>
+                    </div>
+                    <div className="pact col">
+                      <button className="btn small ghost" onClick={() => archive.mutate({ id: e.id, archived: false })}>
+                        Ripristina
+                      </button>
+                      <ConfirmButton confirmLabel={n ? `Elimina anche ${n} reg.` : 'Conferma'} onConfirm={() => del.mutate(e.id)} />
+                    </div>
                   </div>
-                  <div className="pact col">
-                    <button className="btn small ghost" onClick={() => archive.mutate({ id: e.id, archived: false })}>
-                      Ripristina
-                    </button>
-                    <ConfirmButton confirmLabel={n ? `Elimina anche ${n} reg.` : 'Conferma'} onConfirm={() => del.mutate(e.id)} />
-                  </div>
-                </div>
-              );
-            })}
-        </>
-      )}
-    </section>
+                );
+              })}
+          </>
+        )}
+      </section>
+    </>
   );
 }

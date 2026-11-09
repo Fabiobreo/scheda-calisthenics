@@ -1,12 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useLevel, useProfile } from '../data/hooks';
 import { AXES } from '../features/home/levelView';
-import { Avatar } from './Avatar';
 import { Pentagon } from './Pentagon';
 
 /**
- * Riepilogo compatto (ticket 12): avatar, nome, livello e mini-pentagono in cima a Scheda, Grafici ed Esercizi.
- * Porta alla Home. Usa la stessa cache della Home (nessuna richiesta in più); l'altezza è fissa, quindi il contenuto
+ * Riepilogo compatto (ticket 12): nome, livello e mini-pentagono in cima a Scheda, Grafici ed Esercizi; l'avatar è
+ * quello accanto, che porta ad Account (audit A11: un solo avatar in testata). Porta alla Home. Usa la stessa cache della Home (nessuna richiesta in più); l'altezza è fissa, quindi il contenuto
  * non si sposta quando i dati arrivano.
  */
 export function LevelStrip() {
@@ -18,7 +17,6 @@ export function LevelStrip() {
   const label = isLoading ? 'Livello' : `Livello ${summary.level}${elite ? ' ELITE' : ''}`;
   return (
     <Link className="strip" to="/" aria-label={`${label}: apri la Home`}>
-      <Avatar name={name} avatar={summary.avatar} elite={elite} small body={profile?.avatarBody} />
       <span className="strip-txt">
         <span className="strip-name">{name || 'Il tuo livello'}</span>
         <span className="strip-level">

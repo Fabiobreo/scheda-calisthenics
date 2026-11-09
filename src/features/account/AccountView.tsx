@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRepo, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { Avatar } from '../../components/Avatar';
-import { Field, Seg } from '../../components/ui';
+import { Field, PageTitle, Seg } from '../../components/ui';
 import { useData, useDeleteAccount, useLevel, useProfile, useUpdateProfile } from '../../data/hooks';
 import { AVATAR_BODIES } from '../../lib/avatarFigure';
 import { todayStr } from '../../lib/dates';
@@ -16,6 +16,7 @@ const CONFIRM_WORD = 'ELIMINA';
 export function AccountView({ inviteCode }: { inviteCode?: string }) {
   return (
     <>
+      <PageTitle title={inviteCode ? 'Invito del trainer' : 'Account'} />
       {/* arrivando da un invito la cosa da fare è collegarsi: va in cima */}
       {inviteCode && <MyTrainerCard inviteCode={inviteCode} />}
       <ProfileCard />
