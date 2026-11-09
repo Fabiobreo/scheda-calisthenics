@@ -21,6 +21,7 @@ import { byCategory, defaultType } from '../../lib/catalog';
 import { addDays, inWeek, longDate, mondayOf, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
 import { fmt, fmtScheme, fmtSets } from '../../lib/format';
 import { byDay, copyWeek, dayCount, offPlan, weekItems, type CopyMode } from '../../lib/plan';
+import { adherenceText, movedText, summarizeStatuses, weekStatuses } from '../../lib/adherence';
 import { lastTraining, personalBest, recordEntryIds, suggestScheme } from '../../lib/stats';
 import { useLogger } from '../logger/Logger';
 
@@ -173,6 +174,9 @@ function Programma() {
   const extra = offPlan(entries, visible, date);
   const prIds = recordEntryIds(done);
   const weekCount = visible.filter((p) => inWeek(p.date, monday)).length;
+  // rispetto del piano della settimana mostrata (ticket 16): uno spostato nella settimana conta come fatto
+  const statuses = weekStatuses(visible, entries, monday, today);
+  const weekAdh = summarizeStatuses(statuses.values());
   // si aggiunge uno dei propri esercizi, oppure una voce del catalogo che diventa un esercizio al volo
   const avail = active.filter((e) => !items.some((p) => p.exerciseId === e.id));
   const activeCatalog = new Set(active.map((e) => e.catalogId));
@@ -225,6 +229,11 @@ function Programma() {
           }
         }}
       />
+      {weekAdh.pct !== null && (
+        <p className="adh">
+          {monday === thisMonday ? 'Questa settimana' : 'Settimana'}: <b>{adherenceText(weekAdh)}</b> del programma
+        </p>
+      )}
       <h3 style={{ fontSize: 22, marginTop: 18 }}>{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
 
       <div className="plan">
@@ -236,6 +245,7 @@ function Programma() {
           const saved = entries.find((e) => e.exerciseId === ex.id && e.kind === 'training' && e.date === date);
           const last = lastTraining(done, ex.id);
           const fromTrainer = locked(p);
+          const st = statuses.get(p.id);
           return (
             <div className="pitem" key={p.id}>
               <div>
@@ -256,6 +266,10 @@ function Programma() {
                     </div>
                     {saved.note && <div className="pmeta">La tua nota: {saved.note}</div>}
                   </>
+                ) : st?.kind === 'moved' ? (
+                  <div className="pmeta">
+                    {movedText(st.entry.date)} · {fmtSets(st.entry.sets)}
+                  </div>
                 ) : (
                   last && (
                     <div className="pmeta">

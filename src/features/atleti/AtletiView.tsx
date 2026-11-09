@@ -14,6 +14,7 @@ import {
   useData,
   useEndLink,
   useLevel,
+  useLevelRecords,
   useLinks,
   useRemovePlanItem,
   useSetPlanNote,
@@ -25,6 +26,8 @@ import { fmtScheme, fmtSets } from '../../lib/format';
 import { blankScheme, recordEntryIds, suggestType } from '../../lib/stats';
 import { defaultType } from '../../lib/catalog';
 import { byDay, dayCount, offPlan } from '../../lib/plan';
+import { adherence, adherenceText, athleteAlerts, lastTrainingDate, movedText, summarizeStatuses, weekStatuses, type Alert } from '../../lib/adherence';
+import { subRule } from '../../lib/levels';
 import { GraficiView } from '../grafici/GraficiView';
 import { HomeView } from '../home/HomeView';
 import { SchedeCard } from './SchedeView';
@@ -41,6 +44,20 @@ export function AtletiView() {
 
   return (
     <>
+      {athletes.length > 0 && (
+        <section className="card">
+          <h2>Da guardare</h2>
+          <p className="sub">Chi è fermo, chi è indietro col programma, a chi manca la settimana prossima e chi ha fatto un record.</p>
+          <ul className="alerts">
+            {athletes.map((l) => (
+              <AthleteScope key={l.id} athleteId={l.athleteId}>
+                <AthleteAlerts athleteId={l.athleteId} name={nameOf(l.athleteName)} />
+              </AthleteScope>
+            ))}
+          </ul>
+          <p className="alerts-none">Tutto in ordine: nessun avviso.</p>
+        </section>
+      )}
       <section className="card">
         <h2>Atleti</h2>
         <p className="sub">Gli atleti che segui: programmi i loro giorni, vedi storico, note, grafici e livello. I loro dati restano loro.</p>
@@ -79,7 +96,11 @@ export function AtletiView() {
  */
 function AthleteHead({ name, since }: { name: string | null; since: string }) {
   const { summary, records, isLoading, error } = useLevel();
+  const data = useData();
   const elite = summary.zone === 'elite';
+  const today = todayStr();
+  const adh = adherence(data.plan, data.entries, today);
+  const last = lastTrainingDate(data.entries, today);
   return (
     <div className="ath">
       <Avatar name={name} avatar={summary.avatar} elite={elite} small />
@@ -99,9 +120,53 @@ function AthleteHead({ name, since }: { name: string | null; since: string }) {
             </>
           )}
         </div>
+        {!data.isLoading && !data.error && (
+          <div className="pmeta">
+            Piano, 4 sett.: {adherenceText(adh)} · {last ? `ultimo allenamento ${shortDate(last)}` : 'nessun allenamento'}
+          </div>
+        )}
         <div className="pmeta">Collegato dal {shortDate(since)}</div>
       </div>
     </div>
+  );
+}
+
+const ALERT_ICON: Record<Alert['kind'], string> = { inactive: '!', 'low-week': '↓', 'no-plan': '…', record: '★' };
+
+/**
+ * Avvisi su un atleta per il riquadro "Da guardare" (dentro il suo `AthleteScope`). Mentre carica lascia un elemento
+ * nascosto, così il riquadro non dice "Tutto in ordine" prima del tempo.
+ */
+function AthleteAlerts({ athleteId, name }: { athleteId: string; name: string }) {
+  const data = useData();
+  const lr = useLevelRecords();
+  if (data.isLoading || lr.isLoading) return <li hidden />;
+  if (data.error || lr.error)
+    return (
+      <li className="alert">
+        <Link to={`/atleti/${athleteId}`}>{name}</Link>
+        <span className="alert-t">Non riesco a leggere i suoi dati.</span>
+      </li>
+    );
+  const byId = new Map(data.exercises.map((e) => [e.id, e.name]));
+  const alerts = athleteAlerts({
+    plan: data.plan,
+    entries: data.entries,
+    levelRecords: lr.data ?? [],
+    today: todayStr(),
+    nameOf: (id) => byId.get(id),
+    subName: (id) => subRule(id)?.name,
+  });
+  if (!alerts.length) return null;
+  return (
+    <li className="alert">
+      <Link to={`/atleti/${athleteId}`}>{name}</Link>
+      {alerts.map((a) => (
+        <span key={a.kind} className={`alert-t ${a.kind}`}>
+          <i aria-hidden="true">{ALERT_ICON[a.kind]}</i> {a.text}
+        </span>
+      ))}
+    </li>
   );
 }
 
@@ -196,6 +261,9 @@ function AthletePlan() {
   const extra = offPlan(entries, visible, date);
   const prIds = recordEntryIds(done);
   const title = longDate(date);
+  // rispetto del piano della settimana mostrata (ticket 16)
+  const statuses = weekStatuses(visible, entries, monday, today);
+  const weekAdh = summarizeStatuses(statuses.values());
   // gli esercizi già nel giorno non si propongono di nuovo
   const inDay = items.map((p) => byId.get(p.exerciseId)).filter((e) => e !== undefined);
   const picker = useExercisePicker(catalog, (r) =>
@@ -227,6 +295,11 @@ function AthletePlan() {
     <section className="card">
       <h2>Programma</h2>
       <WeekDays monday={monday} day={day} count={(dt) => dayCount(entries, visible, dt)} onChange={go} />
+      {weekAdh.pct !== null && (
+        <p className="adh">
+          {monday === thisMonday ? 'Questa settimana' : 'Settimana'}: <b>{adherenceText(weekAdh)}</b> del programma
+        </p>
+      )}
       <h3 style={{ fontSize: 22, marginTop: 18 }}>{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
       <div className="plan">
         {items.length === 0 && !extra.length && <p className="empty">Niente in programma.</p>}
@@ -235,6 +308,7 @@ function AthletePlan() {
           const sc = p.scheme;
           const mine = p.assignedBy === myId;
           const saved = entries.find((e) => e.exerciseId === ex.id && e.kind === 'training' && e.date === date);
+          const st = statuses.get(p.id);
           return (
             <div className="pitem" key={p.id}>
               <div>
@@ -248,7 +322,13 @@ function AthletePlan() {
                   )}
                 </div>
                 <div className="pmeta">
-                  {saved ? `${saved.date > today ? 'Programmato' : 'Fatto'}: ${fmtSets(saved.sets)}` : date < today ? 'Non registrato' : 'Da fare'}
+                  {saved
+                    ? `${saved.date > today ? 'Programmato' : 'Fatto'}: ${fmtSets(saved.sets)}`
+                    : st?.kind === 'moved'
+                      ? `${movedText(st.entry.date)} · ${fmtSets(st.entry.sets)}`
+                      : date < today
+                        ? 'Non registrato'
+                        : 'Da fare'}
                   {saved?.difficulty && ` · ${DIFFICULTY_LABEL[saved.difficulty]}`}
                 </div>
                 {saved?.note && <div className="pmeta">Nota dell'atleta: {saved.note}</div>}
