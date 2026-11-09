@@ -119,7 +119,7 @@ a.link { text-decoration: none; }
 .link { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; background: none; border: 0; padding: 0; margin: -8px 0; color: var(--accent); font-weight: 600; font-size: 15px; }
 .link:disabled { color: var(--muted); cursor: not-allowed; }
 /* dentro un testo: area di tocco più alta, la riga non cambia */
-main p a { padding: 13px 4px; margin: 0 -4px; }
+main p a { padding: 14px 4px; margin: 0 -4px; }
 .alert a { align-self: flex-start; padding: 12px 0; margin: -12px 0; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .row .push { margin-left: auto; }
@@ -177,10 +177,10 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .days { display: grid; grid-template-columns: repeat(7, minmax(44px, 1fr)); gap: 3px; margin: 14px -12px 0; }
 @media (min-width: 480px) { .days { gap: 6px; margin-inline: 0; } }
 .day { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 8px 0 7px; color: var(--muted); font-weight: 600; font-size: 15px; text-align: center; min-width: 0; }
-.day i { display: block; font-style: normal; font-family: var(--f-display); font-size: 20px; line-height: 1.1; color: var(--fg); font-variant-numeric: tabular-nums; }
+.day > i { display: block; font-style: normal; font-family: var(--f-display); font-size: 20px; line-height: 1.1; color: var(--fg); font-variant-numeric: tabular-nums; }
 .day.on { border-color: var(--accent); background: var(--surface2); color: var(--fg); box-shadow: var(--glow); }
-.day.today span::after { content: ' •'; color: var(--accent); }
-.day small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+.day.today > span:first-child::after { content: ' •'; color: var(--accent); }
+.day > small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
 .weeknav { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-top: 14px; }
 .weeknav-t { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
 .weeknav-t b { font-family: var(--f-display); font-size: 20px; font-weight: 700; }
@@ -589,3 +589,48 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .span-all { grid-column: 1 / -1; }
 .day-title { font-size: 22px; margin-top: 18px; }
 .copy-title { font-size: 20px; }
+
+/* Schermo largo (audit A06): barra laterale al posto di quella in basso, pagine a due colonne.
+   Sul telefono .cols, .col e .masonry non esistono (display: contents): le schede restano in fila come prima. */
+.cols, .cols > .col, .masonry, .flat { display: contents; }
+.only-wide { display: none; }
+.board-list { margin: 6px 0 0; display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.b-item { font-size: 12px; font-weight: 500; color: var(--fg); line-height: 1.25; display: flex; gap: 5px; align-items: baseline; min-width: 0; }
+.b-item > span { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; hyphens: auto; }
+.b-item i { font-style: normal; flex: none; width: 1em; text-align: center; color: var(--muted); }
+.b-item.done i, .b-item.moved i { color: var(--ok); }
+.b-item.missed i { color: var(--danger); }
+.b-item.missed span { color: var(--muted); }
+.board-empty { display: block; font-size: 13px; color: var(--muted); margin-top: 6px; text-align: left; }
+@media (min-width: 1024px) {
+  :root { --tabbar: 0px; --side: 232px; }
+  body { padding-left: calc(var(--side) + 32px); padding-right: 32px; }
+  .wrap { max-width: 1180px; }
+  .tabbar {
+    top: 0; right: auto; width: var(--side); border-top: 0; border-right: 1px solid var(--line);
+    padding: calc(24px + env(safe-area-inset-top, 0px)) 14px 24px;
+  }
+  .tabbar-in { flex-direction: column; max-width: none; gap: 4px; }
+  .tabbar a { flex: none; flex-direction: row; justify-content: flex-start; gap: 12px; padding: 0 14px; min-height: 48px; font-size: 16px; letter-spacing: .01em; }
+  .tabbar a.on { background: var(--surface2); }
+  .tabbar a.on::before { top: 10px; bottom: 10px; left: 0; right: auto; width: 3px; height: auto; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .cols.even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cols > .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  /* elenco stretto a sinistra, dettaglio largo a destra */
+  .cols.master { grid-template-columns: 280px minmax(0, 1fr); }
+  .entry.on { box-shadow: inset 3px 0 0 var(--accent); padding-left: 12px; }
+  .masonry { display: block; columns: 2; column-gap: 20px; }
+  .masonry > * { break-inside: avoid; margin-bottom: 16px; }
+  .only-wide { display: block; }
+  .only-narrow { display: none; }
+  /* settimana a 7 colonne con gli esercizi di ogni giorno (vista del trainer) */
+  .days.board { margin-inline: 0; gap: 6px; }
+  .days.board .day { min-height: 150px; padding: 10px 6px; display: flex; flex-direction: column; align-items: stretch; text-align: left; }
+  .days.board .day > span, .days.board .day > i { text-align: center; }
+}
+@media (min-width: 1024px) {
+  /* esercizi su due colonne nella scheda larga */
+  .ex-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+  .ex-list .entry:last-child { border-bottom: 1px solid var(--line); }
+}

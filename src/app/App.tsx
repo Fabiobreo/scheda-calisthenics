@@ -15,7 +15,7 @@ import { usePasswordRecovery, useSession } from './session';
 // scarica mai la parte trainer, chi è già dentro non scarica l'accesso. Il service worker li tiene comunque in cache.
 const AccountView = lazy(() => import('../features/account/AccountView').then((m) => ({ default: m.AccountView })));
 const AtletiView = lazy(() => import('../features/atleti/AtletiView').then((m) => ({ default: m.AtletiView })));
-const AtletaView = lazy(() => import('../features/atleti/AtletiView').then((m) => ({ default: m.AtletaView })));
+const AtletaPage = lazy(() => import('../features/atleti/AtletiView').then((m) => ({ default: m.AtletaPage })));
 const SchedaModelloView = lazy(() => import('../features/atleti/SchedeView').then((m) => ({ default: m.SchedaModelloView })));
 const AuthScreen = lazy(() => import('../features/auth/AuthScreen').then((m) => ({ default: m.AuthScreen })));
 const NewPasswordScreen = lazy(() => import('../features/auth/AuthScreen').then((m) => ({ default: m.NewPasswordScreen })));
@@ -145,8 +145,13 @@ function Main() {
       <nav className="tabbar" aria-label="Sezioni">
         <div className="tabbar-in">
           {tabs.map((t) => (
-            // "Atleti" resta acceso anche sulla pagina di un atleta
-            <NavLink key={t.to} to={t.to} end={t.to !== '/atleti'} className={({ isActive }) => (isActive ? 'on' : '')}>
+            // "Atleti" resta acceso anche sulla pagina di un atleta e nelle schede modello
+            <NavLink
+              key={t.to}
+              to={t.to}
+              end={t.to !== '/atleti'}
+              className={({ isActive }) => (isActive || (t.to === '/atleti' && location.pathname.startsWith('/schede/')) ? 'on' : '')}
+            >
               {t.icon}
               <span>{t.label}</span>
             </NavLink>
@@ -170,7 +175,7 @@ function Main() {
               <Route path="/account" element={<AccountView />} />
               <Route path="/invito/:code" element={<InviteRoute />} />
               <Route path="/atleti" element={<AtletiView />} />
-              <Route path="/atleti/:athleteId" element={<AtletaView />} />
+              <Route path="/atleti/:athleteId" element={<AtletaPage />} />
               <Route path="/schede/:programId" element={<SchedaModelloView />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

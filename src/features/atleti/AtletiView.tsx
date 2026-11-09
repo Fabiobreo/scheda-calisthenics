@@ -7,7 +7,7 @@ import { useExercisePicker } from '../../components/ExercisePicker';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
-import { ConfirmButton, NestedView, PageTitle, Seg, Skeleton, TypeChip } from '../../components/ui';
+import { ConfirmButton, NestedView, PageTitle, Seg, Skeleton, TypeChip, useWide } from '../../components/ui';
 import {
   useCatalog,
   useCoachAddPlanItem,
@@ -36,16 +36,70 @@ import { SchedeCard } from './SchedeView';
 const nameOf = (n: string | null) => n ?? 'Atleta senza nome';
 
 /** Gli atleti che il trainer segue. */
-export function AtletiView() {
+/** Atleti seguiti dal trainer collegato (solo i collegamenti attivi in cui è trainer). */
+function useMyAthletes() {
   const session = useSession();
   const myId = session.status === 'ready' ? session.userId : '';
   const links = useLinks();
-  const end = useEndLink('Atleta scollegato');
-  const athletes = links.data?.filter((l) => l.trainerId === myId) ?? [];
+  return { links, athletes: links.data?.filter((l) => l.trainerId === myId) ?? [] };
+}
 
+/**
+ * Pagina Atleti. Sul telefono: avvisi, elenco, schede in fila. Su schermo largo (audit A06): elenco e schede a
+ * sinistra, "Da guardare" a destra.
+ */
+export function AtletiView() {
+  const wide = useWide();
   return (
     <>
       <PageTitle title="Atleti" />
+      {wide ? (
+        <div className="cols">
+          <div className="col">
+            <AthletesCard />
+            <SchedeCard />
+          </div>
+          <div className="col">
+            <AlertsCard />
+          </div>
+        </div>
+      ) : (
+        <>
+          <AlertsCard />
+          <AthletesCard />
+          <SchedeCard />
+        </>
+      )}
+    </>
+  );
+}
+
+/**
+ * Pagina di un atleta. Su schermo largo l'elenco degli atleti resta a sinistra (si passa dall'uno all'altro senza
+ * tornare indietro) e l'atleta occupa la colonna larga; sul telefono c'è solo l'atleta.
+ */
+export function AtletaPage() {
+  const { athleteId = '' } = useParams();
+  const wide = useWide();
+  if (!wide) return <AtletaView />;
+  return (
+    <div className="cols master">
+      <div className="col">
+        <NestedView>
+          <AthletesCard selected={athleteId} />
+        </NestedView>
+      </div>
+      <div className="col">
+        <AtletaView />
+      </div>
+    </div>
+  );
+}
+
+function AlertsCard() {
+  const { athletes } = useMyAthletes();
+  return (
+    <>
       {athletes.length > 0 && (
         <section className="card">
           <h2>Da guardare</h2>
@@ -60,35 +114,46 @@ export function AtletiView() {
           <p className="alerts-none">Tutto in ordine: nessun avviso.</p>
         </section>
       )}
-      <section className="card">
-        <h2>Atleti</h2>
-        <p className="sub">Gli atleti che segui: programmi i loro giorni, vedi storico, note, grafici e livello. I loro dati restano loro.</p>
-        {links.isLoading ? (
-          <Skeleton inline />
-        ) : !athletes.length ? (
-          <p className="empty">
-            Nessun atleta. Manda il tuo link d'invito da <Link to="/account">Account</Link>.
-          </p>
-        ) : (
-          athletes.map((l) => (
-            <div className="entry" key={l.id}>
-              <AthleteScope athleteId={l.athleteId}>
-                <AthleteHead name={l.athleteName} since={l.createdAt.slice(0, 10)} />
-              </AthleteScope>
+    </>
+  );
+}
+
+function AthletesCard({ selected }: { selected?: string }) {
+  const { links, athletes } = useMyAthletes();
+  const end = useEndLink('Atleta scollegato');
+  return (
+    <section className="card">
+      <h2>Atleti</h2>
+      <p className="sub">Gli atleti che segui: programmi i loro giorni, vedi storico, note, grafici e livello. I loro dati restano loro.</p>
+      {links.isLoading ? (
+        <Skeleton inline />
+      ) : !athletes.length ? (
+        <p className="empty">
+          Nessun atleta. Manda il tuo link d'invito da <Link to="/account">Account</Link>.
+        </p>
+      ) : (
+        athletes.map((l) => (
+          <div className={`entry${l.athleteId === selected ? ' on' : ''}`} key={l.id}>
+            <AthleteScope athleteId={l.athleteId}>
+              <AthleteHead name={l.athleteName} since={l.createdAt.slice(0, 10)} />
+            </AthleteScope>
+            {/* con un atleta aperto (schermo largo) l'elenco serve a passare dall'uno all'altro: "Scollega" resta nella pagina Atleti */}
+            {l.athleteId !== selected && (
               <div className="pact col">
-                <Link className="btn small" to={`/atleti/${l.athleteId}`}>
+                <Link className={`btn small${selected ? ' ghost' : ''}`} to={`/atleti/${l.athleteId}`}>
                   Apri
                 </Link>
-                <ConfirmButton confirmLabel="Scollegare?" onConfirm={() => end.mutate(l.id)}>
-                  Scollega
-                </ConfirmButton>
+                {!selected && (
+                  <ConfirmButton confirmLabel="Scollegare?" onConfirm={() => end.mutate(l.id)}>
+                    Scollega
+                  </ConfirmButton>
+                )}
               </div>
-            </div>
-          ))
-        )}
-      </section>
-      <SchedeCard />
-    </>
+            )}
+          </div>
+        ))
+      )}
+    </section>
   );
 }
 
@@ -202,7 +267,8 @@ export function AtletaView() {
       <section className="card">
         <div className="card-h">
           <h2>{nameOf(link.athleteName)}</h2>
-          <Link className="link small" to="/atleti">
+          {/* su schermo largo l'elenco degli atleti è già a sinistra */}
+          <Link className="link small only-narrow" to="/atleti">
             ‹ Atleti
           </Link>
         </div>
@@ -252,6 +318,7 @@ function AthleteData({ tab }: { tab: Tab }) {
  * Il trainer aggiunge esercizi ai giorni e ritocca le righe sue; quelle dell'atleta le vede soltanto.
  */
 function AthletePlan() {
+  const wide = useWide();
   const { exercises, entries, done, plan } = useData();
   const session = useSession();
   const myId = session.status === 'ready' ? session.userId : '';
@@ -306,10 +373,35 @@ function AthletePlan() {
     setAdding(false);
   };
 
+  // su schermo largo la settimana intera, giorno per giorno, con lo stato di ogni esercizio (audit A06)
+  const board = (dt: string) => {
+    const dayItems = visible.filter((p) => p.date === dt).sort(byDay);
+    if (!dayItems.length) return <span className="board-empty">Riposo</span>;
+    return (
+      // dentro un pulsante: solo span (niente liste)
+      <span className="board-list">
+        {dayItems.map((p) => {
+          const st = statuses.get(p.id)?.kind ?? 'pending';
+          const mark = st === 'done' ? '✓' : st === 'moved' ? '↔' : st === 'missed' ? '✕' : '·';
+          const label = st === 'done' ? 'fatto' : st === 'moved' ? 'spostato' : st === 'missed' ? 'non fatto' : 'da fare';
+          return (
+            <span key={p.id} className={`b-item ${st}`}>
+              <i aria-hidden="true">{mark}</i>
+              <span>
+                {byId.get(p.exerciseId)!.name}
+                <span className="sr-only">, {label}</span>
+              </span>
+            </span>
+          );
+        })}
+      </span>
+    );
+  };
+
   return (
     <section className="card">
       <h2>Programma</h2>
-      <WeekDays monday={monday} day={day} count={(dt) => dayCount(entries, visible, dt)} onChange={go} />
+      <WeekDays monday={monday} day={day} count={(dt) => dayCount(entries, visible, dt)} onChange={go} detail={wide ? board : undefined} />
       {weekAdh.pct !== null && (
         <p className="adh">
           {monday === thisMonday ? 'Questa settimana' : 'Settimana'}: <b>{adherenceText(weekAdh)}</b> del programma

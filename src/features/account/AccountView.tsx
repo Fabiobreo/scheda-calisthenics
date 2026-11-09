@@ -20,14 +20,17 @@ export function AccountView({ inviteCode }: { inviteCode?: string }) {
       <PageTitle title={inviteCode ? 'Invito del trainer' : 'Account'} />
       {/* arrivando da un invito la cosa da fare è collegarsi: va in cima */}
       {inviteCode && <MyTrainerCard inviteCode={inviteCode} />}
-      <ProfileCard />
-      <AvatarCard />
-      {!inviteCode && <MyTrainerCard />}
-      <TrainerModeCard />
-      <SecurityCard />
-      <ExportCard />
-      <DeleteCard />
-      <AboutCard />
+      {/* su schermo largo le schede vanno su due colonne (audit A06) */}
+      <div className="masonry">
+        <ProfileCard />
+        <AvatarCard />
+        {!inviteCode && <MyTrainerCard />}
+        <TrainerModeCard />
+        <SecurityCard />
+        <ExportCard />
+        <DeleteCard />
+        <AboutCard />
+      </div>
     </>
   );
 }

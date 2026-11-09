@@ -198,5 +198,6 @@ coach cambierei per prime:
 | 9/11/2026 | ticket 17 | 9,7 | 20,0 | 10,0 | 7,0 | 3,0 | 4,0 | **53,7** | 5,4 | interventi rapidi A01, A02, A04, A11, A16 (+ regola CSS duplicata di A23); Lighthouse invariato 94/100/100/91, JS 191 KB |
 | 9/11/2026 | ticket 18 | 10,9 | 20,0 | 15,0 | 8,0 | 6,0 | 4,0 | **63,9** | 5,4 | A10, A12, A13, A17, A18, A23; Lighthouse 95/100/100/100, JS iniziale 153 KB (A4 = 2), `style={{` 8 (A20 rimandato: serve un SMTP) |
 | 9/11/2026 | ticket 19 | 10,9 | 20,0 | 20,0 | 8,0 | 9,0 | 4,0 | **71,9** | 5,4 | A03 ("Oggi" in Home, C1) e A05 parziale (cambio password ed email, versione: E1, E2); privacy/termini rimandati, supporto solo con `VITE_SUPPORT_EMAIL` (E3, E8 ancora 0). Soglia "prodotto professionale" (70) superata |
+| 9/11/2026 | ticket 20 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | A06: barra laterale e due colonne sopra i 1024 px (D6), atleti elenco + dettaglio e settimana a 7 colonne per il trainer (F1); a 1280 px il contenuto occupa il 76 % della larghezza; sonda a 375 e 1280 px pulita |
 
 Gli interventi sono tracciati in [`ticket/00-INDICE.md`](../ticket/00-INDICE.md), sezione "Backlog — Audit di prodotto".

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useScope } from '../../app/session';
 import { EntryItem } from '../../components/EntryItem';
 import { LineChart, TypeChart } from '../../components/charts';
-import { PageTitle, Seg, Select } from '../../components/ui';
+import { PageTitle, Seg, Select, useNested } from '../../components/ui';
 import { useData } from '../../data/hooks';
 import { EXERCISE_TYPES, TYPE_LABEL, type Measure } from '../../data/types';
 import { todayStr } from '../../lib/dates';
@@ -52,6 +52,7 @@ function loadPeriod(): Period {
 const howLabel = (metric: Metric) => (isMaxMetric(metric) ? 'massimo' : 'media a sessione');
 
 export function GraficiView() {
+  const nested = useNested();
   const { exercises, done: entries } = useData();
   // la posizione della metrica, non la metrica: passando da un esercizio a ripetizioni a uno a tempo resta il ruolo
   const [slot, setSlot] = useState(0);
@@ -84,10 +85,13 @@ export function GraficiView() {
 
   if (!shown.length)
     return (
-      <section className="card">
-        <h2>Andamento</h2>
-        <p className="empty">Aggiungi un esercizio e registra un allenamento per vedere i grafici.</p>
-      </section>
+      <>
+        <PageTitle title="Grafici" />
+        <section className="card">
+          <h2>Andamento</h2>
+          <p className="empty">Aggiungi un esercizio e registra un allenamento per vedere i grafici.</p>
+        </section>
+      </>
     );
 
   const range = periodRange(period, todayStr());
@@ -124,6 +128,9 @@ export function GraficiView() {
   return (
     <>
       <PageTitle title="Grafici" />
+      {/* su schermo largo: andamento a sinistra, ripartizione per tipo ed elenco degli esercizi a destra (audit A06) */}
+      <div className={nested ? 'flat' : 'cols'}>
+      <div className={nested ? 'flat' : 'col'}>
       <section className="card">
         <h2>Andamento</h2>
         <p className="sub">
@@ -211,7 +218,9 @@ export function GraficiView() {
           </>
         )}
       </section>
+      </div>
 
+      <div className={nested ? 'flat' : 'col'}>
       <section className="card">
         <h2>Ripetizioni per tipo</h2>
         <p className="sub">
@@ -275,6 +284,8 @@ export function GraficiView() {
           })}
         </div>
       </section>
+      </div>
+      </div>
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useToast } from '../../app/toast';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
-import { PageTitle, SearchSelect, Seg, Select, TypeChip } from '../../components/ui';
+import { Cols, PageTitle, SearchSelect, Seg, Select, TypeChip } from '../../components/ui';
 import {
   useAddCatalogToPlan,
   useAddPlanItem,
@@ -29,9 +29,8 @@ export function SchedaView() {
   return (
     <>
       <PageTitle title="Scheda" />
-      {/* prima il programma (quello che si apre in palestra), poi i record (audit A03) */}
-      <Programma />
-      <Records />
+      {/* prima il programma (quello che si apre in palestra), poi i record (audit A03); su schermo largo affiancati (A06) */}
+      <Cols left={<Programma />} right={<Records />} />
     </>
   );
 }

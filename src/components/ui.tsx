@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useRef, useState, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from 'react';
 import { TYPE_LABEL, type ExerciseType } from '../data/types';
 
 /**
@@ -13,6 +13,8 @@ export function PageTitle({ title }: { title: string }) {
 
 /** Una schermata mostrata dentro un'altra (Livello e Grafici dell'atleta nella vista del trainer): il titolo resta quello di fuori. */
 const Nested = createContext(false);
+/** Dentro un'altra schermata (vista del trainer): niente due colonne proprie, c'è già quella di fuori. */
+export const useNested = () => useContext(Nested);
 export const NestedView = ({ children }: { children: ReactNode }) => <Nested.Provider value>{children}</Nested.Provider>;
 
 /** Solo il titolo della scheda del browser, per le schermate che hanno già un `h1` visibile. */
@@ -40,6 +42,32 @@ export function Skeleton({ inline }: { inline?: boolean }) {
       <i className="skel-card" />
       <i className="skel-row" />
       <i className="skel-row" />
+    </div>
+  );
+}
+
+/** Schermo largo (desktop, tablet orizzontale): da qui l'app passa a due colonne e alla barra laterale (audit A06). */
+export const WIDE_QUERY = '(min-width: 1024px)';
+const wideMq = typeof window !== 'undefined' ? window.matchMedia(WIDE_QUERY) : null;
+export function useWide() {
+  return useSyncExternalStore(
+    (cb) => {
+      wideMq?.addEventListener('change', cb);
+      return () => wideMq?.removeEventListener('change', cb);
+    },
+    () => wideMq?.matches ?? false,
+  );
+}
+
+/**
+ * Due colonne su schermo largo, una sola sul telefono (le colonne "spariscono" e le schede restano in fila, come
+ * prima). `even` = colonne di pari larghezza invece della sinistra più larga.
+ */
+export function Cols({ left, right, even }: { left: ReactNode; right: ReactNode; even?: boolean }) {
+  return (
+    <div className={`cols${even ? ' even' : ''}`}>
+      <div className="col">{left}</div>
+      <div className="col">{right}</div>
     </div>
   );
 }

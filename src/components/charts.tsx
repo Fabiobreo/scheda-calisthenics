@@ -77,7 +77,15 @@ export function LineChart({
   const y = (v: number) => p.t + (h - p.t - p.b) * (1 - v / sc.top);
   const base = y(0);
   const d = points.map((pt, i) => `${i ? 'L' : 'M'}${x(pt.date).toFixed(1)} ${y(pt.v).toFixed(1)}`).join(' ');
-  const labels = labelIndexes(points.length);
+  // date sull'asse: le scelte per numero di punti, poi via quelle troppo vicine sull'asse del tempo (si sovrapporrebbero);
+  // l'ultima resta sempre
+  const MIN_GAP = 58;
+  const labels = labelIndexes(points.length).reduce<number[]>((kept, i) => {
+    const prev = kept[kept.length - 1];
+    if (prev === undefined || x(points[i].date) - x(points[prev].date) >= MIN_GAP) kept.push(i);
+    else if (i === points.length - 1) kept[kept.length - 1] = i;
+    return kept;
+  }, []);
   // pallini più piccoli quando sono fitti; oltre 40 punti resta la linea
   const dotR = points.length > 40 ? 0 : points.length > 16 ? 2.6 : 3.6;
   const sel = selected ? points.find((pt) => pt.date === selected) : undefined;

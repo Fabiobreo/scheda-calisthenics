@@ -1,4 +1,4 @@
-import { PageTitle, Skeleton } from '../../components/ui';
+import { PageTitle, Skeleton, useNested } from '../../components/ui';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useScope } from '../../app/session';
@@ -31,6 +31,7 @@ type Row = LevelRecordRow & { bodyweightKg: number | null };
  */
 export function HomeView() {
   const level = useLevel();
+  const nested = useNested();
   const { readOnly } = useScope();
   const [open, setOpen] = useState<CategoryId | null>(null);
   const [sheet, setSheet] = useState<SubId | null>(null);
@@ -54,6 +55,9 @@ export function HomeView() {
     <>
       <PageTitle title="Livello" />
       {level.error && <div className="banner">Non riesco a leggere livello e record. Controlla la connessione e riprova.</div>}
+      {/* su schermo largo: oggi, profilo e pentagono a sinistra, categorie a destra (audit A06) */}
+      <div className={nested ? 'flat' : 'cols'}>
+      <div className={nested ? 'flat' : 'col'}>
       {!readOnly && <TodayCard />}
       <Profile level={summary.level} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} readOnly={readOnly} />
 
@@ -88,6 +92,7 @@ export function HomeView() {
       <section className="card penta-card" aria-label="Pentagono">
         <Pentagon axes={axes.map((c) => ({ label: categoryName(c.categoryId), value: c.value }))} />
       </section>
+      </div>
 
       <section className="cats" aria-label="Categorie">
         {axes.map((c) => (
@@ -101,6 +106,7 @@ export function HomeView() {
           />
         ))}
       </section>
+      </div>
 
       {sheet && (
         <RecordSheet

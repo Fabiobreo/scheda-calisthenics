@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { DAY_SHORT, addDays, longDate, mondayOf, parseDate, todayStr, weekLabel, weekdayIndex } from '../lib/dates';
 import { plural } from '../lib/format';
 
@@ -10,6 +11,7 @@ export function WeekDays({
   day,
   count,
   onChange,
+  detail,
 }: {
   monday: string;
   /** 0 = lunedì ... 6 = domenica */
@@ -17,6 +19,8 @@ export function WeekDays({
   /** esercizi programmati in una data YYYY-MM-DD */
   count: (date: string) => number;
   onChange: (monday: string, day: number) => void;
+  /** contenuto di ogni giorno sotto la data: con questo la settimana diventa una tavola a 7 colonne (desktop) */
+  detail?: (date: string) => ReactNode;
 }) {
   const today = todayStr();
   const thisMonday = mondayOf(today);
@@ -41,7 +45,7 @@ export function WeekDays({
           ›
         </button>
       </div>
-      <div className="days">
+      <div className={`days${detail ? ' board' : ''}`}>
         {DAY_SHORT.map((d, i) => {
           const dt = addDays(monday, i);
           const n = count(dt);
@@ -55,7 +59,7 @@ export function WeekDays({
             >
               <span>{d}</span>
               <i>{parseDate(dt).getDate()}</i>
-              <small>{n ? `${n} es.` : '–'}</small>
+              {detail ? detail(dt) : <small>{n ? `${n} es.` : '–'}</small>}
             </button>
           );
         })}

@@ -4,7 +4,7 @@ import { useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { refName, useExercisePicker } from '../../components/ExercisePicker';
 import { SchemeForm } from '../../components/SchemeForm';
-import { ConfirmButton, Field, PageTitle, Select, Skeleton, TypeChip } from '../../components/ui';
+import { Cols, ConfirmButton, Field, PageTitle, Select, Skeleton, TypeChip, useWide } from '../../components/ui';
 import {
   useAddProgramItems,
   useAssignProgram,
@@ -89,6 +89,7 @@ export function SchedaModelloView() {
 }
 
 function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }) {
+  const wide = useWide();
   const items = useProgramItems(id).data ?? [];
   const catalog = useCatalog().data ?? [];
   const update = useUpdateProgram('Scheda salvata');
@@ -145,171 +146,185 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
 
   const headDirty = title.trim() !== name || weeksText !== String(weeks);
 
+  const headCard = (
+    <section className="card">
+      <div className="card-h">
+        <h2>Scheda</h2>
+        <Link className="link small" to="/atleti">
+          ‹ Atleti
+        </Link>
+      </div>
+      <div className="form mt-14">
+        <Field label="Nome" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} />
+        <div className="grid2">
+          <Field label="Settimane" inputMode="numeric" value={weeksText} onChange={(e) => setWeeksText(e.target.value)} />
+        </div>
+        <div className="row">
+          <button className="btn small" disabled={!headDirty} onClick={saveHead}>
+            Salva
+          </button>
+          <ConfirmButton
+            confirmLabel="Eliminare la scheda?"
+            onConfirm={() => del.mutate(id, { onSuccess: () => navigate('/atleti') })}
+          >
+            Elimina scheda
+          </ConfirmButton>
+        </div>
+        <p className="hint">Eliminare o cambiare la scheda non tocca i calendari degli atleti a cui l'hai già assegnata.</p>
+      </div>
+    </section>
+  );
+  const assignCard = <AssignCard programId={id} programName={name} weeks={weeks} empty={!items.length} />;
+  const daysCard = (
+    <section className="card">
+      <h2>Giorni</h2>
+      <div className="grid2 mt-14">
+        <Select
+          label="Settimana"
+          value={String(shownWeek)}
+          options={Array.from({ length: weeks }, (_, i) => {
+            const n = items.filter((x) => x.week === i + 1).length;
+            return { v: String(i + 1), l: `Settimana ${i + 1}${n ? ` · ${plural(n, 'esercizio', 'esercizi')}` : ''}` };
+          })}
+          onChange={(v) => {
+            setWeek(Number(v));
+            setEditing(null);
+            setAdding(false);
+          }}
+        />
+      </div>
+      <div className="days">
+        {DAY_SHORT.map((d, i) => {
+          const n = weekItems.filter((x) => x.weekday === i).length;
+          return (
+            <button
+              key={d}
+              className={`day${i === day ? ' on' : ''}`}
+              onClick={() => {
+                setDay(i);
+                setEditing(null);
+                setAdding(false);
+              }}
+              aria-label={`${DAY_LONG[i]}, ${plural(n, 'esercizio', 'esercizi')}`}
+              aria-pressed={i === day}
+            >
+              <span>{d}</span>
+              <small>{n ? `${n} es.` : '–'}</small>
+            </button>
+          );
+        })}
+      </div>
+      <h3 className="day-title">
+        Settimana {shownWeek} · {DAY_LONG[day]}
+      </h3>
+
+      <div className="plan">
+        {!dayItems.length && <p className="empty">Riposo. Aggiungi un esercizio qui sotto.</p>}
+        {dayItems.map((i) => (
+          <div className="pitem" key={i.id}>
+            <div>
+              <div className="pname">{refName(catalog, i)}</div>
+              <div className="pmeta">
+                {fmtScheme(i.scheme)}{' '}
+                {editing !== i.id && (
+                  <button className="link small" onClick={() => setEditing(i.id)}>
+                    Modifica
+                  </button>
+                )}
+              </div>
+              {i.note && <p className="coach-note mt-8">{i.note}</p>}
+              <div className="chips">
+                <TypeChip type={i.scheme.type} />
+              </div>
+            </div>
+            <div className="pact">
+              <button
+                className="x"
+                aria-label={`Togli ${refName(catalog, i)}`}
+                onClick={() =>
+                  removeItems.mutate([i.id], {
+                    onSuccess: () => {
+                      const { id: _gone, ...back } = i;
+                      toast(`${refName(catalog, i)} tolto`, { label: 'Annulla', run: () => addItems.mutate([back]) });
+                    },
+                  })
+                }
+              >
+                ×
+              </button>
+            </div>
+            {editing === i.id && (
+              <SchemeForm
+                initial={i.scheme}
+                measure={catalogMeasure(i) ?? (i.scheme.seconds > 0 ? 'time' : 'reps')}
+                measureEditable={!i.catalogId}
+                note={i.note}
+                hint="Solo in questa scheda."
+                saveLabel="Salva"
+                onSave={(scheme, note) => {
+                  editItem.mutate({ id: i.id, patch: { scheme, note } });
+                  setEditing(null);
+                }}
+                onCancel={() => setEditing(null)}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="form mt-12">
+        {picker.view}
+        {!adding ? (
+          <div className="row">
+            <button className="btn" onClick={() => (picker.ref() ? setAdding(true) : toast("Scrivi il nome dell'esercizio"))}>
+              Aggiungi
+            </button>
+          </div>
+        ) : (
+          <SchemeForm
+            key={picker.key}
+            initial={blankScheme(defaultType(catalog, addRef ?? undefined), catalogMeasure(addRef) ?? customMeasure(addRef))}
+            measure={catalogMeasure(addRef) ?? customMeasure(addRef)}
+            measureEditable={!!addRef && !addRef.catalogId}
+            note={null}
+            hint={`Settimana ${shownWeek}, ${DAY_LONG[day].toLowerCase()}.`}
+            saveLabel="Aggiungi"
+            onSave={(scheme, note) => {
+              const ref = picker.ref();
+              if (!ref) return toast("Scrivi il nome dell'esercizio");
+              if (dayItems.some((i) => sameRef(i, ref))) return toast('Questo esercizio è già nel giorno');
+              const sortOrder = dayItems.reduce((m, i) => Math.max(m, i.sortOrder), 0) + 1;
+              addItems.mutate([{ programId: id, week: shownWeek, weekday: day, ...ref, sortOrder, scheme, note }]);
+              setAdding(false);
+            }}
+            onCancel={() => setAdding(false)}
+          />
+        )}
+      </div>
+
+      {shownWeek < weeks && weekItems.length > 0 && (
+        <div className="row mt-16">
+          <ConfirmButton confirmLabel={`Sostituire le settimane ${shownWeek + 1}–${weeks}?`} onConfirm={copyToNext}>
+            Copia la settimana {shownWeek} nelle successive
+          </ConfirmButton>
+        </div>
+      )}
+    </section>
+  );
+
   return (
     <>
       <PageTitle title={name || 'Scheda modello'} />
-      <section className="card">
-        <div className="card-h">
-          <h2>Scheda</h2>
-          <Link className="link small" to="/atleti">
-            ‹ Atleti
-          </Link>
-        </div>
-        <div className="form mt-14">
-          <Field label="Nome" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} />
-          <div className="grid2">
-            <Field label="Settimane" inputMode="numeric" value={weeksText} onChange={(e) => setWeeksText(e.target.value)} />
-          </div>
-          <div className="row">
-            <button className="btn small" disabled={!headDirty} onClick={saveHead}>
-              Salva
-            </button>
-            <ConfirmButton
-              confirmLabel="Eliminare la scheda?"
-              onConfirm={() => del.mutate(id, { onSuccess: () => navigate('/atleti') })}
-            >
-              Elimina scheda
-            </ConfirmButton>
-          </div>
-          <p className="hint">Eliminare o cambiare la scheda non tocca i calendari degli atleti a cui l'hai già assegnata.</p>
-        </div>
-      </section>
-
-      <section className="card">
-        <div className="grid2">
-          <Select
-            label="Settimana"
-            value={String(shownWeek)}
-            options={Array.from({ length: weeks }, (_, i) => {
-              const n = items.filter((x) => x.week === i + 1).length;
-              return { v: String(i + 1), l: `Settimana ${i + 1}${n ? ` · ${plural(n, 'esercizio', 'esercizi')}` : ''}` };
-            })}
-            onChange={(v) => {
-              setWeek(Number(v));
-              setEditing(null);
-              setAdding(false);
-            }}
-          />
-        </div>
-        <div className="days">
-          {DAY_SHORT.map((d, i) => {
-            const n = weekItems.filter((x) => x.weekday === i).length;
-            return (
-              <button
-                key={d}
-                className={`day${i === day ? ' on' : ''}`}
-                onClick={() => {
-                  setDay(i);
-                  setEditing(null);
-                  setAdding(false);
-                }}
-                aria-label={`${DAY_LONG[i]}, ${plural(n, 'esercizio', 'esercizi')}`}
-                aria-pressed={i === day}
-              >
-                <span>{d}</span>
-                <small>{n ? `${n} es.` : '–'}</small>
-              </button>
-            );
-          })}
-        </div>
-        <h3 className="day-title">
-          Settimana {shownWeek} · {DAY_LONG[day]}
-        </h3>
-
-        <div className="plan">
-          {!dayItems.length && <p className="empty">Riposo. Aggiungi un esercizio qui sotto.</p>}
-          {dayItems.map((i) => (
-            <div className="pitem" key={i.id}>
-              <div>
-                <div className="pname">{refName(catalog, i)}</div>
-                <div className="pmeta">
-                  {fmtScheme(i.scheme)}{' '}
-                  {editing !== i.id && (
-                    <button className="link small" onClick={() => setEditing(i.id)}>
-                      Modifica
-                    </button>
-                  )}
-                </div>
-                {i.note && <p className="coach-note mt-8">{i.note}</p>}
-                <div className="chips">
-                  <TypeChip type={i.scheme.type} />
-                </div>
-              </div>
-              <div className="pact">
-                <button
-                  className="x"
-                  aria-label={`Togli ${refName(catalog, i)}`}
-                  onClick={() =>
-                    removeItems.mutate([i.id], {
-                      onSuccess: () => {
-                        const { id: _gone, ...back } = i;
-                        toast(`${refName(catalog, i)} tolto`, { label: 'Annulla', run: () => addItems.mutate([back]) });
-                      },
-                    })
-                  }
-                >
-                  ×
-                </button>
-              </div>
-              {editing === i.id && (
-                <SchemeForm
-                  initial={i.scheme}
-                  measure={catalogMeasure(i) ?? (i.scheme.seconds > 0 ? 'time' : 'reps')}
-                  measureEditable={!i.catalogId}
-                  note={i.note}
-                  hint="Solo in questa scheda."
-                  saveLabel="Salva"
-                  onSave={(scheme, note) => {
-                    editItem.mutate({ id: i.id, patch: { scheme, note } });
-                    setEditing(null);
-                  }}
-                  onCancel={() => setEditing(null)}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="form mt-12">
-          {picker.view}
-          {!adding ? (
-            <div className="row">
-              <button className="btn" onClick={() => (picker.ref() ? setAdding(true) : toast("Scrivi il nome dell'esercizio"))}>
-                Aggiungi
-              </button>
-            </div>
-          ) : (
-            <SchemeForm
-              key={picker.key}
-              initial={blankScheme(defaultType(catalog, addRef ?? undefined), catalogMeasure(addRef) ?? customMeasure(addRef))}
-              measure={catalogMeasure(addRef) ?? customMeasure(addRef)}
-              measureEditable={!!addRef && !addRef.catalogId}
-              note={null}
-              hint={`Settimana ${shownWeek}, ${DAY_LONG[day].toLowerCase()}.`}
-              saveLabel="Aggiungi"
-              onSave={(scheme, note) => {
-                const ref = picker.ref();
-                if (!ref) return toast("Scrivi il nome dell'esercizio");
-                if (dayItems.some((i) => sameRef(i, ref))) return toast('Questo esercizio è già nel giorno');
-                const sortOrder = dayItems.reduce((m, i) => Math.max(m, i.sortOrder), 0) + 1;
-                addItems.mutate([{ programId: id, week: shownWeek, weekday: day, ...ref, sortOrder, scheme, note }]);
-                setAdding(false);
-              }}
-              onCancel={() => setAdding(false)}
-            />
-          )}
-        </div>
-
-        {shownWeek < weeks && weekItems.length > 0 && (
-          <div className="row mt-16">
-            <ConfirmButton confirmLabel={`Sostituire le settimane ${shownWeek + 1}–${weeks}?`} onConfirm={copyToNext}>
-              Copia la settimana {shownWeek} nelle successive
-            </ConfirmButton>
-          </div>
-        )}
-      </section>
-
-      <AssignCard programId={id} programName={name} weeks={weeks} empty={!items.length} />
+      {/* su schermo largo i giorni (dove si lavora) a sinistra, nome e assegnazione a destra (audit A06) */}
+      {wide ? (
+        <Cols left={daysCard} right={<>{headCard}{assignCard}</>} />
+      ) : (
+        <>
+          {headCard}
+          {daysCard}
+          {assignCard}
+        </>
+      )}
     </>
   );
 }

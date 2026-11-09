@@ -192,6 +192,7 @@ export function EserciziView() {
         )}
 
         {!active.length && !form && <p className="empty">Non hai ancora esercizi. Aggiungili dal catalogo.</p>}
+        <div className="ex-list">
         {active.map((e) => (
           <div className="entry" key={e.id}>
             <div>
@@ -226,6 +227,7 @@ export function EserciziView() {
             </div>
           </div>
         ))}
+        </div>
         {active.length > 0 && <p className="hint mt-12">Archiviare toglie l'esercizio da programma e liste, ma conserva lo storico e i grafici. Quelli che il tuo trainer ha in programma li toglie lui.</p>}
 
         {archived.length > 0 && (
