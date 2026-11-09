@@ -80,8 +80,12 @@ function ExportCard() {
   const download = async () => {
     setBusy(true);
     let coaching: Record<string, unknown[]>;
+    let levels: Record<string, unknown[]>;
     try {
-      coaching = await repo.exportCoaching();
+      const [c, bodyWeights, levelRecords] = await Promise.all([repo.exportCoaching(), repo.listBodyWeights(), repo.listLevelRecords()]);
+      coaching = c;
+      // peso corporeo e record di livello (ticket 09); il livello si ricalcola dai record
+      levels = { bodyWeights, levelRecords };
     } catch {
       setBusy(false);
       return toast('Non riesco a leggere tutti i dati. Riprova.');
@@ -96,6 +100,7 @@ function ExportCard() {
       entries: entries.map((e) => ({ ...e, exercise: name.get(e.exerciseId) ?? null })),
       plan: plan.map((p) => ({ ...p, exercise: name.get(p.exerciseId) ?? null })),
       // schede (come trainer), assegnazioni e collegamenti, anche quelli chiusi
+      ...levels,
       ...coaching,
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
@@ -111,7 +116,7 @@ function ExportCard() {
       <h2>I tuoi dati</h2>
       <p className="sub">
         Scarica tutto in un file JSON: {plural(exercises.length, 'esercizio', 'esercizi')}, {plural(entries.length, 'registrazione', 'registrazioni')},{' '}
-        {plural(plan.length, 'esercizio', 'esercizi')} in programma, più schede e collegamenti con i trainer.
+        {plural(plan.length, 'esercizio', 'esercizi')} in programma, peso corporeo e record di livello, più schede e collegamenti con i trainer.
       </p>
       <div className="row" style={{ marginTop: 14 }}>
         <button className="btn small ghost" disabled={busy} onClick={download}>
@@ -130,7 +135,7 @@ function DeleteCard() {
   return (
     <section className="card">
       <h2>Elimina account</h2>
-      <p className="sub">Cancella l'account con esercizi, registrazioni e programma. Non si può annullare: se vuoi tenere i dati, esportali prima.</p>
+      <p className="sub">Cancella l'account con esercizi, registrazioni, programma, peso e record. Non si può annullare: se vuoi tenere i dati, esportali prima.</p>
       {!open ? (
         <div className="row" style={{ marginTop: 14 }}>
           <button className="btn small ghost" onClick={() => setOpen(true)}>

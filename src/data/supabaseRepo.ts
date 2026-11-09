@@ -1,12 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Repo } from './repo';
 import type {
+  BodyWeight,
   CatalogExercise,
   CoachLink,
   Entry,
   EntryInput,
   Exercise,
   ExerciseInput,
+  LevelRecordInput,
+  LevelRecordRow,
   PlanItem,
   PlanItemInput,
   Profile,
@@ -243,13 +246,44 @@ function entryPatch(p: Partial<EntryInput>) {
   return row;
 }
 
+interface LevelRow {
+  id: string;
+  sub_id: string;
+  stage: string;
+  /** numeric: PostgREST lo può restituire come stringa */
+  value: number | string;
+  date: string;
+  note: string | null;
+  created_at: string;
+}
+
+const toLevelRecord = (r: LevelRow): LevelRecordRow => ({
+  id: r.id,
+  subId: r.sub_id,
+  stage: r.stage,
+  value: Number(r.value),
+  date: r.date,
+  note: r.note,
+  createdAt: r.created_at,
+});
+
+function levelPatch(p: Partial<LevelRecordInput>) {
+  const row: Record<string, unknown> = {};
+  if (p.subId !== undefined) row.sub_id = p.subId;
+  if (p.stage !== undefined) row.stage = p.stage;
+  if (p.value !== undefined) row.value = p.value;
+  if (p.date !== undefined) row.date = p.date;
+  if (p.note !== undefined) row.note = p.note;
+  return row;
+}
+
 /** Lancia l'errore di PostgREST invece di restituirlo. */
 function must(res: { data: unknown; error: { message: string } | null }): unknown {
   if (res.error) throw new Error(res.error.message);
   return res.data;
 }
 
-type Table = 'exercises' | 'entries' | 'plan_items';
+type Table = 'exercises' | 'entries' | 'plan_items' | 'body_weights' | 'level_records';
 
 /**
  * Repo dei dati di `userId`. Ogni query filtra per utente in modo esplicito: le policy RLS non bastano a
@@ -279,6 +313,47 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
       must(await sb.rpc('delete_own_account'));
       // la sessione punta a un utente che non c'è più: la chiudo solo su questo dispositivo
       await sb.auth.signOut({ scope: 'local' });
+    },
+
+    async listBodyWeights() {
+      // una riga al giorno: dopo qualche anno si superano le 1000 righe di una richiesta
+      const out: BodyWeight[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const rows = must(await select('body_weights', 'date, kg').order('date').range(from, from + PAGE - 1)) as { date: string; kg: number | string }[];
+        out.push(...rows.map((r) => ({ date: r.date, kg: Number(r.kg) })));
+        if (rows.length < PAGE) return out;
+      }
+    },
+    async setBodyWeight(date, kg) {
+      must(await sb.from('body_weights').upsert({ user_id: userId, date, kg }, { onConflict: 'user_id,date' }));
+    },
+    async deleteBodyWeight(date) {
+      must(await remove('body_weights').eq('date', date));
+    },
+
+    async listLevelRecords() {
+      const out: LevelRecordRow[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const rows = must(
+          await select('level_records', 'id, sub_id, stage, value, date, note, created_at')
+            .order('date')
+            .order('created_at')
+            .order('id')
+            .range(from, from + PAGE - 1),
+        ) as LevelRow[];
+        out.push(...rows.map(toLevelRecord));
+        if (rows.length < PAGE) return out;
+      }
+    },
+    async createLevelRecord(input) {
+      const row = must(await insert('level_records', [levelPatch(input)]).select('id, sub_id, stage, value, date, note, created_at').single());
+      return toLevelRecord(row as LevelRow);
+    },
+    async updateLevelRecord(id, patch) {
+      must(await update('level_records', levelPatch(patch)).eq('id', id));
+    },
+    async deleteLevelRecord(id) {
+      must(await remove('level_records').eq('id', id));
     },
 
     async listLinks() {

@@ -315,6 +315,14 @@ export function validateRecord(record: LevelRecord, records?: readonly LevelReco
   return null;
 }
 
+/**
+ * Limiti strutturali di ogni progressione (senza guardare cosa è sbloccato): sono gli stessi che il database
+ * controlla in `level_stages` (migration 0012). Un test verifica che coincidano.
+ */
+export function stageLimits(): { subId: SubId; stage: string; min: number; max: number; whole: boolean }[] {
+  return SUBS.flatMap((sub) => sub.stages.map((s) => ({ subId: sub.id, stage: s.id, ...stageRange(s), whole: s.kind === 'table' })));
+}
+
 /** Peso corporeo plausibile (kg). */
 export function validateBodyweight(kg: number): boolean {
   return validBodyweight(kg);

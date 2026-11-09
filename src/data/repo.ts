@@ -1,4 +1,5 @@
 import type {
+  BodyWeight,
   CatalogExercise,
   CoachLink,
   Entry,
@@ -6,6 +7,8 @@ import type {
   Exercise,
   ExerciseInput,
   ExerciseRef,
+  LevelRecordInput,
+  LevelRecordRow,
   PlanChanges,
   PlanItem,
   Profile,
@@ -21,6 +24,18 @@ export interface Repo {
   updateProfile(patch: Partial<Profile>): Promise<void>;
   /** Elimina l'account con tutti i suoi dati. Non si torna indietro. */
   deleteAccount(): Promise<void>;
+
+  /** storico del peso corporeo, dal giorno più vecchio */
+  listBodyWeights(): Promise<BodyWeight[]>;
+  /** inserisce o corregge il peso del giorno */
+  setBodyWeight(date: string, kg: number): Promise<void>;
+  deleteBodyWeight(date: string): Promise<void>;
+
+  /** record di livello, dal più vecchio (a parità di data, in ordine d'inserimento) */
+  listLevelRecords(): Promise<LevelRecordRow[]>;
+  createLevelRecord(input: LevelRecordInput): Promise<LevelRecordRow>;
+  updateLevelRecord(id: string, patch: Partial<LevelRecordInput>): Promise<void>;
+  deleteLevelRecord(id: string): Promise<void>;
 
   /** collegamenti attivi in cui l'utente è trainer o atleta */
   listLinks(): Promise<CoachLink[]>;

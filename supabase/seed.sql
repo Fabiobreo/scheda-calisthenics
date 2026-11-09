@@ -59,3 +59,26 @@ insert into public.plan_items (user_id, exercise_id, date, sort_order, sets, rep
 
 insert into public.plan_items (user_id, exercise_id, date, sort_order, sets, reps, seconds, weight, rest_seconds, type) values
   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0000-0000-0000-000000000005', date_trunc('week', current_date)::date + 3, 2, 4, 15, 15, 0, 90, 'tecnico');
+
+-- Sistema di livelli (ticket 09): storico del peso e qualche record, per vedere subito la Home piena.
+-- Le trazioni da 20 kg sono di quando l'atleta pesava 76 kg; c'è anche un'ELITE sbloccata (verticale).
+insert into public.body_weights (user_id, date, kg) values
+  ('11111111-1111-1111-1111-111111111111', current_date - 60, 76),
+  ('11111111-1111-1111-1111-111111111111', current_date - 30, 75.5),
+  ('11111111-1111-1111-1111-111111111111', current_date - 2, 75);
+
+insert into public.level_records (user_id, sub_id, stage, value, date, note) values
+  ('11111111-1111-1111-1111-111111111111', 'trazioni', 'zavorra', 20, current_date - 45, null),
+  ('11111111-1111-1111-1111-111111111111', 'trazioni', 'zavorra', 30, current_date - 5, 'presa prona, mento sopra'),
+  ('11111111-1111-1111-1111-111111111111', 'muscle-up', 'zavorra', 5, current_date - 20, null),
+  ('11111111-1111-1111-1111-111111111111', 'oap', 'spalla', 3, current_date - 12, null),
+  ('11111111-1111-1111-1111-111111111111', 'dip', 'zavorra', 40, current_date - 8, null),
+  ('11111111-1111-1111-1111-111111111111', 'military', 'bilanciere', 50, current_date - 15, null),
+  ('11111111-1111-1111-1111-111111111111', 'planche', 'advanced-tuck', 10, current_date - 40, null),
+  ('11111111-1111-1111-1111-111111111111', 'planche', 'straddle', 5, current_date - 6, null),
+  ('11111111-1111-1111-1111-111111111111', 'planche-push-up', 'tuck', 2, current_date - 6, null),
+  ('11111111-1111-1111-1111-111111111111', 'front-lever', 'one-leg', 8, current_date - 10, null),
+  ('11111111-1111-1111-1111-111111111111', 'front-lever-touch', 'advanced-tuck', 3, current_date - 10, null),
+  ('11111111-1111-1111-1111-111111111111', 'verticale', 'verticale', 120, current_date - 25, null),
+  ('11111111-1111-1111-1111-111111111111', 'verticale', 'straddle-mono-braccio', 2, current_date - 3, null),
+  ('11111111-1111-1111-1111-111111111111', 'hspu', 'libera', 6, current_date - 3, null);

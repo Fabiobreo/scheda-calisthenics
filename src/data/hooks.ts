@@ -1,14 +1,17 @@
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useRepo, useScope } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
 import { todayStr } from '../lib/dates';
+import { currentBodyweight, levelSummary, withBodyweight } from '../lib/levels';
 import type {
   CatalogExercise,
   EntryInput,
   Exercise,
   ExerciseInput,
   ExerciseRef,
+  LevelRecordInput,
   PlanChanges,
   Profile,
   PlanItem,
@@ -26,6 +29,8 @@ const K = {
   invite: ['invite'] as QueryKey,
   programs: ['programs'] as QueryKey,
   programItems: ['program-items'] as QueryKey,
+  bodyWeights: ['body-weights'] as QueryKey,
+  levelRecords: ['level-records'] as QueryKey,
 };
 
 /** Chiave di una query sui dati di un utente: quelli propri e quelli di un atleta non si mescolano in cache. */
@@ -242,3 +247,48 @@ export const useAssignProgram = () =>
 
 export const useApplyPlanChanges = (okMsg?: string) =>
   useRepoMutation((r, a: PlanChanges) => r.applyPlanChanges(a), [K.plan], okMsg);
+
+// Sistema di livelli (ticket 09): peso corporeo e record. Solo l'atleta scrive; il trainer legge.
+
+export function useBodyWeights() {
+  const repo = useRepo();
+  return useQuery({ queryKey: useKey(K.bodyWeights), queryFn: () => repo.listBodyWeights() });
+}
+
+export function useLevelRecords() {
+  const repo = useRepo();
+  return useQuery({ queryKey: useKey(K.levelRecords), queryFn: () => repo.listLevelRecords() });
+}
+
+/**
+ * Livello calcolato dai record, ognuno col peso del suo giorno. Non si salva mai: cambiando un record, un peso o
+ * una soglia delle regole si ricalcola da solo.
+ */
+export function useLevel() {
+  const bw = useBodyWeights();
+  const lr = useLevelRecords();
+  const computed = useMemo(() => {
+    const weights = bw.data ?? [];
+    const records = withBodyweight(lr.data ?? [], weights);
+    return { summary: levelSummary(records), records, weights, bodyweight: currentBodyweight(weights) };
+  }, [bw.data, lr.data]);
+  return {
+    ...computed,
+    isLoading: bw.isLoading || lr.isLoading,
+    error: bw.error ?? lr.error,
+  };
+}
+
+/** Inserisce o corregge il peso di un giorno (di default oggi). */
+export const useSetBodyWeight = (okMsg = 'Peso salvato') =>
+  useRepoMutation((r, a: { kg: number; date?: string }) => r.setBodyWeight(a.date ?? todayStr(), a.kg), [K.bodyWeights], okMsg);
+
+export const useDeleteBodyWeight = () => useRepoMutation((r, date: string) => r.deleteBodyWeight(date), [K.bodyWeights], 'Peso eliminato');
+
+export const useCreateLevelRecord = (okMsg = 'Record salvato') =>
+  useRepoMutation((r, a: LevelRecordInput) => r.createLevelRecord(a), [K.levelRecords], okMsg);
+
+export const useUpdateLevelRecord = (okMsg = 'Record aggiornato') =>
+  useRepoMutation((r, a: { id: string; patch: Partial<LevelRecordInput> }) => r.updateLevelRecord(a.id, a.patch), [K.levelRecords], okMsg);
+
+export const useDeleteLevelRecord = () => useRepoMutation((r, id: string) => r.deleteLevelRecord(id), [K.levelRecords], 'Record eliminato');

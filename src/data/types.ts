@@ -156,3 +156,27 @@ export interface PlanChanges {
 
 /** Recupero quando non c'è uno schema da cui prenderlo. */
 export const DEFAULT_REST = 90;
+
+/** Peso corporeo di un giorno (ticket 09): una riga per giorno, l'ultima è il peso attuale. */
+export interface BodyWeight {
+  /** YYYY-MM-DD */
+  date: string;
+  kg: number;
+}
+
+/** Record di livello (ticket 09): progressione + valore in una data. Il punteggio lo calcola src/lib/levels. */
+export interface LevelRecordRow {
+  id: string;
+  /** sotto-esercizio (es. 'planche'), vedi src/lib/levels/rules.ts */
+  subId: string;
+  /** progressione o fase (es. 'straddle', 'wide', 'zavorra') */
+  stage: string;
+  /** ripetizioni, secondi o kg secondo la progressione */
+  value: number;
+  /** YYYY-MM-DD */
+  date: string;
+  note: string | null;
+  createdAt: string;
+}
+
+export type LevelRecordInput = Omit<LevelRecordRow, 'id' | 'createdAt'>;
