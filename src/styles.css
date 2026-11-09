@@ -19,6 +19,8 @@
   --glow: 0 0 14px rgb(47 214 232 / .35); --glow-elite: 0 0 16px rgb(255 173 51 / .45);
   --halo: rgb(47 214 232 / .45); --halo-elite: rgb(255 173 51 / .6);
   --shadow: 0 10px 30px rgb(0 0 0 / .35); --scrim: rgb(0 0 0 / .55);
+  /* scosse elettriche dell'avatar in zona ELITE (ticket 11) */
+  --spark: #fff1cc;
   /* raggi */
   --r-ctl: 12px; --r-tile: 14px; --r-card: 18px;
   --f-display: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
@@ -354,7 +356,7 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 #toast.show { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   #toast, .timer-bar, .hold-bar i { transition: none; }
-  .party { animation: none; }
+  .party, .av-bolts path { animation: none; }
 }
 
 /* Home "Livello" (ticket 10), con lo stile del design system (06) */
@@ -371,6 +373,28 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   font-family: var(--f-display); font-weight: 700; font-size: 36px; color: var(--fg);
 }
 .avatar.elite { border-color: var(--elite); box-shadow: 0 0 24px var(--halo-elite); }
+/* avatar con la figura (ticket 11): mezzo busto disegnato in SVG, aura dietro, scosse attorno */
+.avatar.fig { background: var(--bg); overflow: hidden; }
+.hero .avatar.fig { width: 96px; height: 96px; }
+.av-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.av-aura-in { stop-color: var(--accent); stop-opacity: .45; }
+.av-aura { fill: none; stroke: var(--accent); stroke-width: 3.5; }
+.avatar.elite .av-aura { stroke: var(--elite); }
+.av-aura-out { stop-color: var(--accent); stop-opacity: 0; }
+.avatar.elite .av-aura-in, .avatar.elite .av-aura-out { stop-color: var(--elite); }
+.av-body-top { stop-color: var(--line); }
+.av-body-bottom { stop-color: var(--surface); }
+.av-body { stroke: var(--accent); stroke-width: 1.1; stroke-linejoin: round; }
+.avatar.elite .av-body { stroke: var(--elite); }
+.avatar.sm .av-body { stroke-width: 2; }
+.av-lines { fill: none; stroke: var(--accent); stroke-width: .8; stroke-linecap: round; }
+.avatar.elite .av-lines { stroke: var(--elite); }
+.av-bolts { fill: none; stroke: var(--spark); stroke-width: 1.1; stroke-linejoin: round; stroke-linecap: round; }
+.avatar.sm .av-bolts { stroke-width: 2.2; }
+.av-bolts path { animation: av-flick 1.6s steps(1) infinite; }
+@keyframes av-flick { 0%, 100% { opacity: 1; } 18% { opacity: .15; } 24% { opacity: .9; } 55% { opacity: .35; } 70% { opacity: 1; } }
+.avatar-pick { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
+.avatar-pick .fld { flex: 1; }
 .hero-txt { min-width: 0; }
 .hero-name { margin: 0; font-weight: 600; font-size: 19px; overflow-wrap: anywhere; }
 .hero-level { margin: 2px 0 0; display: flex; align-items: baseline; gap: 10px; }

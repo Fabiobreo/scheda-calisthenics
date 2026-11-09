@@ -1,8 +1,12 @@
+import type { AvatarBody } from '../lib/avatarFigure';
+
 export interface Profile {
   /** nome mostrato agli altri (es. al trainer); null = non ancora scelto */
   displayName: string | null;
   /** modalità trainer attiva: può invitare atleti e leggerne i dati */
   isTrainer: boolean;
+  /** figura dell'avatar (ticket 11): uomo o donna; null = non ancora scelta */
+  avatarBody: AvatarBody | null;
 }
 
 /** Collegamento attivo tra un trainer e un atleta. */

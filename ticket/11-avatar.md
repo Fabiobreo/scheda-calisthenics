@@ -44,3 +44,51 @@ Richiesta:
    è la strada più seria e meno costosa.)
 4. Budget e tempi per l'illustratore? In alternativa un pacchetto acquistato con licenza commerciale, adattato.
 5. L'avatar si può personalizzare (nome, colore aura) o è uguale per tutti a parità di livello?
+
+## Stato
+
+**Fatto il 9 novembre 2026**, senza illustratore esterno: su decisione dell'utente la figura è disegnata in codice (SVG),
+quindi niente brief, contratto né diritti da cedere. Migration `0013_avatar_body.sql` (una colonna facoltativa: le
+versioni vecchie dell'app non la leggono e non si rompono). Codice in [avatarFigure.ts](../src/lib/avatarFigure.ts)
+(disegno, 9 test) e [Avatar.tsx](../src/components/Avatar.tsx); scelta in Account. Tutti i 40 stadi in
+[riferimenti/11-avatar-stadi.html](riferimenti/11-avatar-stadi.html).
+
+Decisioni dell'utente (9 novembre 2026):
+
+1. **Uomo e donna**, scelta nell'Account (2 × 20 stadi). Carnagione e corporatura no.
+2. Stile **silhouette + luce**, coerente col design system (06).
+3. **L'illustratore è Claude**: figura in codice, nessun brief né budget.
+4. **Uguale per tutti** a parità di livello: nessuna personalizzazione in v1.
+
+Come è fatto:
+
+- **Figura**: mezzo busto frontale, sempre nella stessa posa e inquadratura (testa ferma, braccia lungo i fianchi, il
+  cerchio taglia ai fianchi). Corpo scuro con il contorno in luce ciano (ambra in ELITE). Lo stadio è quello del 05
+  (`floor(livello / 10)`, 0–19). Salendo crescono spalle, braccia, trapezi e dorsali, la vita resta stretta (forma a
+  V); più veloce nei primi stadi, perché i progressi del principiante si vedano. La definizione compare un poco alla
+  volta: clavicole sempre, poi pettorali, deltoidi, addominali, bicipiti, obliqui. Donna: spalle più strette, fianchi
+  più larghi, capelli raccolti, linea morbida sotto il seno al posto dei pettorali, addominali più leggeri.
+  Stadio 0 è una persona normale, 19 un atleta d'élite, senza caricature.
+- **Aura**: il contorno esterno sfocato più un alone dietro la figura e attorno al cerchio. Cresce col quadrato del
+  livello verso 100: appena percepibile a metà strada (un quarto a 50), piena a 100.
+- **Scosse** da 101: 8 saette fisse attorno alla figura, ne compare una ogni 12–13 livelli fino a 200, più luminose
+  salendo; tremolano. Con "riduci movimento" restano ferme.
+- **Leggerezza**: niente immagini da scaricare (pochi KB di codice per tutti i 40 stadi). Nella versione piccola
+  (riepilogo in alto, elenco atleti) niente linee dei muscoli, aura sfocata e filtri.
+- **Scelta**: Account → "Avatar", Uomo / Donna, con anteprima al proprio livello; si salva subito. Finché non si
+  sceglie resta il cerchio con l'iniziale. Il trainer vede la figura scelta dall'atleta (nell'elenco Atleti e nella
+  sua Home in sola lettura).
+- Decorativo per il lettore di schermo: il livello è sempre scritto accanto.
+
+Prove fatte: unitari 181 (9 nuovi), pgTAP 171 (5 nuovi: valori ammessi, solo sul proprio profilo), `tsc -b` e
+`vite build` OK. Foglio dei 40 stadi generato dal componente vero e rivisto (corretta l'aura, che all'inizio
+illuminava lo spazio tra braccia e tronco). Nell'app locale: scelta "Uomo" in Account con anteprima, figura nella Home;
+poi la scelta è stata tolta dal database locale (rimesso com'era).
+
+Note per chi viene dopo:
+
+- Non provato su telefono vero, né la vista del trainer con un atleta che ha scelto la figura (nel seed
+  `trainer@scheda.test` non è trainer).
+- Ogni atleta nell'elenco del trainer legge il proprio profilo (una richiesta piccola in più per atleta).
+- Se in futuro si vuole un'illustrazione vera, basta sostituire il disegno in `Figure` (Avatar.tsx): stadio, aura e
+  scosse restano.

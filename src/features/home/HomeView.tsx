@@ -126,10 +126,11 @@ function Profile({
   bodyweight: { date: string; kg: number } | null;
   readOnly: boolean;
 }) {
-  const name = useProfile().data?.displayName;
+  const profile = useProfile().data;
+  const name = profile?.displayName;
   return (
     <section className="card hero" aria-label="Profilo">
-      <Avatar name={name} avatar={avatar} elite={elite} />
+      <Avatar name={name} avatar={avatar} elite={elite} body={profile?.avatarBody} />
       <div className="hero-txt">
         {name || readOnly ? (
           <p className="hero-name">{name || 'Atleta senza nome'}</p>

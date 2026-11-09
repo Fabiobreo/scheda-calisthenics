@@ -11,13 +11,14 @@ import { Pentagon } from './Pentagon';
  */
 export function LevelStrip() {
   const { summary, isLoading } = useLevel();
-  const name = useProfile().data?.displayName;
+  const profile = useProfile().data;
+  const name = profile?.displayName;
   const elite = summary.zone === 'elite';
   const byId = new Map(summary.categories.map((c) => [c.categoryId, c.value]));
   const label = isLoading ? 'Livello' : `Livello ${summary.level}${elite ? ' ELITE' : ''}`;
   return (
     <Link className="strip" to="/" aria-label={`${label}: apri la Home`}>
-      <Avatar name={name} avatar={summary.avatar} elite={elite} small />
+      <Avatar name={name} avatar={summary.avatar} elite={elite} small body={profile?.avatarBody} />
       <span className="strip-txt">
         <span className="strip-name">{name || 'Il tuo livello'}</span>
         <span className="strip-level">

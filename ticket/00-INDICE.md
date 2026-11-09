@@ -29,7 +29,7 @@ Ogni file ha la stessa struttura:
 | 08 | [Motore di calcolo dei punteggi](08-motore-punteggi.md) — fatto 9/11 | 5, 6 | Sviluppatore TypeScript (logica + test) | M |
 | 09 | [Dati: peso corporeo e record di livello](09-dati-peso-e-record.md) — fatto 9/11 | 5 | Backend (Postgres/Supabase, RLS) | M |
 | 10 | [Home "Livello": profilo, pentagono, barre, record](10-home-livello.md) — fatto 9/11 | 5 | Frontend + UI designer | L |
-| 11 | [Avatar che evolve con il livello](11-avatar.md) | 5, 6 | Illustratore / character designer + motion designer | XL |
+| 11 | [Avatar che evolve con il livello](11-avatar.md) — fatto 9/11 (disegnato in codice) | 5, 6 | Illustratore / character designer + motion designer | XL |
 | 12 | [Riepilogo compatto (avatar + livello) nelle altre sezioni](12-riepilogo-compatto.md) — fatto 9/11 | 7 | Frontend + UI designer | S |
 | 13 | [Grafici: periodo selezionabile](13-grafici-periodo.md) — fatto 9/11 | 3 | Frontend + data-viz | M |
 | 14 | [Grafici: restyling coerente col pentagono](14-grafici-restyling.md) — fatto 9/11 | 10 | Data-viz designer + frontend | M |

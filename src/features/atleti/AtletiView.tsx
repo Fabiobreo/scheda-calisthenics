@@ -16,6 +16,7 @@ import {
   useLevel,
   useLevelRecords,
   useLinks,
+  useProfile,
   useRemovePlanItem,
   useSetPlanNote,
   useSetPlanScheme,
@@ -97,13 +98,15 @@ export function AtletiView() {
 function AthleteHead({ name, since }: { name: string | null; since: string }) {
   const { summary, records, isLoading, error } = useLevel();
   const data = useData();
+  // dentro lo scope dell'atleta: il suo profilo, per la figura dell'avatar
+  const body = useProfile().data?.avatarBody;
   const elite = summary.zone === 'elite';
   const today = todayStr();
   const adh = adherence(data.plan, data.entries, today);
   const last = lastTrainingDate(data.entries, today);
   return (
     <div className="ath">
-      <Avatar name={name} avatar={summary.avatar} elite={elite} small />
+      <Avatar name={name} avatar={summary.avatar} elite={elite} small body={body} />
       <div>
         <b>{nameOf(name)}</b>
         <div className="ath-level">

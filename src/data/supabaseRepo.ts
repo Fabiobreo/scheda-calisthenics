@@ -1,3 +1,4 @@
+import { isAvatarBody } from '../lib/avatarFigure';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Repo } from './repo';
 import type {
@@ -297,16 +298,18 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
 
   return {
     async getProfile() {
-      const row = must(await sb.from('profiles').select('display_name, is_trainer').eq('id', userId).single()) as {
+      const row = must(await sb.from('profiles').select('display_name, is_trainer, avatar_body').eq('id', userId).single()) as {
         display_name: string | null;
         is_trainer: boolean;
+        avatar_body: string | null;
       };
-      return { displayName: row.display_name, isTrainer: row.is_trainer };
+      return { displayName: row.display_name, isTrainer: row.is_trainer, avatarBody: isAvatarBody(row.avatar_body) ? row.avatar_body : null };
     },
     async updateProfile(patch: Partial<Profile>) {
       const row: Record<string, unknown> = {};
       if (patch.displayName !== undefined) row.display_name = patch.displayName;
       if (patch.isTrainer !== undefined) row.is_trainer = patch.isTrainer;
+      if (patch.avatarBody !== undefined) row.avatar_body = patch.avatarBody;
       must(await sb.from('profiles').update(row).eq('id', userId));
     },
     async deleteAccount() {
