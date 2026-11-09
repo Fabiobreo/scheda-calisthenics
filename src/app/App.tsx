@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { IconAtleti, IconEsercizi, IconGrafici, IconScheda } from '../components/icons';
+import { IconAtleti, IconEsercizi, IconGrafici, IconLivello, IconScheda } from '../components/icons';
 import { useData, useProfile } from '../data/hooks';
 import { AccountView } from '../features/account/AccountView';
 import { AtletaView, AtletiView } from '../features/atleti/AtletiView';
@@ -9,12 +9,14 @@ import { SchedaModelloView } from '../features/atleti/SchedeView';
 import { AuthScreen, NewPasswordScreen, usePasswordRecovery } from '../features/auth/AuthScreen';
 import { EserciziView } from '../features/esercizi/EserciziView';
 import { GraficiView } from '../features/grafici/GraficiView';
+import { HomeView } from '../features/home/HomeView';
 import { LoggerProvider } from '../features/logger/Logger';
 import { SchedaView } from '../features/scheda/SchedaView';
 import { useSession } from './session';
 
 const TABS: { to: string; label: string; icon: ReactNode }[] = [
-  { to: '/', label: 'Scheda', icon: <IconScheda /> },
+  { to: '/', label: 'Livello', icon: <IconLivello /> },
+  { to: '/scheda', label: 'Scheda', icon: <IconScheda /> },
   { to: '/grafici', label: 'Grafici', icon: <IconGrafici /> },
   { to: '/esercizi', label: 'Esercizi', icon: <IconEsercizi /> },
 ];
@@ -134,10 +136,12 @@ function Main() {
           <p className="empty">Caricamento…</p>
         ) : (
           <Routes>
-            <Route path="/" element={<SchedaView />} />
+            {/* Home "Livello" (ticket 10); la Scheda, che prima era qui, è a /scheda */}
+            <Route path="/" element={<HomeView />} />
+            <Route path="/scheda" element={<SchedaView />} />
             <Route path="/grafici" element={<GraficiView />} />
             {/* il Registro non c'è più (ticket 04): chi l'aveva salvato torna alla Scheda */}
-            <Route path="/registro" element={<Navigate to="/" replace />} />
+            <Route path="/registro" element={<Navigate to="/scheda" replace />} />
             <Route path="/esercizi" element={<EserciziView />} />
             <Route path="/account" element={<AccountView />} />
             <Route path="/invito/:code" element={<InviteRoute />} />

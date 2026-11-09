@@ -39,3 +39,55 @@ export const IconAtleti = () => (
     <path d="M15.5 5.6a3 3 0 0 1 0 5.8M17.6 14.6c1.8.7 3 2.4 3.4 4.9" />
   </Svg>
 );
+
+/** Livello: pentagono con un'area dentro */
+export const IconLivello = () => (
+  <Svg>
+    <path d="M12 3.2 20.5 9.4 17.3 19.5H6.7L3.5 9.4Z" />
+    <path d="M12 8.2 16 11 14.6 15.6H9.6L8.2 11.3Z" />
+  </Svg>
+);
+
+/** Icone delle 5 categorie della Home (ticket 10): segni semplici, decorativi, il nome è accanto. */
+export const IconFondTirata = () => (
+  <Svg>
+    <path d="M3 4.5h18" />
+    <path d="M8 4.5v4.5a4 4 0 0 0 8 0V4.5" />
+    <path d="M12 21v-7M9 17l3-3 3 3" />
+  </Svg>
+);
+
+export const IconFondSpinta = () => (
+  <Svg>
+    <path d="M3 20.5h18" />
+    <path d="M12 16V4M8 8l4-4 4 4" />
+    <path d="M7 20.5v-3.5M17 20.5v-3.5" />
+  </Svg>
+);
+
+export const IconSkillSpinta = () => (
+  <Svg>
+    <path d="M3 20.5h18" />
+    <path d="M9 20.5v-6" />
+    <path d="M4 12.5h15" />
+    <circle cx="20.5" cy="12.5" r="1.5" />
+  </Svg>
+);
+
+export const IconSkillTirata = () => (
+  <Svg>
+    <path d="M3 4.5h18" />
+    <path d="M9 4.5v6" />
+    <path d="M4 12.5h15" />
+    <circle cx="20.5" cy="12.5" r="1.5" />
+  </Svg>
+);
+
+export const IconHandbalance = () => (
+  <Svg>
+    <path d="M12 3.5v13" />
+    <circle cx="12" cy="19" r="1.8" />
+    <path d="M7.5 20.5h9" />
+    <path d="M9.5 3.5h5" />
+  </Svg>
+);
