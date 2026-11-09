@@ -4,8 +4,8 @@
 - **Figura professionale**: product owner insieme a un **coach/esperto di calisthenics** (meglio se con esperienza di
   streetlifting per i carichi). È un ticket di decisione: il risultato è questo documento approvato, non codice.
 - **Dipende da**: nulla. **Sblocca**: 08, 09, 10, 11.
-- **Stato**: domande chiuse l'8 novembre 2026. Restano da rivedere le **definizioni dei movimenti** e le
-  **interpretazioni adottate** (in fondo), poi il ticket è approvato.
+- **Stato**: domande chiuse l'8 novembre 2026; definizioni dei movimenti e interpretazioni adottate **confermate il 9
+  novembre 2026** (ticket 08): il ticket è approvato.
 
 ## Decisioni (8 novembre 2026)
 

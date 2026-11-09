@@ -23,10 +23,10 @@ Ogni file ha la stessa struttura:
 | 02 | [Nuovo catalogo esercizi](02-nuovo-catalogo-esercizi.md) — fatto 9/11 | 1 | Coach di calisthenics + backend | M |
 | 03 | [Esercizi a tempo (secondi) oltre a ripetizioni e peso](03-esercizi-a-tempo.md) — fatto 9/11 | 1, 5 (implicito) | Full-stack | L |
 | 04 | [Eliminare il Registro senza perdere funzioni](04-eliminare-registro.md) — fatto 9/11 | 4 | UX designer + frontend | M |
-| 05 | [Specifica del sistema di livelli](05-specifica-livelli.md) — domande chiuse l'8/11, restano definizioni da rivedere | 5, 6 | Product owner + coach di calisthenics | S (ma bloccante) |
+| 05 | [Specifica del sistema di livelli](05-specifica-livelli.md) — approvato 9/11 | 5, 6 | Product owner + coach di calisthenics | S (ma bloccante) |
 | 06 | [Identità visiva e design system](06-design-system.md) | 9, 10 | UI / brand designer | L |
 | 07 | [Navigazione in basso (tab bar)](07-navigazione-in-basso.md) — fatto 9/11 | 8 | UX mobile + frontend | S |
-| 08 | [Motore di calcolo dei punteggi](08-motore-punteggi.md) | 5, 6 | Sviluppatore TypeScript (logica + test) | M |
+| 08 | [Motore di calcolo dei punteggi](08-motore-punteggi.md) — fatto 9/11 | 5, 6 | Sviluppatore TypeScript (logica + test) | M |
 | 09 | [Dati: peso corporeo e record di livello](09-dati-peso-e-record.md) | 5 | Backend (Postgres/Supabase, RLS) | M |
 | 10 | [Home "Livello": profilo, pentagono, barre, record](10-home-livello.md) | 5 | Frontend + UI designer | L |
 | 11 | [Avatar che evolve con il livello](11-avatar.md) | 5, 6 | Illustratore / character designer + motion designer | XL |
