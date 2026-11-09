@@ -11,6 +11,7 @@ import {
   grainFor,
   labelIndexes,
   periodRange,
+  recordIndex,
   summarize,
 } from './periods';
 import type { Point } from './stats';
@@ -137,5 +138,26 @@ describe('etichette', () => {
     expect(labelIndexes(3)).toEqual([0, 1, 2]);
     expect(labelIndexes(52)).toEqual([0, 17, 34, 51]);
     expect(labelIndexes(0)).toEqual([]);
+  });
+});
+
+describe('recordIndex', () => {
+  const daily = pts(['2026-08-01', 25], ['2026-11-02', 10], ['2026-11-04', 20], ['2026-11-06', 20], ['2026-11-10', 15]);
+  const inside = daily.slice(1);
+
+  it('il record di sempre fuori dal periodo non si segna', () => {
+    expect(recordIndex(inside, daily, 'day', 'peso')).toBe(-1);
+  });
+  it('nel periodo: il punto più recente che lo eguaglia', () => {
+    expect(recordIndex(inside, inside, 'day', 'reps')).toBe(2);
+  });
+  it('gruppi: sì per peso e tenuta (massimo), no per le medie', () => {
+    const weeks = aggregate(inside, 'week', 'peso');
+    expect(recordIndex(weeks, inside, 'week', 'peso')).toBe(0);
+    expect(recordIndex(aggregate(inside, 'week', 'reps'), inside, 'week', 'reps')).toBe(-1);
+  });
+  it('tutto a zero (corpo libero): nessun record', () => {
+    const zero = pts(['2026-11-02', 0], ['2026-11-04', 0]);
+    expect(recordIndex(zero, zero, 'day', 'peso')).toBe(-1);
   });
 });

@@ -188,14 +188,30 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 /* grafici */
 .chart { margin-top: 14px; width: 100%; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
-.g-grid { stroke: var(--line); stroke-width: 1; }
-.g-line { stroke: var(--accent); fill: none; stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
-.g-area { fill: var(--accent); opacity: .15; }
-.g-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2.5; }
+/* stile del pentagono (ticket 14): griglia tratteggiata, area sfumata, linea con bagliore, record in ambra */
+.g-grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
+.g-base { stroke: var(--line-strong); stroke-width: 1; }
+.g-fill-top { stop-color: var(--accent); stop-opacity: .32; }
+.g-fill-bottom { stop-color: var(--accent); stop-opacity: 0; }
+.g-line { stroke: var(--accent); fill: none; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.mini .g-line { stroke-width: 2; }
+.g-glow { stroke: var(--accent); fill: none; stroke-width: 7; opacity: .4; stroke-linejoin: round; }
+.g-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.mini .g-dot { stroke-width: 0; }
+.g-dot.rec { fill: var(--elite); }
+.g-halo { fill: var(--accent); opacity: .22; }
+.g-halo.rec { fill: var(--elite); opacity: .3; }
+.g-rec-t { fill: var(--elite); font-family: var(--f-body); font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.g-tip rect { fill: var(--surface2); stroke: var(--line-strong); }
+.g-tip text { fill: var(--fg); font-family: var(--f-body); font-size: 12px; font-weight: 600; }
+.g-tip text.s { fill: var(--muted); font-weight: 500; font-size: 11px; }
+.g-bar { stroke: var(--surface); stroke-width: 1; }
 .g-txt { fill: var(--muted); font-family: var(--f-body); font-size: 11px; }
-.pt { fill: transparent; cursor: pointer; }
+/* trascinare in orizzontale legge i valori, in verticale la pagina scorre */
+.g-big { touch-action: pan-y; }
+.pt { fill: transparent; cursor: crosshair; }
 .card .period .seg button { padding: 10px 2px; }
-.g-sel { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.g-sel { stroke: var(--fg); stroke-width: 1; opacity: .5; }
 .cmp { margin-top: 4px; color: var(--muted); font-size: 15px; }
 .cmp .up { color: var(--ok); font-weight: 600; }
 .cmp .down { color: var(--danger); font-weight: 600; }

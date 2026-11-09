@@ -33,6 +33,38 @@ piatti da `styles.css`.
 
 ## Stato
 
-**Rimandato il 9 novembre 2026** (decisione dell'utente): si fa quando c'è il design system (06), per non rifarlo due
-volte. Nel frattempo il 13 ha già cambiato la struttura dei grafici (periodi, gruppi, tocco sul punto più vicino): il
-restyling tocca solo l'aspetto in [charts.tsx](../src/components/charts.tsx) e `styles.css`.
+**Fatto il 9 novembre 2026** (solo app, nessuna migration), dopo il design system (06). Codice in
+[charts.tsx](../src/components/charts.tsx), regola del record in  di [periods.ts](../src/lib/periods.ts)
+(4 test nuovi), stile in  (classi ).
+
+Decisioni dell'utente (9 novembre 2026):
+
+1. **Animazioni solo nella Home**: i grafici appaiono subito (si cambia periodo ed esercizio spesso).
+2. **"Ripetizioni per tipo" resta**, con il nuovo stile (Volume viola). Sostituirlo con il lavoro per macro categoria
+   sarebbe un ticket a parte, da decidere col coach.
+
+Come è fatto:
+
+- Stessa grammatica del pentagono: griglia tratteggiata e sottile con la linea dello zero piena, **area sfumata** dal
+  ciano al trasparente, **linea con bagliore** (copia sfocata sotto, solo nel grafico grande), **ultimo valore** con
+  alone.
+- **Record personale in ambra** con alone ed etichetta "RECORD": il punto più recente che vale quanto la miglior
+  sessione di sempre. Se il record è fuori dal periodo non si segna; nei gruppi per settimana o mese solo per peso e
+  tenuta (il punto è un massimo), non per le medie. Nelle mini-schede un puntino ambra, senza bagliore.
+- **Toccare o trascinare** per leggere: un fumetto sopra il punto (sotto se manca spazio) con valore, unità e data,
+  linea verticale e punto evidenziato; sotto restano lettura e sessioni come nel 13. Col mouse si sceglie premendo e
+  trascinando; col dito il punto si sceglie al rilascio del tocco o trascinando in orizzontale, così chi scorre la
+  pagina in verticale passando sul grafico non cambia la selezione ().
+- Barre per tipo con una linea del colore della scheda tra i segmenti.
+- Contrasto: assi e testi in  (7:1), il bagliore non passa sotto i testi.
+
+Prove fatte: unitari 172 (4 nuovi), pgTAP 166,  e  OK. Nell'app locale a 375 px con l'atleta di
+prova: grafico grande con record, tocco e trascinamento col mouse (fumetto, lettura, sessioni del punto), "Ripetizioni
+per tipo", mini-schede; nessuno scorrimento orizzontale.
+
+Note per chi viene dopo:
+
+- **Non provato col dito su un telefono vero**: la logica tocco/scorrimento va verificata lì (trascinare in orizzontale
+  sul grafico, scorrere in verticale passandoci sopra).
+- Prestazioni: un solo filtro di sfocatura per pagina (grafico grande); con molte mini-schede su telefono di fascia media
+  non misurato.

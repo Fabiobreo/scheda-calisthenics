@@ -179,3 +179,16 @@ export function labelIndexes(count: number, max = 4): number[] {
   for (let i = 0; i < max; i++) out.add(Math.round((i * (count - 1)) / (max - 1)));
   return [...out];
 }
+
+/**
+ * Punto del grafico da segnare come record personale (ticket 14): il più recente che vale quanto la miglior sessione di
+ * sempre (`daily`, non solo il periodo). Nei gruppi vale solo per peso e tenuta, dove il punto è il massimo del gruppo;
+ * una media di settimana o mese non è un record. -1 se non c'è (record fuori dal periodo, oppure tutto a zero).
+ */
+export function recordIndex(points: Point[], daily: Point[], grain: Grain, metric: Metric): number {
+  if (grain !== 'day' && !isMaxMetric(metric)) return -1;
+  const best = Math.max(0, ...daily.map((p) => p.v));
+  if (best <= 0) return -1;
+  for (let i = points.length - 1; i >= 0; i--) if (points[i].v >= round1(best)) return i;
+  return -1;
+}

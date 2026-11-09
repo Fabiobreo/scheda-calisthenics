@@ -22,6 +22,7 @@ import {
   PERIODS,
   IN_PERIOD,
   PREVIOUS,
+  recordIndex,
   summarize,
   type Grain,
   type Period,
@@ -98,13 +99,14 @@ export function GraficiView() {
     const daily = series(entries, exerciseId, metric);
     const inside = daily.filter((p) => inPeriod(p.date));
     const grain = grainFor(period, inside.map((p) => p.date));
-    return { daily, inside, grain, points: aggregate(inside, grain, metric) };
+    const points = aggregate(inside, grain, metric);
+    return { daily, inside, grain, points, record: recordIndex(points, daily, grain, metric) };
   };
 
   const ex = shown.find((e) => e.id === picked) ?? shown.find((e) => withData.has(e.id)) ?? shown[0];
   const metric = metricOf(ex.measure, slot);
   const m = METRICS[metric];
-  const { daily, inside, grain, points: pts } = chartOf(ex.id, metric);
+  const { daily, inside, grain, points: pts, record } = chartOf(ex.id, metric);
   const cmp = range && inside.length ? compare(daily, range, metric) : null;
   const anyTimed = shown.some((x) => x.measure === 'time');
   const anyReps = shown.some((x) => x.measure === 'reps');
@@ -155,7 +157,14 @@ export function GraficiView() {
         ) : (
           <>
             <div className="chart">
-              <LineChart points={pts} onSelect={setSelected} selected={readout?.date} label={(d) => axisLabel(d, grain)} />
+              <LineChart
+                points={pts}
+                onSelect={setSelected}
+                selected={readout?.date}
+                label={(d) => axisLabel(d, grain)}
+                record={record}
+                format={(p) => `${fmt(p.v)} ${m.unit}`}
+              />
             </div>
             <p className="readout" aria-live="polite">
               {readout ? (
@@ -182,7 +191,7 @@ export function GraficiView() {
               <p className="cmp">
                 {plural(inside.length, 'sessione', 'sessioni')}
                 {cmp && period !== 'all' && <Change cmp={cmp} text={PREVIOUS[period]} />}
-                {pts.length > 1 && ' · tocca il grafico per i dettagli'}
+                {pts.length > 1 && ' · tocca o trascina sul grafico per i dettagli'}
               </p>
             )}
             <div className="sessions">
@@ -255,7 +264,7 @@ export function GraficiView() {
                       {fmt(Math.round(summarize(c.inside, xm) * 10) / 10)} <small>{METRICS[xm].unit}</small>
                     </div>
                     <div className="cap">{howLabel(xm)}</div>
-                    <LineChart points={c.points} mini />
+                    <LineChart points={c.points} mini record={c.record} />
                   </>
                 ) : (
                   <div className="none">{c.daily.length ? 'Nessun dato nel periodo' : 'Nessun dato'}</div>
