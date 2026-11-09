@@ -34,8 +34,8 @@ piatti da `styles.css`.
 ## Stato
 
 **Fatto il 9 novembre 2026** (solo app, nessuna migration), dopo il design system (06). Codice in
-[charts.tsx](../src/components/charts.tsx), regola del record in  di [periods.ts](../src/lib/periods.ts)
-(4 test nuovi), stile in  (classi ).
+[charts.tsx](../src/components/charts.tsx), regola del record in `recordIndex` di [periods.ts](../src/lib/periods.ts)
+(4 test nuovi), stile in `styles.css` (classi `g-*`).
 
 Decisioni dell'utente (9 novembre 2026):
 
@@ -54,11 +54,11 @@ Come è fatto:
 - **Toccare o trascinare** per leggere: un fumetto sopra il punto (sotto se manca spazio) con valore, unità e data,
   linea verticale e punto evidenziato; sotto restano lettura e sessioni come nel 13. Col mouse si sceglie premendo e
   trascinando; col dito il punto si sceglie al rilascio del tocco o trascinando in orizzontale, così chi scorre la
-  pagina in verticale passando sul grafico non cambia la selezione ().
+  pagina in verticale passando sul grafico non cambia la selezione (`touch-action: pan-y`).
 - Barre per tipo con una linea del colore della scheda tra i segmenti.
-- Contrasto: assi e testi in  (7:1), il bagliore non passa sotto i testi.
+- Contrasto: assi e testi in `--muted` (7:1), il bagliore non passa sotto i testi.
 
-Prove fatte: unitari 172 (4 nuovi), pgTAP 166,  e  OK. Nell'app locale a 375 px con l'atleta di
+Prove fatte: unitari 172 (4 nuovi), pgTAP 166, `tsc -b` e `vite build` OK. Nell'app locale a 375 px con l'atleta di
 prova: grafico grande con record, tocco e trascinamento col mouse (fumetto, lettura, sessioni del punto), "Ripetizioni
 per tipo", mini-schede; nessuno scorrimento orizzontale.
 
