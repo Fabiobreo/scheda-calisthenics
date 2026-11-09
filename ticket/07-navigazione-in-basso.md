@@ -33,3 +33,26 @@ nell'intestazione, sopra il grande titolo "Scheda Calisthenics".
 1. Account come voce della barra o dietro l'avatar? (Consiglio: dietro l'avatar, la barra resta a 4–5 voci.)
 2. Per un trainer le voci diventano 5: va bene, o "Atleti" sostituisce "Esercizi" (che finisce in Scheda)?
 3. Su schermi larghi (computer, usato dai trainer) teniamo la barra in basso o una barra laterale?
+
+## Stato
+
+**Fatto il 9 novembre 2026** (solo app, nessuna migration). Decisioni dell'utente sulle domande:
+
+1. Account: **cerchio con l'iniziale in alto a destra**; "Esci" è ora nella scheda Account. L'avatar (11–12) prenderà
+   quel posto.
+2. Trainer: **Atleti come voce in più** (Scheda, Grafici, Esercizi, Atleti).
+3. Schermi larghi: **barra in basso anche lì**, centrata e larga come il contenuto.
+
+Cosa c'è:
+
+- Barra fissa in basso con icona ed etichetta ([icons.tsx](../src/components/icons.tsx)), area sicura dell'iPhone
+  rispettata, `nav aria-label="Sezioni"` con `aria-current="page"` sulla voce attiva.
+- Intestazione corta: nome dell'app a sinistra (porta alla Scheda), cerchio Account a destra.
+- Timer di recupero e toast stanno sopra la barra (variabile CSS `--tabbar`); logger e cronometro la coprono.
+- Risolto anche il vecchio difetto del timer che, su schermi larghi, copriva "Salva" nel logger: con il timer aperto il
+  pannello si accorcia (`body:has(.timer)`).
+
+Rimandato:
+
+- **Home a `/` e Scheda a `/scheda`**: la Home non esiste ancora; si fa con il ticket 10 (con redirect da `/`).
+- Prova su iPhone con PWA installata e su Android: provato solo nel browser con la vista da telefono (375 px).

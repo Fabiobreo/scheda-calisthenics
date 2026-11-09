@@ -1,4 +1,4 @@
-/* Layout: una colonna stretta in stile diario di allenamento, nav segmentata fissa in alto,
+/* Layout: una colonna stretta in stile diario di allenamento, barra delle sezioni fissa in basso,
    schede scure con numeri grandi in condensed. Ripreso dalla versione artifact originale. */
 :root {
   --bg: #0b0b0c; --surface: #161617; --surface2: #202022; --line: #2c2c2f;
@@ -9,6 +9,8 @@
   /* controlli segmentati: binario incavato, voce attiva in rilievo */
   --seg-bg: #0b0b0c; --seg-on: #2a2a2e; --seg-shadow: none;
   color-scheme: dark;
+  /* altezza della barra in basso, senza l'area sicura dell'iPhone */
+  --tabbar: 66px;
 }
 @media (prefers-color-scheme: light) {
   :root {
@@ -20,11 +22,12 @@
   }
 }
 * { box-sizing: border-box; }
-html { scroll-padding-top: 80px; }
+html { scroll-padding-top: 16px; scroll-padding-bottom: calc(var(--tabbar) + 16px + env(safe-area-inset-bottom, 0px)); }
 body {
   margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.4;
   padding-top: calc(20px + env(safe-area-inset-top, 0px));
-  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  /* spazio per la barra in basso e per il timer di recupero sopra di lei */
+  padding-bottom: calc(var(--tabbar) + 120px + env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 }
@@ -37,12 +40,31 @@ button { cursor: pointer; }
 a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.hero { padding: 4px 0 8px; }
-.hero-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 12px; }
+.brand { font-family: var(--f-display); font-weight: 700; font-size: 24px; text-transform: uppercase; letter-spacing: .01em; color: var(--fg); text-decoration: none; }
+.badge {
+  flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; text-decoration: none;
+  background: var(--surface2); border: 1px solid var(--line); color: var(--fg); font-family: var(--f-display); font-weight: 700; font-size: 20px;
+}
+.badge.on { border-color: var(--accent); color: var(--accent); }
 .eyebrow { font-weight: 500; font-size: 14px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
 h1 { font-size: clamp(42px, 13vw, 72px); line-height: .9; letter-spacing: .005em; }
 
-.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 10px 0; margin-top: 6px; }
+/* barra delle sezioni in basso: sopra il contenuto, sotto logger, timer e toast */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+}
+.tabbar-in { max-width: 640px; margin: 0 auto; display: flex; gap: 4px; }
+.tabbar a {
+  flex: 1 1 0; min-width: 0; min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border-radius: 12px; color: var(--muted); text-decoration: none; font-size: 12px; font-weight: 600; letter-spacing: .03em;
+}
+.tabbar a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tabbar a.on { color: var(--accent); }
+.tabbar a.on svg { stroke-width: 2.3; }
+@media (hover: hover) { .tabbar a:not(.on):hover { color: var(--fg); background: var(--surface2); } }
 .seg { display: flex; gap: 4px; background: var(--seg-bg); border: 1px solid var(--line); border-radius: 14px; padding: 4px; overflow-x: auto; scrollbar-width: none; }
 .seg::-webkit-scrollbar { display: none; }
 .seg a, .seg button {
@@ -178,12 +200,15 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .sheet {
   background: var(--surface); border: 1px solid var(--line); border-radius: 22px 22px 0 0; width: 100%; max-width: 640px;
   max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain;
-  padding: 18px max(16px, env(safe-area-inset-left, 0px)) calc(110px + env(safe-area-inset-bottom, 0px));
+  /* in fondo resta spazio per il timer di recupero, che sta sopra la barra */
+  padding: 18px max(16px, env(safe-area-inset-left, 0px)) calc(var(--tabbar) + 110px + env(safe-area-inset-bottom, 0px));
 }
 .sheet h2 { font-size: 28px; }
 @media (min-width: 700px) {
-  .sheet-back { align-items: center; }
-  .sheet { border-radius: 22px; padding-bottom: 24px; }
+  .sheet-back { align-items: center; padding: 4dvh 0; }
+  .sheet { border-radius: 22px; padding-bottom: 24px; max-height: 100%; }
+  /* con il timer di recupero aperto il pannello si accorcia: il timer non copre più "Salva" */
+  body:has(.timer) .sheet-back { padding-bottom: calc(var(--tabbar) + 100px + env(safe-area-inset-bottom, 0px)); }
 }
 .sets { display: flex; flex-direction: column; gap: 8px; }
 .set-h, .set { display: grid; grid-template-columns: 28px 1fr 1fr auto; gap: 8px; align-items: center; }
@@ -197,7 +222,7 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 
 /* timer di recupero */
 .timer {
-  position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar) + 10px + env(safe-area-inset-bottom, 0px));
   width: min(608px, calc(100% - 24px)); background: var(--surface2); border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
   box-shadow: 0 10px 30px rgb(0 0 0 / .35);
 }
@@ -284,7 +309,7 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .empty { color: var(--muted); padding: 18px 0 4px; font-size: 16px; margin: 0; }
 .banner { background: var(--surface2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 8px 0; font-size: 15px; }
 #toast {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg);
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar) + 96px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg);
   padding: 11px 18px; border-radius: 999px; font-weight: 600; font-size: 15px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 50; max-width: 90vw; text-align: center;
 }
 #toast.show { opacity: 1; }

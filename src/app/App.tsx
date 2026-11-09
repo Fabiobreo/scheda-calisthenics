@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { IconAtleti, IconEsercizi, IconGrafici, IconScheda } from '../components/icons';
 import { useData, useProfile } from '../data/hooks';
 import { AccountView } from '../features/account/AccountView';
 import { AtletaView, AtletiView } from '../features/atleti/AtletiView';
@@ -10,14 +11,25 @@ import { EserciziView } from '../features/esercizi/EserciziView';
 import { GraficiView } from '../features/grafici/GraficiView';
 import { LoggerProvider } from '../features/logger/Logger';
 import { SchedaView } from '../features/scheda/SchedaView';
-import { supabase } from '../lib/supabase';
 import { useSession } from './session';
 
-const TABS = [
-  { to: '/', label: 'Scheda' },
-  { to: '/grafici', label: 'Grafici' },
-  { to: '/esercizi', label: 'Esercizi' },
+const TABS: { to: string; label: string; icon: ReactNode }[] = [
+  { to: '/', label: 'Scheda', icon: <IconScheda /> },
+  { to: '/grafici', label: 'Grafici', icon: <IconGrafici /> },
+  { to: '/esercizi', label: 'Esercizi', icon: <IconEsercizi /> },
 ];
+const ATLETI_TAB = { to: '/atleti', label: 'Atleti', icon: <IconAtleti /> };
+
+/** Cerchio con l'iniziale del nome (o dell'email): porta ad Account, dove si esce. Lo sostituirà l'avatar (ticket 11–12). */
+function AccountBadge({ email }: { email: string | null }) {
+  const name = useProfile().data?.displayName;
+  const initial = (name || email || '?').trim().charAt(0).toUpperCase();
+  return (
+    <NavLink to="/account" className={({ isActive }) => `badge${isActive ? ' on' : ''}`} aria-label="Account" title={name || email || 'Account'}>
+      {initial}
+    </NavLink>
+  );
+}
 
 /**
  * Codice d'invito aperto da chi non ha ancora un account: la mail di conferma riporta alla home,
@@ -67,25 +79,12 @@ export function App() {
 
   return (
     <div className="wrap">
-      <header className="hero">
-        <div className="hero-top">
-          <p className="eyebrow">Registro allenamenti</p>
-          {session.status === 'ready' && (
-            <span className="row">
-              <Link className="link" to="/account" title={session.email ?? undefined}>
-                Account
-              </Link>
-              <button className="link" onClick={() => supabase.auth.signOut()}>
-                Esci
-              </button>
-            </span>
-          )}
-        </div>
-        <h1>
-          Scheda
-          <br />
-          Calisthenics
-        </h1>
+      {/* intestazione corta: le sezioni sono nella barra in basso, l'account nel cerchio a destra */}
+      <header className="top">
+        <Link className="brand" to="/">
+          Scheda Calisthenics
+        </Link>
+        {session.status === 'ready' && !recovery && <AccountBadge email={session.email} />}
       </header>
       <UpdateBanner />
       {session.status === 'loading' && <p className="empty">Caricamento…</p>}
@@ -114,15 +113,17 @@ function Main() {
     if (!INVITE_PATH.test(location.pathname)) navigate(`/invito/${code}`, { replace: true });
   }, [location.pathname, navigate]);
   const trainer = useProfile().data?.isTrainer;
-  const tabs = trainer ? [...TABS, { to: '/atleti', label: 'Atleti' }] : TABS;
+  const tabs = trainer ? [...TABS, ATLETI_TAB] : TABS;
   return (
     <>
-      <nav className="nav">
-        <div className="seg">
+      {/* barra in basso, a portata di pollice; NavLink mette aria-current="page" sulla voce attiva */}
+      <nav className="tabbar" aria-label="Sezioni">
+        <div className="tabbar-in">
           {tabs.map((t) => (
             // "Atleti" resta acceso anche sulla pagina di un atleta
             <NavLink key={t.to} to={t.to} end={t.to !== '/atleti'} className={({ isActive }) => (isActive ? 'on' : '')}>
-              {t.label}
+              {t.icon}
+              <span>{t.label}</span>
             </NavLink>
           ))}
         </div>

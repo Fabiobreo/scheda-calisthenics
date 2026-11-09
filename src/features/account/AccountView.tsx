@@ -4,6 +4,7 @@ import { useToast } from '../../app/toast';
 import { Field } from '../../components/ui';
 import { useData, useDeleteAccount, useProfile, useUpdateProfile } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
+import { supabase } from '../../lib/supabase';
 import { plural } from '../../lib/format';
 import { MyTrainerCard, TrainerModeCard } from './CoachingCards';
 
@@ -42,7 +43,12 @@ function ProfileCard() {
 
   return (
     <section className="card">
-      <h2>Account</h2>
+      <div className="card-h">
+        <h2>Account</h2>
+        <button className="btn small ghost" onClick={() => supabase.auth.signOut()}>
+          Esci
+        </button>
+      </div>
       <p className="sub">{session.status === 'ready' ? session.email : ''}</p>
       <div className="form" style={{ marginTop: 14 }}>
         <Field
