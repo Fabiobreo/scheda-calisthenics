@@ -53,6 +53,7 @@ export function RecordSheet({
   summary,
   onClose,
   onCelebrate,
+  readOnly = false,
 }: {
   subId: SubId;
   records: Row[];
@@ -60,6 +61,8 @@ export function RecordSheet({
   summary: LevelSummary;
   onClose: () => void;
   onCelebrate: (msgs: string[]) => void;
+  /** il trainer legge i record dell'atleta: niente inserimento, modifica o eliminazione */
+  readOnly?: boolean;
 }) {
   const rule = subRule(subId)!;
   const score = scoreSub(subId, records);
@@ -159,60 +162,62 @@ export function RecordSheet({
           <span>{score.best ? `Record: ${recordText(score.best)} · ${shortDate(score.best.date)}` : 'Ancora nessun record'}</span>
         </p>
 
-        <form className="form" onSubmit={save} noValidate>
-          <h3 className="rec-h">{editing ? 'Modifica record' : 'Nuovo record'}</h3>
-          {options.length > 1 && (
-            <Select
-              label="Progressione"
-              value={opt.stageId}
-              options={options.map((o) => ({ v: o.stageId, l: o.name, group: isEliteStage(subId, o.stageId) ? 'ELITE' : undefined }))}
-              onChange={(v) => {
-                setStage(v);
+        {!readOnly && (
+          <form className="form" onSubmit={save} noValidate>
+            <h3 className="rec-h">{editing ? 'Modifica record' : 'Nuovo record'}</h3>
+            {options.length > 1 && (
+              <Select
+                label="Progressione"
+                value={opt.stageId}
+                options={options.map((o) => ({ v: o.stageId, l: o.name, group: isEliteStage(subId, o.stageId) ? 'ELITE' : undefined }))}
+                onChange={(v) => {
+                  setStage(v);
+                  setErr(null);
+                }}
+              />
+            )}
+            {opt.definition && <p className="hint">{opt.definition}</p>}
+            <Field
+              label={options.length > 1 ? UNIT_LABEL[opt.measure] : `${opt.name} (${UNIT[opt.measure]})`}
+              inputMode={opt.measure === 'kg' ? 'decimal' : 'numeric'}
+              autoComplete="off"
+              value={value}
+              hint={hint}
+              error={err ?? undefined}
+              onChange={(e) => {
+                setValue(e.target.value);
                 setErr(null);
               }}
             />
-          )}
-          {opt.definition && <p className="hint">{opt.definition}</p>}
-          <Field
-            label={options.length > 1 ? UNIT_LABEL[opt.measure] : `${opt.name} (${UNIT[opt.measure]})`}
-            inputMode={opt.measure === 'kg' ? 'decimal' : 'numeric'}
-            autoComplete="off"
-            value={value}
-            hint={hint}
-            error={err ?? undefined}
-            onChange={(e) => {
-              setValue(e.target.value);
-              setErr(null);
-            }}
-          />
-          <Field
-            label="Data"
-            type="date"
-            max={todayStr()}
-            value={date}
-            error={dateErr ?? undefined}
-            onChange={(e) => {
-              setDate(e.target.value);
-              setDateErr(null);
-            }}
-          />
-          {next && <p className="coach-note">Sei al massimo di {opt.name}: dopo questo record prova {next.name}.</p>}
-          {needsWeight && <p className="coach-note">Inserisci prima il tuo peso corporeo (in alto nella Home): senza, i record in kg non contano.</p>}
-          <div className="row">
-            <button className="btn" disabled={busy} aria-busy={busy || undefined}>
-              {editing ? 'Salva modifica' : 'Salva record'}
-            </button>
-            {editing && (
-              <button type="button" className="btn ghost" onClick={cancelEdit}>
-                Annulla
+            <Field
+              label="Data"
+              type="date"
+              max={todayStr()}
+              value={date}
+              error={dateErr ?? undefined}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setDateErr(null);
+              }}
+            />
+            {next && <p className="coach-note">Sei al massimo di {opt.name}: dopo questo record prova {next.name}.</p>}
+            {needsWeight && <p className="coach-note">Inserisci prima il tuo peso corporeo (in alto nella Home): senza, i record in kg non contano.</p>}
+            <div className="row">
+              <button className="btn" disabled={busy} aria-busy={busy || undefined}>
+                {editing ? 'Salva modifica' : 'Salva record'}
               </button>
-            )}
-          </div>
-        </form>
+              {editing && (
+                <button type="button" className="btn ghost" onClick={cancelEdit}>
+                  Annulla
+                </button>
+              )}
+            </div>
+          </form>
+        )}
 
         <h3 className="rec-h">Storico</h3>
         {history.length === 0 ? (
-          <p className="hint">Qui compariranno i tuoi record.</p>
+          <p className="hint">{readOnly ? 'Nessun record inserito.' : 'Qui compariranno i tuoi record.'}</p>
         ) : (
           <ul className="rec-list">
             {history.map((r) => (
@@ -222,12 +227,14 @@ export function RecordSheet({
                   {score.best?.id === r.id && <span className="pr"> · migliore</span>}
                   <small>{shortDate(r.date)}</small>
                 </span>
-                <span className="pact">
-                  <button type="button" className="btn small ghost" onClick={() => startEdit(r)} aria-label={`Modifica ${recordText(r)} del ${shortDate(r.date)}`}>
-                    Modifica
-                  </button>
-                  <ConfirmButton onConfirm={() => del.mutate(r.id, { onSuccess: () => editing?.id === r.id && cancelEdit() })} />
-                </span>
+                {!readOnly && (
+                  <span className="pact">
+                    <button type="button" className="btn small ghost" onClick={() => startEdit(r)} aria-label={`Modifica ${recordText(r)} del ${shortDate(r.date)}`}>
+                      Modifica
+                    </button>
+                    <ConfirmButton onConfirm={() => del.mutate(r.id, { onSuccess: () => editing?.id === r.id && cancelEdit() })} />
+                  </span>
+                )}
               </li>
             ))}
           </ul>

@@ -2,12 +2,23 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AthleteScope, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
+import { Avatar } from '../../components/Avatar';
 import { useExercisePicker } from '../../components/ExercisePicker';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
 import { ConfirmButton, Seg, TypeChip } from '../../components/ui';
-import { useCatalog, useCoachAddPlanItem, useData, useEndLink, useLinks, useRemovePlanItem, useSetPlanNote, useSetPlanScheme } from '../../data/hooks';
+import {
+  useCatalog,
+  useCoachAddPlanItem,
+  useData,
+  useEndLink,
+  useLevel,
+  useLinks,
+  useRemovePlanItem,
+  useSetPlanNote,
+  useSetPlanScheme,
+} from '../../data/hooks';
 import { DIFFICULTY_LABEL, type ExerciseRef, type Measure } from '../../data/types';
 import { addDays, longDate, mondayOf, shortDate, todayStr, weekdayIndex } from '../../lib/dates';
 import { fmtScheme, fmtSets } from '../../lib/format';
@@ -15,6 +26,7 @@ import { blankScheme, recordEntryIds, suggestType } from '../../lib/stats';
 import { defaultType } from '../../lib/catalog';
 import { byDay, dayCount, offPlan } from '../../lib/plan';
 import { GraficiView } from '../grafici/GraficiView';
+import { HomeView } from '../home/HomeView';
 import { SchedeCard } from './SchedeView';
 
 const nameOf = (n: string | null) => n ?? 'Atleta senza nome';
@@ -31,7 +43,7 @@ export function AtletiView() {
     <>
       <section className="card">
         <h2>Atleti</h2>
-        <p className="sub">Gli atleti che segui: programmi i loro giorni, vedi storico, note e grafici. I loro dati restano loro.</p>
+        <p className="sub">Gli atleti che segui: programmi i loro giorni, vedi storico, note, grafici e livello. I loro dati restano loro.</p>
         {links.isLoading ? (
           <p className="empty">Caricamento…</p>
         ) : !athletes.length ? (
@@ -41,10 +53,9 @@ export function AtletiView() {
         ) : (
           athletes.map((l) => (
             <div className="entry" key={l.id}>
-              <div>
-                <b>{nameOf(l.athleteName)}</b>
-                <div className="pmeta">Collegato dal {shortDate(l.createdAt.slice(0, 10))}</div>
-              </div>
+              <AthleteScope athleteId={l.athleteId}>
+                <AthleteHead name={l.athleteName} since={l.createdAt.slice(0, 10)} />
+              </AthleteScope>
               <div className="pact col">
                 <Link className="btn small" to={`/atleti/${l.athleteId}`}>
                   Apri
@@ -62,7 +73,39 @@ export function AtletiView() {
   );
 }
 
-type Tab = 'programma' | 'grafici';
+/**
+ * Atleta in elenco: avatar, nome, livello e data del collegamento. Va dentro il suo `AthleteScope`: il livello usa la
+ * stessa cache della sua scheda Livello.
+ */
+function AthleteHead({ name, since }: { name: string | null; since: string }) {
+  const { summary, records, isLoading, error } = useLevel();
+  const elite = summary.zone === 'elite';
+  return (
+    <div className="ath">
+      <Avatar name={name} avatar={summary.avatar} elite={elite} small />
+      <div>
+        <b>{nameOf(name)}</b>
+        <div className="ath-level">
+          {isLoading ? (
+            'Livello –'
+          ) : error ? (
+            'Livello non disponibile'
+          ) : !records.length ? (
+            'Nessun record'
+          ) : (
+            <>
+              Livello <b className={elite ? 'elite' : undefined}>{summary.level}</b>
+              {elite && <span className="tag-elite">ELITE</span>}
+            </>
+          )}
+        </div>
+        <div className="pmeta">Collegato dal {shortDate(since)}</div>
+      </div>
+    </div>
+  );
+}
+
+type Tab = 'programma' | 'livello' | 'grafici';
 
 /** Un atleta visto dal suo trainer: le viste dentro leggono i suoi dati, senza poterli modificare. */
 export function AtletaView() {
@@ -93,13 +136,14 @@ export function AtletaView() {
             ‹ Atleti
           </Link>
         </div>
-        <p className="sub">Programmi i suoi giorni e vedi cosa ha fatto, anche fuori programma; registrazioni e grafici sono in sola lettura.</p>
+        <p className="sub">Programmi i suoi giorni e vedi cosa ha fatto, anche fuori programma; registrazioni, grafici e livello sono in sola lettura.</p>
         <div style={{ marginTop: 14 }}>
           <Seg
             label="Sezione"
             value={tab}
             options={[
               { v: 'programma', l: 'Programma' },
+              { v: 'livello', l: 'Livello' },
               { v: 'grafici', l: 'Grafici' },
             ]}
             onChange={setTab}
@@ -115,6 +159,8 @@ export function AtletaView() {
 
 function AthleteData({ tab }: { tab: Tab }) {
   const { isLoading, error } = useData();
+  // il livello ha i suoi dati (record e peso): non aspetta registrazioni e programma
+  if (tab === 'livello') return <HomeView />;
   if (isLoading) return <p className="empty">Caricamento…</p>;
   if (error) return <div className="banner">Non riesco a leggere i dati dell'atleta. Riprova.</div>;
   if (tab === 'grafici') return <GraficiView />;

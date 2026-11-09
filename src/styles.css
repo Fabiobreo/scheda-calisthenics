@@ -447,3 +447,9 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .penta-mini .penta-dot { stroke-width: 0; }
 .penta-mini .penta-dot.elite { filter: none; }
 @media (hover: hover) { .strip:hover { border-color: var(--accent); } }
+
+/* atleti: livello accanto al nome (ticket 15) */
+.ath { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.ath-level { color: var(--muted); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
+.ath-level b { font-family: var(--f-display); font-size: 18px; color: var(--fg); letter-spacing: 0; margin-left: 2px; }
+.ath-level b.elite { color: var(--elite); }

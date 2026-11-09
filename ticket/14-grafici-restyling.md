@@ -30,3 +30,9 @@ piatti da `styles.css`.
 1. Vuoi animazioni di ingresso nei grafici o solo nella Home?
 2. Il grafico "Ripetizioni per tipo" ha ancora senso dopo il 01, o lo sostituiamo con qualcosa di più utile (es.
    distribuzione del lavoro per macro categoria, legata al livello)?
+
+## Stato
+
+**Rimandato il 9 novembre 2026** (decisione dell'utente): si fa quando c'è il design system (06), per non rifarlo due
+volte. Nel frattempo il 13 ha già cambiato la struttura dei grafici (periodi, gruppi, tocco sul punto più vicino): il
+restyling tocca solo l'aspetto in [charts.tsx](../src/components/charts.tsx) e `styles.css`.

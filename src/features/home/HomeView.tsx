@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useScope } from '../../app/session';
 import { Avatar } from '../../components/Avatar';
 import { Pentagon } from '../../components/Pentagon';
 import { IconFondSpinta, IconFondTirata, IconHandbalance, IconSkillSpinta, IconSkillTirata } from '../../components/icons';
@@ -21,9 +22,13 @@ const ICON: Record<CategoryId, ReactNode> = {
 
 type Row = LevelRecordRow & { bodyweightKg: number | null };
 
-/** Home "Livello" (ticket 10): profilo, pentagono, barre delle categorie, sotto-esercizi e record. */
+/**
+ * Home "Livello" (ticket 10): profilo, pentagono, barre delle categorie, sotto-esercizi e record.
+ * Dentro `AthleteScope` è il livello di un atleta visto dal suo trainer (ticket 15): si legge soltanto.
+ */
 export function HomeView() {
   const level = useLevel();
+  const { readOnly } = useScope();
   const [open, setOpen] = useState<CategoryId | null>(null);
   const [sheet, setSheet] = useState<SubId | null>(null);
   const [party, setParty] = useState<string[]>([]);
@@ -45,7 +50,7 @@ export function HomeView() {
   return (
     <>
       {level.error && <div className="banner">Non riesco a leggere livello e record. Controlla la connessione e riprova.</div>}
-      <Profile level={summary.level} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} />
+      <Profile level={summary.level} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} readOnly={readOnly} />
 
       <div className="party-slot" role="status" aria-live="polite">
         {party.length > 0 && (
@@ -58,7 +63,14 @@ export function HomeView() {
         )}
       </div>
 
-      {(fresh || !bodyweight) && (
+      {readOnly && (fresh || !bodyweight) && (
+        <p className="coach-note">
+          {fresh
+            ? 'Non ha ancora inserito record: li inserisce dalla sua Home.'
+            : 'Non ha ancora inserito il peso corporeo: i suoi record in kg non contano finché non lo fa.'}
+        </p>
+      )}
+      {!readOnly && (fresh || !bodyweight) && (
         <p className="coach-note">
           {fresh && !bodyweight
             ? 'Per iniziare inserisci il tuo peso qui sopra, poi tocca una categoria e aggiungi i tuoi primi record.'
@@ -80,6 +92,7 @@ export function HomeView() {
             open={open === c.categoryId}
             onToggle={() => setOpen(open === c.categoryId ? null : c.categoryId)}
             onPick={setSheet}
+            readOnly={readOnly}
           />
         ))}
       </section>
@@ -92,6 +105,7 @@ export function HomeView() {
           summary={summary}
           onClose={() => setSheet(null)}
           onCelebrate={setParty}
+          readOnly={readOnly}
         />
       )}
     </>
@@ -99,14 +113,26 @@ export function HomeView() {
 }
 
 /** Intestazione: avatar (segnaposto finché non c'è il ticket 11), nome, livello, peso con modifica rapida. */
-function Profile({ level, elite, avatar, bodyweight }: { level: number; elite: boolean; avatar: AvatarStage; bodyweight: { date: string; kg: number } | null }) {
+function Profile({
+  level,
+  elite,
+  avatar,
+  bodyweight,
+  readOnly,
+}: {
+  level: number;
+  elite: boolean;
+  avatar: AvatarStage;
+  bodyweight: { date: string; kg: number } | null;
+  readOnly: boolean;
+}) {
   const name = useProfile().data?.displayName;
   return (
     <section className="card hero" aria-label="Profilo">
       <Avatar name={name} avatar={avatar} elite={elite} />
       <div className="hero-txt">
-        {name ? (
-          <p className="hero-name">{name}</p>
+        {name || readOnly ? (
+          <p className="hero-name">{name || 'Atleta senza nome'}</p>
         ) : (
           <Link className="link small" to="/account">
             Scegli il tuo nome
@@ -118,8 +144,19 @@ function Profile({ level, elite, avatar, bodyweight }: { level: number; elite: b
           {elite && <span className="tag-elite">ELITE</span>}
         </p>
       </div>
-      <Weight current={bodyweight} />
+      {readOnly ? <WeightReadOnly current={bodyweight} /> : <Weight current={bodyweight} />}
     </section>
+  );
+}
+
+/** Il peso dell'atleta visto dal trainer: solo lettura. */
+function WeightReadOnly({ current }: { current: { date: string; kg: number } | null }) {
+  return (
+    <div className="weight">
+      <span className="fld-l">Peso</span>
+      <b>{current ? `${fmt(current.kg)} kg` : '—'}</b>
+      {current && <span className="hint">dal {shortDate(current.date)}</span>}
+    </div>
   );
 }
 
@@ -201,7 +238,19 @@ function ZoneBar({ value, elite }: { value: number; elite: boolean }) {
   );
 }
 
-function Category({ cat, open, onToggle, onPick }: { cat: CategoryScore<Row>; open: boolean; onToggle: () => void; onPick: (id: SubId) => void }) {
+function Category({
+  cat,
+  open,
+  onToggle,
+  onPick,
+  readOnly,
+}: {
+  cat: CategoryScore<Row>;
+  open: boolean;
+  onToggle: () => void;
+  onPick: (id: SubId) => void;
+  readOnly: boolean;
+}) {
   const elite = cat.zone === 'elite';
   const panel = `cat-${cat.categoryId}`;
   return (
@@ -221,7 +270,7 @@ function Category({ cat, open, onToggle, onPick }: { cat: CategoryScore<Row>; op
       {open && (
         <ul className="subs" id={panel}>
           {cat.subs.map((s) => (
-            <SubRow key={s.subId} s={s} onPick={() => onPick(s.subId)} />
+            <SubRow key={s.subId} s={s} onPick={() => onPick(s.subId)} readOnly={readOnly} />
           ))}
         </ul>
       )}
@@ -229,7 +278,7 @@ function Category({ cat, open, onToggle, onPick }: { cat: CategoryScore<Row>; op
   );
 }
 
-function SubRow({ s, onPick }: { s: SubScore<Row>; onPick: () => void }) {
+function SubRow({ s, onPick, readOnly }: { s: SubScore<Row>; onPick: () => void; readOnly: boolean }) {
   const rule = subRule(s.subId)!;
   const elite = s.zone === 'elite';
   return (
@@ -241,7 +290,7 @@ function SubRow({ s, onPick }: { s: SubScore<Row>; onPick: () => void }) {
           <i className={elite ? 'hot' : undefined} style={{ width: `${s.percent}%` }} />
         </span>
         <span className="sub-best">
-          {s.best ? `${recordText(s.best)} · ${shortDate(s.best.date)}` : 'Nessun record: tocca per inserirlo'}
+          {s.best ? `${recordText(s.best)} · ${shortDate(s.best.date)}` : readOnly ? 'Nessun record' : 'Nessun record: tocca per inserirlo'}
           {s.unlocked && !elite && <span className="tag-elite">ELITE sbloccata</span>}
           {s.needsBodyweight && <span className="warn"> · manca il peso</span>}
         </span>
