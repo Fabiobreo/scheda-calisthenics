@@ -19,9 +19,10 @@ import {
   useUpdateProgram,
   useUpdateProgramItem,
 } from '../../data/hooks';
-import { DEFAULT_REST, type ProgramItem, type ProgramItemInput } from '../../data/types';
+import { type ExerciseRef, type Measure, type ProgramItem, type ProgramItemInput } from '../../data/types';
 import { DAY_LONG, DAY_SHORT, addDays, mondayOf, shortDate, todayStr, weekLabel } from '../../lib/dates';
-import { fmt, isInt, plural } from '../../lib/format';
+import { fmtScheme, isInt, plural } from '../../lib/format';
+import { blankScheme } from '../../lib/stats';
 import { defaultType } from '../../lib/catalog';
 
 /** Le schede modello del trainer, nella pagina Atleti. */
@@ -111,6 +112,14 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
   const sameRef = (i: ProgramItem, r: { catalogId: string | null; customName: string | null }) =>
     i.catalogId === r.catalogId && (i.customName ?? '').toLowerCase() === (r.customName ?? '').toLowerCase();
   const picker = useExercisePicker(catalog, (r) => dayItems.some((i) => sameRef(i, r)));
+  // misura: per una voce del catalogo la sua; un nome personalizzato la sceglie il trainer, partendo da come l'ha
+  // già usato in questa scheda
+  const catalogMeasure = (r: { catalogId: string | null } | null) => (r?.catalogId ? catalog.find((c) => c.id === r.catalogId)?.measure : undefined);
+  const customMeasure = (r: ExerciseRef | null): Measure => {
+    const twin = r && !r.catalogId ? items.find((i) => sameRef(i, r)) : undefined;
+    return twin && twin.scheme.seconds > 0 ? 'time' : 'reps';
+  };
+  const addRef = adding ? picker.ref() : null;
 
   const saveHead = () => {
     const n = Number(weeksText);
@@ -213,7 +222,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
               <div>
                 <div className="pname">{refName(catalog, i)}</div>
                 <div className="pmeta">
-                  {i.scheme.sets} × {i.scheme.reps} · {fmt(i.scheme.weight)} kg{i.scheme.rest > 0 && ` · rec. ${i.scheme.rest} s`}{' '}
+                  {fmtScheme(i.scheme)}{' '}
                   {editing !== i.id && (
                     <button className="link small" onClick={() => setEditing(i.id)}>
                       Modifica
@@ -233,6 +242,8 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
               {editing === i.id && (
                 <SchemeForm
                   initial={i.scheme}
+                  measure={catalogMeasure(i) ?? (i.scheme.seconds > 0 ? 'time' : 'reps')}
+                  measureEditable={!i.catalogId}
                   note={i.note}
                   hint="Solo in questa scheda."
                   saveLabel="Salva"
@@ -258,7 +269,9 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
           ) : (
             <SchemeForm
               key={picker.key}
-              initial={{ type: defaultType(catalog, picker.ref() ?? undefined), sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST }}
+              initial={blankScheme(defaultType(catalog, addRef ?? undefined), catalogMeasure(addRef) ?? customMeasure(addRef))}
+              measure={catalogMeasure(addRef) ?? customMeasure(addRef)}
+              measureEditable={!!addRef && !addRef.catalogId}
               note={null}
               hint={`Settimana ${shownWeek}, ${DAY_LONG[day].toLowerCase()}.`}
               saveLabel="Aggiungi"

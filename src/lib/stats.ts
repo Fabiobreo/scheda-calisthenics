@@ -1,11 +1,22 @@
-import { DEFAULT_REST, type Entry, type ExerciseType, type PlanItem, type Scheme, type WorkSet } from '../data/types';
+import { DEFAULT_REST, type Entry, type ExerciseType, type Measure, type PlanItem, type Scheme, type WorkSet } from '../data/types';
 
-export type Metric = 'peso' | 'reps' | 'volume';
+export type Metric = 'peso' | 'reps' | 'volume' | 'tenuta' | 'secondi';
 
 export const METRICS: Record<Metric, { label: string; unit: string }> = {
   peso: { label: 'Peso', unit: 'kg' },
   reps: { label: 'Rip. totali', unit: 'rip.' },
   volume: { label: 'Volume', unit: 'kg' },
+  tenuta: { label: 'Miglior tenuta', unit: 's' },
+  secondi: { label: 'Secondi totali', unit: 's' },
+};
+
+/**
+ * Metriche di un esercizio secondo come si misura. Stessa posizione, stesso ruolo: il miglior risultato, il totale,
+ * l'ultima; così la scelta resta sensata passando da un esercizio a ripetizioni a uno a tempo.
+ */
+export const METRICS_BY_MEASURE: Record<Measure, Metric[]> = {
+  reps: ['peso', 'reps', 'volume'],
+  time: ['tenuta', 'secondi', 'peso'],
 };
 
 export interface Point {
@@ -16,9 +27,14 @@ export interface Point {
 export const totalReps = (sets: WorkSet[]) => sets.reduce((s, x) => s + x.reps, 0);
 export const volume = (sets: WorkSet[]) => sets.reduce((s, x) => s + x.weight * x.reps, 0);
 export const maxWeight = (sets: WorkSet[]) => sets.reduce((m, x) => Math.max(m, x.weight), 0);
+export const totalSeconds = (sets: WorkSet[]) => sets.reduce((s, x) => s + x.seconds, 0);
+export const maxSeconds = (sets: WorkSet[]) => sets.reduce((m, x) => Math.max(m, x.seconds), 0);
 
-/** > 0 se a è una serie migliore di b: più peso, a parità di peso più ripetizioni. */
-export const compareSets = (a: WorkSet, b: WorkSet) => a.weight - b.weight || a.reps - b.reps;
+/**
+ * > 0 se a è una serie migliore di b: più peso, a parità di peso più ripetizioni (o più secondi, negli esercizi a
+ * tempo: lì le ripetizioni sono 0).
+ */
+export const compareSets = (a: WorkSet, b: WorkSet) => a.weight - b.weight || a.reps - b.reps || a.seconds - b.seconds;
 
 export function bestSet(sets: WorkSet[]): WorkSet | null {
   return sets.reduce<WorkSet | null>((best, s) => (!best || compareSets(s, best) > 0 ? s : best), null);
@@ -61,7 +77,7 @@ export function recordEntryIds(entries: Entry[]): Set<string> {
   return ids;
 }
 
-/** Un punto per data: peso massimo, ripetizioni totali o volume totale della giornata. */
+/** Un punto per data: peso massimo, ripetizioni totali, volume totale, tenuta più lunga o secondi totali della giornata. */
 export function series(entries: Entry[], exerciseId: string, metric: Metric): Point[] {
   const byDate = new Map<string, Point>();
   for (const e of entries) {
@@ -69,7 +85,9 @@ export function series(entries: Entry[], exerciseId: string, metric: Metric): Po
     const p = byDate.get(e.date) ?? { date: e.date, v: 0 };
     if (metric === 'peso') p.v = Math.max(p.v, maxWeight(e.sets));
     else if (metric === 'reps') p.v += totalReps(e.sets);
-    else p.v += volume(e.sets);
+    else if (metric === 'volume') p.v += volume(e.sets);
+    else if (metric === 'tenuta') p.v = Math.max(p.v, maxSeconds(e.sets));
+    else p.v += totalSeconds(e.sets);
     byDate.set(e.date, p);
   }
   return [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -79,11 +97,13 @@ export type TypeTotals = { date: string } & Record<ExerciseType, number>;
 
 /**
  * Ripetizioni per tipo, per data, sulle ultime `limit` sessioni. Il tipo è quello della registrazione:
- * le stesse Trazioni contano in forza un giorno e in volume un altro.
+ * le stesse Trazioni contano in forza un giorno e in volume un altro. Gli esercizi a tempo non hanno ripetizioni:
+ * non contano, e una giornata solo di tenute non compare.
  */
 export function repsByType(entries: Entry[], limit = 10): TypeTotals[] {
   const byDate = new Map<string, TypeTotals>();
   for (const e of entries) {
+    if (!totalReps(e.sets)) continue;
     const d = byDate.get(e.date) ?? { date: e.date, forza: 0, volume: 0, tecnico: 0 };
     d[e.type] += totalReps(e.sets);
     byDate.set(e.date, d);
@@ -112,17 +132,39 @@ export function suggestType(plan: PlanItem[], entries: Entry[], exerciseId: stri
   return upTo?.scheme.type ?? lastTraining(entries, exerciseId)?.type ?? rows[0]?.scheme.type ?? fallback;
 }
 
+/** Lo schema nella misura `m`: lo stesso numero passa da ripetizioni a secondi o viceversa. */
+export function withMeasure(sc: Scheme, m: Measure): Scheme {
+  if (m === 'time') return sc.seconds > 0 ? sc : { ...sc, reps: 0, seconds: sc.reps };
+  return sc.seconds > 0 ? { ...sc, reps: sc.seconds, seconds: 0 } : sc;
+}
+
 /**
  * Schema da proporre quando si aggiunge un esercizio a un giorno: quello che ha già nel programma,
- * altrimenti l'ultimo allenamento registrato, altrimenti 3 × 8 a corpo libero (di tipo `fallbackType`).
+ * altrimenti l'ultimo allenamento registrato, altrimenti 3 × 8 (o 3 × 10 s) a corpo libero, di tipo `fallbackType`.
  */
-export function suggestScheme(plan: PlanItem[], entries: Entry[], exerciseId: string, fallbackType: ExerciseType = 'volume'): Scheme {
+export function suggestScheme(
+  plan: PlanItem[],
+  entries: Entry[],
+  exerciseId: string,
+  fallbackType: ExerciseType = 'volume',
+  measure: Measure = 'reps',
+): Scheme {
   const inPlan = lastInPlan(plan, exerciseId);
-  if (inPlan) return inPlan.scheme;
+  if (inPlan) return withMeasure(inPlan.scheme, measure);
   const last = lastTraining(entries, exerciseId);
-  if (last) return { type: last.type, sets: last.sets.length, reps: last.sets[0].reps, weight: maxWeight(last.sets), rest: DEFAULT_REST };
-  return { type: fallbackType, sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST };
+  if (last) {
+    const first = last.sets[0];
+    const sc = { type: last.type, sets: last.sets.length, reps: first.reps, seconds: first.seconds, weight: maxWeight(last.sets), rest: DEFAULT_REST };
+    return withMeasure(sc, measure);
+  }
+  return blankScheme(fallbackType, measure);
 }
+
+/** Schema di partenza senza storia: 3 × 8 o 3 × 10 s, a corpo libero. */
+export const blankScheme = (type: ExerciseType, measure: Measure): Scheme =>
+  measure === 'time'
+    ? { type, sets: 3, reps: 0, seconds: 10, weight: 0, rest: DEFAULT_REST }
+    : { type, sets: 3, reps: 8, seconds: 0, weight: 0, rest: DEFAULT_REST };
 
 /** Scala "tonda" per l'asse Y: 4 tacche circa. */
 export function niceScale(max: number): { top: number; step: number } {

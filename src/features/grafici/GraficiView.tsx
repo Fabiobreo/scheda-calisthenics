@@ -2,14 +2,18 @@ import { useState } from 'react';
 import { LineChart, TypeChart } from '../../components/charts';
 import { Seg, Select } from '../../components/ui';
 import { useData } from '../../data/hooks';
-import { EXERCISE_TYPES, TYPE_LABEL } from '../../data/types';
+import { EXERCISE_TYPES, TYPE_LABEL, type Measure } from '../../data/types';
 import { shortDate } from '../../lib/dates';
 import { fmt } from '../../lib/format';
-import { METRICS, repsByType, series, type Metric, type Point } from '../../lib/stats';
+import { METRICS, METRICS_BY_MEASURE, repsByType, series, type Point } from '../../lib/stats';
+
+/** Metrica nella posizione `slot` per un esercizio che si misura in `m` (0 = miglior risultato, 1 = totale, 2 = l'altra). */
+const metricOf = (m: Measure, slot: number) => METRICS_BY_MEASURE[m][slot];
 
 export function GraficiView() {
   const { exercises, done: entries } = useData();
-  const [metric, setMetric] = useState<Metric>('peso');
+  // la posizione della metrica, non la metrica: passando da un esercizio a ripetizioni a uno a tempo resta il ruolo
+  const [slot, setSlot] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [selected, setSelected] = useState<Point | null>(null);
 
@@ -26,8 +30,11 @@ export function GraficiView() {
     );
 
   const ex = shown.find((e) => e.id === picked) ?? shown.find((e) => withData.has(e.id)) ?? shown[0];
+  const metric = metricOf(ex.measure, slot);
   const m = METRICS[metric];
   const pts = series(entries, ex.id, metric);
+  const anyTimed = shown.some((x) => x.measure === 'time');
+  const anyReps = shown.some((x) => x.measure === 'reps');
   const last = pts[pts.length - 1];
   const readout = selected && pts.some((p) => p.date === selected.date) ? selected : null;
   const types = repsByType(entries);
@@ -42,9 +49,9 @@ export function GraficiView() {
         <div style={{ marginTop: 14 }}>
           <Seg
             label="Metrica"
-            value={metric}
-            options={(Object.keys(METRICS) as Metric[]).map((k) => ({ v: k, l: METRICS[k].label }))}
-            onChange={(v) => (setMetric(v), setSelected(null))}
+            value={String(slot)}
+            options={METRICS_BY_MEASURE[ex.measure].map((k, i) => ({ v: String(i), l: METRICS[k].label }))}
+            onChange={(v) => (setSlot(Number(v)), setSelected(null))}
           />
         </div>
         <div style={{ marginTop: 14 }}>
@@ -78,7 +85,9 @@ export function GraficiView() {
 
       <section className="card">
         <h2>Ripetizioni per tipo</h2>
-        <p className="sub">Quanto lavoro fai in forza, volume e tecnica, per sessione.</p>
+        <p className="sub">
+          Quanto lavoro fai in forza, volume e tecnica, per sessione.{anyTimed && ' Le tenute a tempo non hanno ripetizioni e qui non contano.'}
+        </p>
         <div className="legend">
           {EXERCISE_TYPES.map((t) => (
             <span key={t}>
@@ -94,10 +103,16 @@ export function GraficiView() {
 
       <section className="card">
         <h2>Tutti gli esercizi</h2>
-        <p className="sub">{m.label} di ogni esercizio. Tocca una scheda per aprirla in grande.</p>
+        <p className="sub">
+          {anyReps && anyTimed
+            ? `${METRICS[metricOf('reps', slot)].label} di ogni esercizio, ${METRICS[metricOf('time', slot)].label.toLowerCase()} per quelli a tempo.`
+            : `${METRICS[metricOf(anyTimed ? 'time' : 'reps', slot)].label} di ogni esercizio.`}{' '}
+          Tocca una scheda per aprirla in grande.
+        </p>
         <div className="minis">
           {shown.map((x) => {
-            const p = series(entries, x.id, metric);
+            const xm = metricOf(x.measure, slot);
+            const p = series(entries, x.id, xm);
             const l = p[p.length - 1];
             return (
               <button
@@ -113,7 +128,7 @@ export function GraficiView() {
                 {l ? (
                   <>
                     <div className="v">
-                      {fmt(l.v)} <small>{m.unit}</small>
+                      {fmt(l.v)} <small>{METRICS[xm].unit}</small>
                     </div>
                     <LineChart points={p} mini />
                   </>

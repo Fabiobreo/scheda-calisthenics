@@ -17,7 +17,7 @@ const entry = (p: Partial<Entry> & Pick<Entry, 'exerciseId' | 'date' | 'sets'>):
 });
 
 const dip = (sets: [number, number][], date: string, extra: Partial<Entry> = {}) =>
-  entry({ exerciseId: 'dip', date, sets: sets.map(([weight, reps]) => ({ weight, reps })), ...extra });
+  entry({ exerciseId: 'dip', date, sets: sets.map(([weight, reps]) => ({ weight, reps, seconds: 0 })), ...extra });
 
 describe('personalBest', () => {
   it('prende la serie con più peso, poi più ripetizioni, da allenamenti e tentativi', () => {
@@ -28,7 +28,7 @@ describe('personalBest', () => {
       dip([[45, 10]], '2026-11-11'),
     ];
     const pb = personalBest(es, 'dip');
-    expect(pb?.set).toEqual({ weight: 50, reps: 7 });
+    expect(pb?.set).toEqual({ weight: 50, reps: 7, seconds: 0 });
     expect(pb?.date).toBe('2026-11-10');
   });
 
@@ -72,7 +72,7 @@ describe('repsByType', () => {
   it('raggruppa per data e per il tipo della registrazione', () => {
     const es = [
       dip([[0, 10]], '2026-11-02'),
-      entry({ exerciseId: 'mu', date: '2026-11-02', type: 'tecnico', sets: [{ weight: 0, reps: 3 }] }),
+      entry({ exerciseId: 'mu', date: '2026-11-02', type: 'tecnico', sets: [{ weight: 0, reps: 3, seconds: 0 }] }),
     ];
     expect(repsByType(es)).toEqual([{ date: '2026-11-02', forza: 0, volume: 10, tecnico: 3 }]);
   });
@@ -96,13 +96,13 @@ describe('niceScale', () => {
 
 describe('fmtSets', () => {
   it('compatta le serie uguali', () => {
-    expect(fmtSets([{ weight: 50, reps: 6 }, { weight: 50, reps: 6 }])).toBe('2 serie × 6 rip. · 50 kg');
+    expect(fmtSets([{ weight: 50, reps: 6, seconds: 0 }, { weight: 50, reps: 6, seconds: 0 }])).toBe('2 serie × 6 rip. · 50 kg');
   });
   it('a parità di peso elenca solo le ripetizioni', () => {
-    expect(fmtSets([{ weight: 50, reps: 6 }, { weight: 50, reps: 5 }])).toBe('6 / 5 rip. · 50 kg');
+    expect(fmtSets([{ weight: 50, reps: 6, seconds: 0 }, { weight: 50, reps: 5, seconds: 0 }])).toBe('6 / 5 rip. · 50 kg');
   });
   it('elenca le serie con pesi diversi', () => {
-    expect(fmtSets([{ weight: 52.5, reps: 6 }, { weight: 50, reps: 5 }])).toBe('52,5 kg × 6 · 50 kg × 5');
+    expect(fmtSets([{ weight: 52.5, reps: 6, seconds: 0 }, { weight: 50, reps: 5, seconds: 0 }])).toBe('52,5 kg × 6 · 50 kg × 5');
   });
 });
 
@@ -128,7 +128,7 @@ describe('date delle settimane', () => {
 });
 
 describe('copyWeek', () => {
-  const sc = (sets: number, type: PlanItem['scheme']['type'] = 'volume') => ({ type, sets, reps: 5, weight: 0, rest: 90 });
+  const sc = (sets: number, type: PlanItem['scheme']['type'] = 'volume') => ({ type, sets, reps: 5, seconds: 0, weight: 0, rest: 90 });
   const at = (date: string, exerciseId: string, sortOrder: number, sets = 3): PlanItem => ({ id: `p${++n}`, date, exerciseId, sortOrder, scheme: sc(sets), assignedBy: null, note: null });
   const plan = [at('2026-11-02', 'trazioni', 1, 5), at('2026-11-02', 'dip', 2), at('2026-11-05', 'squat', 1)];
 
@@ -182,26 +182,26 @@ describe('suggestScheme', () => {
   const item = (exerciseId: string, scheme: PlanItem['scheme']): PlanItem => ({ id: `p${++n}`, date: '2026-11-02', exerciseId, sortOrder: 0, scheme, assignedBy: null, note: null });
 
   it("prende lo schema che l'esercizio ha già nel programma, l'ultimo se sono più d'uno", () => {
-    const plan = [item('dip', { type: 'volume', sets: 3, reps: 8, weight: 0, rest: 60 }), item('dip', { type: 'forza', sets: 5, reps: 5, weight: 20, rest: 120 })];
-    expect(suggestScheme(plan, [], 'dip')).toEqual({ type: 'forza', sets: 5, reps: 5, weight: 20, rest: 120 });
+    const plan = [item('dip', { type: 'volume', sets: 3, reps: 8, seconds: 0, weight: 0, rest: 60 }), item('dip', { type: 'forza', sets: 5, reps: 5, seconds: 0, weight: 20, rest: 120 })];
+    expect(suggestScheme(plan, [], 'dip')).toEqual({ type: 'forza', sets: 5, reps: 5, seconds: 0, weight: 20, rest: 120 });
     expect(suggestedRest(plan, 'dip')).toBe(120);
   });
 
   it("senza programma parte dall'ultimo allenamento, con il recupero predefinito", () => {
     const es = [dip([[30, 6], [25, 6], [25, 5]], '2026-11-09', { type: 'forza' }), dip([[10, 10]], '2026-11-02')];
-    expect(suggestScheme([], es, 'dip')).toEqual({ type: 'forza', sets: 3, reps: 6, weight: 30, rest: 90 });
+    expect(suggestScheme([], es, 'dip')).toEqual({ type: 'forza', sets: 3, reps: 6, seconds: 0, weight: 30, rest: 90 });
     expect(suggestedRest([], 'dip')).toBe(90);
   });
 
   it('senza dati propone 3 × 8 a corpo libero, del tipo predefinito', () => {
-    expect(suggestScheme([], [], 'dip')).toEqual({ type: 'volume', sets: 3, reps: 8, weight: 0, rest: 90 });
+    expect(suggestScheme([], [], 'dip')).toEqual({ type: 'volume', sets: 3, reps: 8, seconds: 0, weight: 0, rest: 90 });
     expect(suggestScheme([], [], 'dip', 'tecnico').type).toBe('tecnico');
   });
 });
 
 describe('suggestType', () => {
   const item = (date: string, type: PlanItem['scheme']['type']): PlanItem => ({
-    id: `p${++n}`, date, exerciseId: 'dip', sortOrder: 0, scheme: { type, sets: 3, reps: 5, weight: 0, rest: 90 }, assignedBy: null, note: null,
+    id: `p${++n}`, date, exerciseId: 'dip', sortOrder: 0, scheme: { type, sets: 3, reps: 5, seconds: 0, weight: 0, rest: 90 }, assignedBy: null, note: null,
   });
 
   const week = [item('2026-11-05', 'volume'), item('2026-11-02', 'forza')];

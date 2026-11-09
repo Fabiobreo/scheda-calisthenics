@@ -14,6 +14,7 @@ import type {
   ProgramItem,
   ProgramItemInput,
   Scheme,
+  WorkSet,
 } from './types';
 
 interface LinkRow {
@@ -53,8 +54,19 @@ interface ExerciseRow {
   /** nome della voce del catalogo collegata */
   catalog: { name: string } | null;
   in_records: boolean;
+  measure: Exercise['measure'];
   sort_order: number;
   archived_at: string | null;
+}
+
+/**
+ * Serie nel database. A tempo `reps` ripete i secondi, per le versioni vecchie dell'app che leggono solo `reps`
+ * (migration 0011); a ripetizioni `seconds` non c'è.
+ */
+interface SetRow {
+  weight: number;
+  reps: number;
+  seconds?: number;
 }
 
 interface EntryRow {
@@ -63,7 +75,7 @@ interface EntryRow {
   date: string;
   kind: Entry['kind'];
   type: Entry['type'];
-  sets: Entry['sets'];
+  sets: SetRow[];
   difficulty: Entry['difficulty'];
   note: string | null;
   created_at: string;
@@ -76,6 +88,8 @@ interface PlanRow {
   sort_order: number;
   sets: number;
   reps: number;
+  /** null = a ripetizioni; a tempo `reps` ripete i secondi */
+  seconds: number | null;
   weight: number;
   rest_seconds: number;
   type: Scheme['type'];
@@ -100,6 +114,7 @@ interface ProgramItemRow {
   sort_order: number;
   sets: number;
   reps: number;
+  seconds: number | null;
   weight: number;
   rest_seconds: number;
   type: Scheme['type'];
@@ -108,13 +123,21 @@ interface ProgramItemRow {
 
 const PAGE = 1000;
 
-const toScheme = (r: { type: Scheme['type']; sets: number; reps: number; weight: number; rest_seconds: number }): Scheme => ({
+const toScheme = (r: { type: Scheme['type']; sets: number; reps: number; seconds: number | null; weight: number; rest_seconds: number }): Scheme => ({
   type: r.type,
   sets: r.sets,
-  reps: r.reps,
+  reps: r.seconds ? 0 : r.reps,
+  seconds: r.seconds ?? 0,
   weight: Number(r.weight),
   rest: r.rest_seconds,
 });
+
+const toSet = (s: SetRow): WorkSet => {
+  const seconds = Number(s.seconds ?? 0) || 0;
+  return { weight: Number(s.weight), reps: seconds ? 0 : Number(s.reps), seconds };
+};
+
+const setRow = (s: WorkSet): SetRow => (s.seconds > 0 ? { weight: s.weight, reps: s.seconds, seconds: s.seconds } : { weight: s.weight, reps: s.reps });
 
 const toProgram = (r: ProgramRow): Program => ({ id: r.id, name: r.name, weeks: r.weeks, updatedAt: r.updated_at });
 
@@ -147,6 +170,7 @@ const toExercise = (r: ExerciseRow): Exercise => ({
   catalogId: r.catalog_id,
   name: r.catalog?.name ?? r.name ?? '',
   inRecords: r.in_records,
+  measure: r.measure,
   sortOrder: r.sort_order,
   archivedAt: r.archived_at,
 });
@@ -157,7 +181,7 @@ const toEntry = (r: EntryRow): Entry => ({
   date: r.date,
   kind: r.kind,
   type: r.type,
-  sets: r.sets.map((s) => ({ weight: Number(s.weight), reps: Number(s.reps) })),
+  sets: r.sets.map(toSet),
   difficulty: r.difficulty,
   note: r.note,
   createdAt: r.created_at,
@@ -179,10 +203,20 @@ function exercisePatch(p: Partial<ExerciseInput>) {
   // il nome di un esercizio del catalogo è quello del catalogo: non se ne salva uno proprio
   if (p.name !== undefined) row.name = p.catalogId ? null : p.name;
   if (p.inRecords !== undefined) row.in_records = p.inRecords;
+  // quella di una voce del catalogo la decide il catalogo
+  if (p.measure !== undefined && !p.catalogId) row.measure = p.measure;
   return row;
 }
 
-const schemeRow = (s: Scheme) => ({ type: s.type, sets: s.sets, reps: s.reps, weight: s.weight, rest_seconds: s.rest });
+const schemeRow = (s: Scheme) => ({
+  type: s.type,
+  sets: s.sets,
+  // a tempo `reps` ripete i secondi, per le versioni vecchie dell'app
+  reps: s.seconds > 0 ? s.seconds : s.reps,
+  seconds: s.seconds > 0 ? s.seconds : null,
+  weight: s.weight,
+  rest_seconds: s.rest,
+});
 
 const planRow = (p: PlanItemInput) => ({ date: p.date, exercise_id: p.exerciseId, sort_order: p.sortOrder, note: p.note, ...schemeRow(p.scheme) });
 
@@ -203,7 +237,7 @@ function entryPatch(p: Partial<EntryInput>) {
   if (p.date !== undefined) row.date = p.date;
   if (p.kind !== undefined) row.kind = p.kind;
   if (p.type !== undefined) row.type = p.type;
-  if (p.sets !== undefined) row.sets = p.sets;
+  if (p.sets !== undefined) row.sets = p.sets.map(setRow);
   if (p.difficulty !== undefined) row.difficulty = p.difficulty;
   if (p.note !== undefined) row.note = p.note;
   return row;
@@ -370,7 +404,8 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
           p_catalog: ref.catalogId,
           p_custom: ref.customName,
           p_sets: scheme.sets,
-          p_reps: scheme.reps,
+          p_reps: scheme.seconds > 0 ? scheme.seconds : scheme.reps,
+          p_seconds: scheme.seconds > 0 ? scheme.seconds : null,
           p_weight: scheme.weight,
           p_rest: scheme.rest,
           p_note: note,

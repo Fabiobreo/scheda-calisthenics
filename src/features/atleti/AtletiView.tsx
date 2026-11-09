@@ -7,10 +7,10 @@ import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
 import { ConfirmButton, Seg, TypeChip } from '../../components/ui';
 import { useCatalog, useCoachAddPlanItem, useData, useEndLink, useLinks, useRemovePlanItem, useSetPlanNote, useSetPlanScheme } from '../../data/hooks';
-import { DEFAULT_REST, type ExerciseRef } from '../../data/types';
+import { type ExerciseRef, type Measure } from '../../data/types';
 import { addDays, longDate, mondayOf, shortDate, todayStr, weekdayIndex } from '../../lib/dates';
-import { fmt, fmtSets } from '../../lib/format';
-import { suggestType } from '../../lib/stats';
+import { fmtScheme, fmtSets } from '../../lib/format';
+import { blankScheme, suggestType } from '../../lib/stats';
 import { defaultType } from '../../lib/catalog';
 import { byDay } from '../../lib/plan';
 import { GraficiView } from '../grafici/GraficiView';
@@ -156,11 +156,18 @@ function AthletePlan() {
   );
 
   // tipo da proporre: come l'atleta fa quell'esercizio in quel periodo, altrimenti il predefinito del catalogo
+  const exerciseFor = (ref: ExerciseRef | null) =>
+    ref ? exercises.find((e) => (ref.catalogId ? e.catalogId === ref.catalogId : !e.catalogId && e.name.toLowerCase() === ref.customName?.toLowerCase())) : undefined;
   const typeFor = (ref: ExerciseRef | null) => {
-    const ex = ref && exercises.find((e) => (ref.catalogId ? e.catalogId === ref.catalogId : !e.catalogId && e.name.toLowerCase() === ref.customName?.toLowerCase()));
+    const ex = exerciseFor(ref);
     const fallback = defaultType(catalog, ref ?? undefined);
     return ex ? suggestType(plan, done, ex.id, date, fallback) : fallback;
   };
+  // misura: quella dell'esercizio che l'atleta ha già, o della voce del catalogo; un nome nuovo la sceglie il trainer
+  const addRef = adding ? picker.ref() : null;
+  const addEx = exerciseFor(addRef);
+  const addMeasure: Measure = addEx?.measure ?? catalog.find((c) => c.id === addRef?.catalogId)?.measure ?? 'reps';
+  const addMeasureFree = !!addRef && !addRef.catalogId && !addEx;
 
   const go = (m: string, d: number) => {
     setMonday(m);
@@ -186,7 +193,7 @@ function AthletePlan() {
               <div>
                 <div className="pname">{ex.name}</div>
                 <div className="pmeta">
-                  Previsto: {sc.sets} × {sc.reps} · {fmt(sc.weight)} kg{sc.rest > 0 && ` · rec. ${sc.rest} s`}{' '}
+                  Previsto: {fmtScheme(sc)}{' '}
                   {mine && editing !== p.id && (
                     <button className="link small" onClick={() => setEditing(p.id)} aria-label={`Modifica ${ex.name}`}>
                       Modifica
@@ -215,6 +222,7 @@ function AthletePlan() {
               {editing === p.id && (
                 <SchemeForm
                   initial={sc}
+                  measure={ex.measure}
                   note={p.note}
                   hint={`Solo per ${title}.`}
                   saveLabel="Salva"
@@ -241,7 +249,9 @@ function AthletePlan() {
         ) : (
           <SchemeForm
             key={picker.key}
-            initial={{ type: typeFor(picker.ref()), sets: 3, reps: 8, weight: 0, rest: DEFAULT_REST }}
+            initial={blankScheme(typeFor(addRef), addMeasure)}
+            measure={addMeasure}
+            measureEditable={addMeasureFree}
             note={null}
             hint={`Per ${title}.`}
             saveLabel="Aggiungi"

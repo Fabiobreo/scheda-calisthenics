@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useRestTimer } from '../../app/restTimer';
+import { unlockAudio } from '../../app/sound';
 import { useToast } from '../../app/toast';
 import { Field, Select, Seg } from '../../components/ui';
 import { useCatalog, useCreateEntry, useData, useUpdateEntry } from '../../data/hooks';
@@ -15,21 +16,28 @@ import {
   type EntryKind,
   type Exercise,
   type ExerciseType,
+  type Measure,
   type PlanItem,
   type Scheme,
+  type WorkSet,
 } from '../../data/types';
 import { defaultType } from '../../lib/catalog';
 import { shortDate, todayStr } from '../../lib/dates';
 import { fmtSets, numInput, parseNum } from '../../lib/format';
 import { lastTraining, personalBest, suggestedRest, suggestType } from '../../lib/stats';
+import { HoldTimer } from './HoldTimer';
 
 const DRAFT_KEY = 'scheda:logger-draft';
 
 interface Row {
   weight: string;
-  reps: string;
+  /** ripetizioni o secondi, secondo la misura dell'esercizio */
+  value: string;
   done: boolean;
 }
+
+/** Ripetizioni o secondi di una serie salvata. */
+const setValue = (s: WorkSet) => String(s.seconds > 0 ? s.seconds : s.reps);
 
 interface Draft {
   /** id della registrazione in modifica; null = nuova */
@@ -65,7 +73,10 @@ function readDraft(): Draft | null {
   try {
     const d = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null') as Draft | null;
     // le bozze salvate da versioni precedenti non hanno tutti i campi
-    return d && { ...d, rest: d.rest ?? DEFAULT_REST, note: d.note ?? '', coachNote: d.coachNote ?? null, type: d.type ?? null };
+    if (!d) return null;
+    // prima del ticket 03 il valore della serie si chiamava `reps`
+    const rows = d.rows.map((r) => ({ weight: r.weight, value: r.value ?? (r as Row & { reps?: string }).reps ?? '', done: r.done }));
+    return { ...d, rows, rest: d.rest ?? DEFAULT_REST, note: d.note ?? '', coachNote: d.coachNote ?? null, type: d.type ?? null };
   } catch {
     return null;
   }
@@ -81,15 +92,19 @@ function writeDraft(d: Draft | null) {
 }
 
 /**
- * Serie di partenza. Tentativo: una serie al peso del record attuale.
+ * Serie di partenza. Tentativo: una serie al peso del record attuale (a tempo i secondi si misurano col cronometro).
  * Allenamento: lo schema del giorno, altrimenti le serie dell'ultimo allenamento, altrimenti una serie da compilare.
  */
-function startingRows(entries: Entry[], exerciseId: string, kind: EntryKind, scheme?: Scheme): Row[] {
-  if (kind === 'attempt') return [{ weight: numInput(personalBest(entries, exerciseId)?.set.weight ?? 0), reps: '1', done: false }];
-  if (scheme) return Array.from({ length: scheme.sets }, () => ({ weight: numInput(scheme.weight), reps: String(scheme.reps), done: false }));
+function startingRows(entries: Entry[], exerciseId: string, kind: EntryKind, measure: Measure, scheme?: Scheme): Row[] {
+  if (kind === 'attempt')
+    return [{ weight: numInput(personalBest(entries, exerciseId)?.set.weight ?? 0), value: measure === 'time' ? '' : '1', done: false }];
+  if (scheme) {
+    const value = String(scheme.seconds || scheme.reps);
+    return Array.from({ length: scheme.sets }, () => ({ weight: numInput(scheme.weight), value, done: false }));
+  }
   const last = lastTraining(entries, exerciseId);
-  if (last) return last.sets.map((x) => ({ weight: numInput(x.weight), reps: String(x.reps), done: false }));
-  return [{ weight: '0', reps: '', done: false }];
+  if (last) return last.sets.map((x) => ({ weight: numInput(x.weight), value: setValue(x), done: false }));
+  return [{ weight: '0', value: '', done: false }];
 }
 
 /** Tipo di partenza senza uno schema da cui si apre: i tentativi di record sono forza, il resto come in programma quel giorno. */
@@ -118,7 +133,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
           kind: e.kind,
           type: e.type,
           date: e.date,
-          rows: e.sets.map((s) => ({ weight: numInput(s.weight), reps: String(s.reps), done: true })),
+          rows: e.sets.map((s) => ({ weight: numInput(s.weight), value: setValue(s), done: true })),
           difficulty: e.difficulty,
           rest: suggestedRest(plan, e.exerciseId),
           note: e.note ?? '',
@@ -145,7 +160,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
         kind,
         type: o.scheme?.type ?? startingType(plan, done, catalog, ex, kind, date),
         date,
-        rows: startingRows(done, ex.id, kind, o.scheme),
+        rows: startingRows(done, ex.id, kind, ex.measure, o.scheme),
         difficulty: null,
         rest: o.scheme?.rest ?? suggestedRest(plan, ex.id),
         note: '',
@@ -176,6 +191,8 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
   const pool = attempt ? active.filter((e) => e.inRecords) : active;
   // l'esercizio aperto resta tra le scelte anche se è archiviato
   const choices = ex && !pool.includes(ex) ? [ex, ...pool] : pool;
+  // serie che si sta cronometrando
+  const [holding, setHolding] = useState<number | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
@@ -198,6 +215,8 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
   const last = attempt ? undefined : lastTraining(done, ex.id);
   const future = draft.date > todayStr();
   const rest = draft.rest;
+  const timed = ex.measure === 'time';
+  const unit = timed ? 'Secondi' : 'Ripetizioni';
 
   const patch = (p: Partial<Draft>) => setDraft({ ...draft, ...p });
   const patchRow = (i: number, p: Partial<Row>) => patch({ rows: draft.rows.map((r, j) => (j === i ? { ...r, ...p } : r)) });
@@ -208,16 +227,38 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
       patch({
         exerciseId: id,
         type: startingType(plan, done, catalog, next, draft.kind, draft.date),
-        rows: startingRows(done, id, draft.kind),
+        rows: startingRows(done, id, draft.kind, next.measure),
         rest: suggestedRest(plan, id),
       });
+  };
+
+  const startRest = (i: number) => {
+    if (!attempt && rest > 0 && i < draft.rows.length - 1) timer.start(rest, `Recupero · ${ex.name}`);
   };
 
   const toggleDone = (i: number) => {
     const done = !draft.rows[i].done;
     patchRow(i, { done });
-    if (done && rest > 0 && i < draft.rows.length - 1) timer.start(rest, `Recupero · ${ex.name}`);
+    if (done) startRest(i);
   };
+
+  const openHold = (i: number) => {
+    // l'audio si sblocca solo durante un tocco
+    unlockAudio();
+    timer.stop();
+    setHolding(i);
+  };
+
+  const stopHold = (seconds: number) => {
+    const i = holding;
+    setHolding(null);
+    if (i === null) return;
+    if (seconds < 1) return toast('Tenuta sotto il secondo: non la segno');
+    patchRow(i, { value: String(seconds), done: true });
+    startRest(i);
+  };
+
+  const cancelHold = () => setHolding(null);
 
   function close() {
     const started = !editing && draft.rows.some((r) => r.done);
@@ -226,10 +267,15 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
   }
 
   const save = () => {
-    const sets = draft.rows.map((r) => ({ weight: parseNum(r.weight || '0'), reps: Number(r.reps) }));
+    const sets = draft.rows.map((r): WorkSet => {
+      const weight = parseNum(r.weight || '0');
+      const n = r.value.trim() === '' ? NaN : Number(r.value);
+      return timed ? { weight, reps: 0, seconds: n } : { weight, reps: n, seconds: 0 };
+    });
     if (!sets.length) return toast('Aggiungi almeno una serie');
-    if (sets.some((s) => !(s.weight >= 0 && s.weight < 10000) || !Number.isInteger(s.reps) || s.reps < 1))
-      return toast('Controlla peso e ripetizioni di ogni serie');
+    const bad = (n: number) => !Number.isInteger(n) || n < 1;
+    if (sets.some((s) => !(s.weight >= 0 && s.weight < 10000) || (timed ? bad(s.seconds) || s.seconds > 3600 : bad(s.reps))))
+      return toast(timed ? 'Controlla peso e secondi di ogni serie (da 1 a 3600)' : 'Controlla peso e ripetizioni di ogni serie');
     const note = draft.note.trim();
     if (note.length > 500) return toast('Nota troppo lunga (massimo 500 caratteri)');
     const body = { exerciseId: draft.exerciseId, kind: draft.kind, type: draft.type ?? undefined, date: draft.date || todayStr(), sets, difficulty: draft.difficulty, note: note || null };
@@ -275,15 +321,26 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
             <div className="set-h" aria-hidden="true">
               <span>#</span>
               <span>Peso (kg)</span>
-              <span>Rip.</span>
+              <span>{timed ? 'Secondi' : 'Rip.'}</span>
               <span />
             </div>
             {draft.rows.map((r, i) => (
               <div className={`set${r.done ? ' done' : ''}`} key={i}>
                 <span className="set-n">{i + 1}</span>
                 <input aria-label={`Peso serie ${i + 1}`} inputMode="decimal" value={r.weight} placeholder="0" onChange={(e) => patchRow(i, { weight: e.target.value })} />
-                <input aria-label={`Ripetizioni serie ${i + 1}`} inputMode="numeric" value={r.reps} onChange={(e) => patchRow(i, { reps: e.target.value })} />
+                <input
+                  aria-label={`${unit} serie ${i + 1}`}
+                  inputMode="numeric"
+                  value={r.value}
+                  placeholder={timed ? 's' : undefined}
+                  onChange={(e) => patchRow(i, { value: e.target.value })}
+                />
                 <div className="set-act">
+                  {timed && (
+                    <button className="tmr" onClick={() => openHold(i)} aria-label={`Cronometra serie ${i + 1}`} title="Cronometro">
+                      ▶
+                    </button>
+                  )}
                   {!attempt && (
                     <button className={`check${r.done ? ' on' : ''}`} onClick={() => toggleDone(i)} aria-pressed={r.done} aria-label={`Serie ${i + 1} fatta`}>
                       ✓
@@ -305,7 +362,7 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
                 className="btn small ghost"
                 onClick={() => {
                   const last = draft.rows[draft.rows.length - 1];
-                  patch({ rows: [...draft.rows, { weight: last?.weight ?? '0', reps: last?.reps ?? '1', done: false }] });
+                  patch({ rows: [...draft.rows, { weight: last?.weight ?? '0', value: last?.value ?? (timed ? '' : '1'), done: false }] });
                 }}
               >
                 + Serie
@@ -350,6 +407,15 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
           </div>
         </div>
       </div>
+      {holding !== null && draft.rows[holding] && (
+        <HoldTimer
+          // obiettivo: i secondi già scritti nella serie (dallo schema del giorno o dall'ultima volta)
+          target={Number.isInteger(Number(draft.rows[holding].value)) ? Math.max(0, Number(draft.rows[holding].value)) : 0}
+          label={`${ex.name} · serie ${holding + 1}`}
+          onStop={stopHold}
+          onCancel={cancelHold}
+        />
+      )}
     </div>
   );
 }

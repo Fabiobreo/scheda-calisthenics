@@ -28,6 +28,9 @@ export const DIFFICULTY_LABEL: Record<Difficulty, string> = { facile: 'Facile', 
 /** Come si misura un esercizio: ripetizioni o secondi di tenuta. */
 export type Measure = 'reps' | 'time';
 
+export const MEASURES: Measure[] = ['reps', 'time'];
+export const MEASURE_LABEL: Record<Measure, string> = { reps: 'Ripetizioni', time: 'Secondi' };
+
 export type Category = 'tirata' | 'spinta' | 'gambe' | 'core' | 'skill';
 
 export const CATEGORIES: Category[] = ['tirata', 'spinta', 'gambe', 'core', 'skill'];
@@ -54,15 +57,19 @@ export interface Exercise {
   /** il nome del catalogo, oppure quello scelto dall'utente */
   name: string;
   inRecords: boolean;
+  /** quella della voce del catalogo; per un personalizzato la sceglie l'utente (non cambia dopo la prima registrazione) */
+  measure: Measure;
   sortOrder: number;
   archivedAt: string | null;
 }
 
 export type ExerciseInput = Omit<Exercise, 'id' | 'sortOrder' | 'archivedAt'>;
 
+/** Una serie: a ripetizioni (`seconds` = 0) oppure a tempo (`reps` = 0), secondo la misura dell'esercizio. */
 export interface WorkSet {
   weight: number;
   reps: number;
+  seconds: number;
 }
 
 export interface Entry {
@@ -83,12 +90,15 @@ export interface Entry {
 /** Senza `type` lo completa il database: dal programma di quel giorno, poi dall'esercizio. */
 export type EntryInput = Omit<Entry, 'id' | 'createdAt' | 'type'> & { type?: ExerciseType };
 
-/** Tipo, serie × ripetizioni × peso e recupero di un esercizio in un giorno del programma. */
+/** Tipo, serie × ripetizioni (o secondi) × peso e recupero di un esercizio in un giorno del programma. */
 export interface Scheme {
   /** lo stesso esercizio può essere di forza un giorno e di volume un altro */
   type: ExerciseType;
   sets: number;
+  /** 0 negli esercizi a tempo */
   reps: number;
+  /** secondi di tenuta di ogni serie; 0 negli esercizi a ripetizioni */
+  seconds: number;
   weight: number;
   /** secondi di recupero tra le serie; 0 = niente timer */
   rest: number;

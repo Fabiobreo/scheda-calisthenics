@@ -3,7 +3,7 @@ import { useToast } from '../../app/toast';
 import { ConfirmButton, Field, Seg, Select } from '../../components/ui';
 import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useTrainerLock, useUpdateExercise } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
-import { CATEGORY_LABEL, type CatalogExercise, type Exercise } from '../../data/types';
+import { CATEGORY_LABEL, MEASURE_LABEL, MEASURES, type CatalogExercise, type Exercise, type Measure } from '../../data/types';
 import { byCategory, matchCatalog } from '../../lib/catalog';
 
 type Source = 'catalog' | 'custom';
@@ -15,6 +15,8 @@ interface Form {
   catalogId: string;
   name: string;
   inRecords: boolean;
+  /** solo per i personalizzati: quelli del catalogo hanno la misura della voce */
+  measure: Measure;
 }
 
 const blank = (first?: CatalogExercise): Form => ({
@@ -23,6 +25,7 @@ const blank = (first?: CatalogExercise): Form => ({
   catalogId: first?.id ?? '',
   name: '',
   inRecords: false,
+  measure: 'reps',
 });
 
 const toForm = (e: Exercise): Form => ({
@@ -31,6 +34,7 @@ const toForm = (e: Exercise): Form => ({
   catalogId: e.catalogId ?? '',
   name: e.name,
   inRecords: e.inRecords,
+  measure: e.measure,
 });
 
 /** Confronto dei nomi come lo fa il database: maiuscole e spazi esterni non contano. */
@@ -53,6 +57,9 @@ export function EserciziView() {
   const linked = new Set(exercises.map((e) => e.catalogId));
   const free = byCategory(catalog.filter((c) => !linked.has(c.id)));
   const editing = form?.id ? exercises.find((e) => e.id === form.id) : undefined;
+  const count = (id: string) => entries.filter((e) => e.exerciseId === id).length;
+  const measureLocked = !!editing && count(editing.id) > 0;
+  const pickedCatalog = form?.source === 'catalog' && !form.id ? catalog.find((c) => c.id === form.catalogId) : undefined;
 
   const patch = (p: Partial<Form>) => form && setForm({ ...form, ...p });
   const pickCatalog = (id: string) => {
@@ -68,7 +75,7 @@ export function EserciziView() {
       }
       const c = catalog.find((x) => x.id === form.catalogId);
       if (!c) return toast('Scegli un esercizio dal catalogo');
-      create.mutate({ catalogId: c.id, name: c.name, inRecords: form.inRecords });
+      create.mutate({ catalogId: c.id, name: c.name, inRecords: form.inRecords, measure: c.measure });
       return setForm(null);
     }
     const name = form.name.trim();
@@ -84,12 +91,13 @@ export function EserciziView() {
       setForm({ ...form, source: 'catalog', catalogId: known.id });
       return toast(`"${known.name}" è nel catalogo: l'ho scelto da lì`);
     }
-    if (form.id) update.mutate({ id: form.id, patch: { name, inRecords: form.inRecords } });
-    else create.mutate({ catalogId: null, name, inRecords: form.inRecords });
+    // con delle registrazioni la misura resta quella: lo storico e i grafici restano coerenti
+    const measure = editing && count(editing.id) ? editing.measure : form.measure;
+    if (form.id) update.mutate({ id: form.id, patch: { name, inRecords: form.inRecords, measure } });
+    else create.mutate({ catalogId: null, name, inRecords: form.inRecords, measure });
     setForm(null);
   };
 
-  const count = (id: string) => entries.filter((e) => e.exerciseId === id).length;
 
   return (
     <section className="card">
@@ -121,6 +129,7 @@ export function EserciziView() {
             editing ? (
               <p className="pname">
                 {editing.name} <span className="chip mut">Dal catalogo</span>
+                {editing.measure === 'time' && <span className="chip mut">A tempo</span>}
               </p>
             ) : free.length ? (
               <>
@@ -130,21 +139,39 @@ export function EserciziView() {
                   options={free.map((c) => ({ v: c.id, l: c.name, group: CATEGORY_LABEL[c.category] }))}
                   onChange={pickCatalog}
                 />
-                <p className="hint">Non c'è quello che cerchi? Crealo personalizzato.</p>
+                <p className="hint">
+                  {pickedCatalog?.measure === 'time' && 'Si misura in secondi di tenuta. '}Non c'è quello che cerchi? Crealo personalizzato.
+                </p>
               </>
             ) : (
               <p className="hint">Hai già tutti gli esercizi del catalogo. Per altri movimenti scegli "Personalizzato".</p>
             )
           ) : (
-            <Field
-              label="Nome"
-              value={form.name}
-              autoComplete="off"
-              autoFocus
-              maxLength={80}
-              hint={form.id ? undefined : 'Solo per movimenti che non sono nel catalogo.'}
-              onChange={(e) => patch({ name: e.target.value })}
-            />
+            <>
+              <Field
+                label="Nome"
+                value={form.name}
+                autoComplete="off"
+                autoFocus
+                maxLength={80}
+                hint={form.id ? undefined : 'Solo per movimenti che non sono nel catalogo.'}
+                onChange={(e) => patch({ name: e.target.value })}
+              />
+              <div className="fld">
+                <span>Si misura in</span>
+                {measureLocked ? (
+                  <>
+                    <p className="pname">{MEASURE_LABEL[form.measure]}</p>
+                    <span className="fld-hint">Ha già delle registrazioni: la misura non si cambia più, così storico e grafici restano coerenti.</span>
+                  </>
+                ) : (
+                  <>
+                    <Seg label="Si misura in" value={form.measure} options={MEASURES.map((m) => ({ v: m, l: MEASURE_LABEL[m] }))} onChange={(measure) => patch({ measure })} />
+                    <span className="fld-hint">Secondi per le tenute (plank, L-sit, verticale…). Dopo la prima registrazione non si cambia più.</span>
+                  </>
+                )}
+              </div>
+            </>
           )}
           <label className="check-row">
             <input type="checkbox" checked={form.inRecords} onChange={(e) => patch({ inRecords: e.target.checked })} />
@@ -168,6 +195,7 @@ export function EserciziView() {
             <b>{e.name}</b>
             <div className="chips">
               {!e.catalogId && <span className="chip mut">Personalizzato</span>}
+              {e.measure === 'time' && <span className="chip mut">A tempo</span>}
               {e.inRecords && <span className="chip mut">Nei record</span>}
             </div>
           </div>

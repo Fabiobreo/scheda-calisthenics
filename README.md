@@ -120,12 +120,16 @@ supabase/migrations/  schema SQL
   schema si usi, e lo stesso esercizio per atleti e trainer. Il tipo (forza/volume/tecnico) non è dell'esercizio ma del
   giorno: sta in `plan_items`, `program_items` ed `entries` (0009). `exercises.type` resta solo per le versioni vecchie
   dell'app, e i trigger completano il tipo delle righe che quelle scrivono senza.
-- **entries**: un esercizio svolto in una data, con `sets` = `[{ weight, reps }, ...]`, tipo, difficoltà e `kind`
+  `measure` dice come si misura: `reps` (ripetizioni) o `time` (secondi di tenuta: planche, front lever, plank…).
+  Per quelli del catalogo è quella della voce; un personalizzato la sceglie l'utente e non la cambia più dopo la prima
+  registrazione (0011).
+- **entries**: un esercizio svolto in una data, con `sets` = `[{ weight, reps }, ...]` (a tempo
+  `[{ weight, reps, seconds }, ...]`, con `reps` uguale ai secondi per le versioni vecchie dell'app), tipo, difficoltà e `kind`
   (`training` o `attempt` per i tentativi di record). Una data futura vuol dire allenamento in programma:
   compare nello storico come "In programma" ed entra in record e grafici solo quando arriva quel giorno.
-- **plan_items**: esercizi programmati in una data del calendario (`date`), con `type`/`sets`/`reps`/`weight`/`rest_seconds`
-  del giorno (obbligatori: lo schema sta solo qui). Un esercizio al massimo una volta per giorno. Nell'app si scorre
+- **plan_items**: esercizi programmati in una data del calendario (`date`), con `type`/`sets`/`reps`/`seconds`/`weight`/`rest_seconds`
+  del giorno (a tempo `seconds` c'è e `reps` lo ripete; a ripetizioni `seconds` è null) (obbligatori: lo schema sta solo qui). Un esercizio al massimo una volta per giorno. Nell'app si scorre
   settimana per settimana e una settimana si può copiare nelle successive.
 
 I record personali non sono più una lista separata: sono calcolati dalla miglior serie singola
-(più peso, a parità di peso più ripetizioni) tra allenamenti e tentativi degli esercizi segnati "nei record".
+(più peso, a parità di peso più ripetizioni, o più secondi nelle tenute) tra allenamenti e tentativi degli esercizi segnati "nei record".

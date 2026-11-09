@@ -18,7 +18,7 @@ import {
 import { CATEGORY_LABEL, DIFFICULTY_LABEL, type PlanChanges, type PlanItem } from '../../data/types';
 import { byCategory, defaultType } from '../../lib/catalog';
 import { addDays, inWeek, longDate, mondayOf, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
-import { fmt, fmtSets } from '../../lib/format';
+import { fmt, fmtScheme, fmtSets } from '../../lib/format';
 import { byDay, copyWeek, weekItems, type CopyMode } from '../../lib/plan';
 import { lastTraining, personalBest, recordEntryIds, suggestScheme } from '../../lib/stats';
 import { useLogger } from '../logger/Logger';
@@ -56,7 +56,7 @@ function Records() {
           </button>
         )}
       </div>
-      <p className="sub">Miglior serie singola: più peso, a parità di peso più ripetizioni. Conta anche gli allenamenti.</p>
+      <p className="sub">Miglior serie singola: più peso, a parità di peso più ripetizioni (o più secondi, nelle tenute). Conta anche gli allenamenti.</p>
 
       <div className="rlist">
         {tracked.length === 0 && <p className="empty">Nessun esercizio nei record. Aggiungine uno qui sotto.</p>}
@@ -68,7 +68,15 @@ function Records() {
               <div className="rname">{ex.name}</div>
               {pb ? (
                 <div className="rval">
-                  {fmt(pb.set.weight)} <small>kg × {pb.set.reps}</small>
+                  {pb.set.seconds > 0 && pb.set.weight === 0 ? (
+                    <>
+                      {pb.set.seconds} <small>s</small>
+                    </>
+                  ) : (
+                    <>
+                      {fmt(pb.set.weight)} <small>kg × {pb.set.seconds > 0 ? `${pb.set.seconds} s` : pb.set.reps}</small>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="rval none">—</div>
@@ -173,6 +181,7 @@ function Programma() {
   const addCatalogItem = addId.startsWith('cat:') ? catalog.find((c) => `cat:${c.id}` === addId) : undefined;
   // una voce del catalogo archiviata dall'utente si ripristina: lo storico resta suo
   const archivedTwin = addCatalogItem && exercises.find((e) => e.archivedAt && e.catalogId === addCatalogItem.id);
+  const addMeasure = addCatalogItem?.measure ?? byId.get(addId)?.measure ?? 'reps';
   const future = date > today;
   const title = longDate(date);
   const dayName = title.split(' ')[0];
@@ -198,7 +207,7 @@ function Programma() {
           </button>
         )}
       </div>
-      <p className="sub">Scegli gli esercizi di ogni giorno con serie, ripetizioni, peso e recupero. Prepara una settimana e copiala in quelle dopo.</p>
+      <p className="sub">Scegli gli esercizi di ogni giorno con serie, ripetizioni (o secondi), peso e recupero. Prepara una settimana e copiala in quelle dopo.</p>
 
       <WeekDays
         monday={monday}
@@ -228,7 +237,7 @@ function Programma() {
               <div>
                 <div className="pname">{ex.name}</div>
                 <div className="pmeta">
-                  {sc.sets} × {sc.reps} · {fmt(sc.weight)} kg{sc.rest > 0 && ` · rec. ${sc.rest} s`}{' '}
+                  {fmtScheme(sc)}{' '}
                   {!fromTrainer && editing !== p.id && (
                     <button className="link small" onClick={() => setEditing(p.id)} aria-label={`Modifica serie, ripetizioni, peso e recupero di ${ex.name} per ${dayName}`}>
                       Modifica
@@ -273,6 +282,7 @@ function Programma() {
               {editing === p.id && (
                 <SchemeForm
                   initial={sc}
+                  measure={ex.measure}
                   hint={`Vale solo per ${title}.`}
                   saveLabel="Salva"
                   onSave={(scheme) => {
@@ -298,7 +308,8 @@ function Programma() {
           {addOpen && addId && (
             <SchemeForm
               key={addId}
-              initial={suggestScheme(plan, done, archivedTwin?.id ?? addId, addCatalogItem?.defaultType ?? defaultType(catalog, byId.get(addId)))}
+              initial={suggestScheme(plan, done, archivedTwin?.id ?? addId, addCatalogItem?.defaultType ?? defaultType(catalog, byId.get(addId)), addMeasure)}
+              measure={addMeasure}
               hint={`Per ${title}: poi puoi cambiarlo quando vuoi.`}
               saveLabel="Aggiungi"
               onSave={(scheme) => {

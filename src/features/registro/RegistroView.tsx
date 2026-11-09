@@ -5,7 +5,7 @@ import { useData, useDeleteEntry, useUpdateEntry } from '../../data/hooks';
 import { DIFFICULTIES, DIFFICULTY_LABEL, type Entry } from '../../data/types';
 import { longDate, todayStr } from '../../lib/dates';
 import { fmtSets } from '../../lib/format';
-import { recordEntryIds, totalReps } from '../../lib/stats';
+import { recordEntryIds, totalReps, totalSeconds } from '../../lib/stats';
 import { useLogger } from '../logger/Logger';
 
 const PAGE = 20;
@@ -49,12 +49,15 @@ export function RegistroView() {
       {dates.slice(0, shown).map((d) => {
         const list = byDate.get(d)!;
         const reps = list.reduce((s, e) => s + totalReps(e.sets), 0);
+        const secs = list.reduce((s, e) => s + totalSeconds(e.sets), 0);
+        // un giorno di sole tenute non mostra "0 rip."
+        const work = [reps || !secs ? `${reps} rip.` : '', secs ? `${secs} s di tenuta` : ''].filter(Boolean).join(' · ');
         return (
           <div className="grp" key={d}>
             <div className="grp-h">
               <h3>{longDate(d)}</h3>
               <span>
-                {list.length} {list.length === 1 ? 'esercizio' : 'esercizi'} · {reps} rip.
+                {list.length} {list.length === 1 ? 'esercizio' : 'esercizi'} · {work}
               </span>
             </div>
             {list.map((e) => {
