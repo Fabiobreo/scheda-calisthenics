@@ -127,6 +127,20 @@ main p a { padding: 13px 4px; margin: 0 -4px; }
 .fld { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .fld > span:not(.fld-hint):not(.fld-err), .fld-l { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
 .fld-hint { color: var(--muted); font-size: 14px; }
+/* scelta con ricerca (audit A17): elenco sotto il campo, sopra il resto della pagina */
+.ss { position: relative; }
+.ss input { padding-right: 40px; background: var(--bg) no-repeat right 14px center / 16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238da0a7' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E"); }
+.ss-list {
+  position: absolute; z-index: 25; top: 100%; left: 0; right: 0; margin: 6px 0 0; padding: 6px; list-style: none;
+  max-height: min(52dvh, 360px); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--surface2); border: 1px solid var(--line-strong); border-radius: var(--r-ctl); box-shadow: var(--shadow);
+}
+.ss-list.up { top: auto; bottom: 100%; margin: 0 0 6px; }
+.ss-group { padding: 10px 10px 4px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.ss-opt { min-height: 44px; display: flex; align-items: center; padding: 0 10px; border-radius: 10px; cursor: pointer; }
+.ss-opt.act { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.ss-opt.on { color: var(--accent); font-weight: 600; }
+.ss-none { padding: 12px 10px; color: var(--muted); }
 .fld-err { color: var(--danger); font-size: 14px; font-weight: 500; }
 input, select { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 12px 14px; width: 100%; min-width: 0; font-size: 16px; min-height: 48px; transition: border-color .15s, box-shadow .15s; }
 input:focus-visible, select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
@@ -156,6 +170,7 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .chip.mut { color: var(--muted); }
 .chip.pr { color: var(--elite); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--elite) 45%, transparent); }
 .dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; flex: none; }
+.dot.forza { background: var(--forza); } .dot.volume { background: var(--volume); } .dot.tecnico { background: var(--tecnico); }
 
 /* programma */
 /* sette giorni da almeno 44 px anche a 375 px: la riga sborda un poco nel margine della scheda */
@@ -210,6 +225,7 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .g-tip text { fill: var(--fg); font-family: var(--f-body); font-size: 12px; font-weight: 600; }
 .g-tip text.s { fill: var(--muted); font-weight: 500; font-size: 12px; }
 .g-bar { stroke: var(--surface); stroke-width: 1; }
+.g-bar.forza { fill: var(--forza); } .g-bar.volume { fill: var(--volume); } .g-bar.tecnico { fill: var(--tecnico); }
 /* il grafico è in unità del viewBox (340 di larghezza): 13 diventa circa 12 px su un telefono */
 .g-txt { fill: var(--muted); font-family: var(--f-body); font-size: 13px; }
 /* trascinare in orizzontale legge i valori, in verticale la pagina scorre */
@@ -331,6 +347,7 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
   background: color-mix(in srgb, var(--ok) 14%, transparent); border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
 }
 .notice p { margin: 0; }
+.invite-note { margin-bottom: -10px; }
 .notice.err { background: color-mix(in srgb, var(--danger) 12%, transparent); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
 /* la regione resta sempre nel DOM perché gli screen reader annuncino i messaggi; da vuota non aggiunge spazio */
 .notice-slot:empty { margin-top: -18px; }
@@ -350,6 +367,21 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   -webkit-box-shadow: 0 0 0 100px var(--bg) inset; -webkit-text-fill-color: var(--fg); caret-color: var(--fg);
 }
 
+/* scheletri di caricamento (audit A13): blocchi con un riflesso che scorre, fermi con "riduci movimento" */
+.skel { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
+.skel i {
+  display: block; border-radius: var(--r-card); border: 1px solid var(--line);
+  background: linear-gradient(100deg, var(--surface) 30%, var(--surface2) 50%, var(--surface) 70%) 0 0 / 300% 100%; animation: skel 1.4s ease-in-out infinite;
+}
+.skel-hero { height: 148px; }
+.skel-card { height: 300px; }
+.skel-row { height: 78px; }
+.skel-in { gap: 10px; padding-top: 14px; }
+.skel-in i { height: 22px; border-radius: 8px; }
+.skel-in i:nth-child(2) { width: 80%; }
+.skel-in i:nth-child(3) { width: 60%; }
+@keyframes skel { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skel i { animation: none; } }
 .empty { color: var(--muted); padding: 18px 0 4px; font-size: 16px; margin: 0; }
 .banner { background: var(--surface2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 8px 0; font-size: 15px; }
 #toast {
@@ -385,18 +417,18 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .hero .avatar.fig { width: 96px; height: 96px; }
 .av-svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .av-aura-in { stop-color: var(--accent); stop-opacity: .45; }
-.av-aura { fill: none; stroke: var(--accent); stroke-width: 3.5; }
+.av-aura { fill: none; stroke: var(--accent); stroke-width: 3.5; opacity: var(--aura, 0); }
 .avatar.elite .av-aura { stroke: var(--elite); }
 .av-aura-out { stop-color: var(--accent); stop-opacity: 0; }
 .avatar.elite .av-aura-in, .avatar.elite .av-aura-out { stop-color: var(--elite); }
 .av-body-top { stop-color: var(--line); }
 .av-body-bottom { stop-color: var(--surface); }
-.av-body { stroke: var(--accent); stroke-width: 1.1; stroke-linejoin: round; }
+.av-body { stroke: var(--accent); stroke-width: 1.1; stroke-linejoin: round; stroke-opacity: calc(.45 + .55 * var(--aura, 0)); }
 .avatar.elite .av-body { stroke: var(--elite); }
 .avatar.sm .av-body { stroke-width: 2; }
 .av-lines { fill: none; stroke: var(--accent); stroke-width: .8; stroke-linecap: round; }
 .avatar.elite .av-lines { stroke: var(--elite); }
-.av-bolts { fill: none; stroke: var(--spark); stroke-width: 1.1; stroke-linejoin: round; stroke-linecap: round; }
+.av-bolts { fill: none; stroke: var(--spark); stroke-width: 1.1; stroke-linejoin: round; stroke-linecap: round; opacity: calc(.45 + .55 * var(--shocks, 0)); }
 .avatar.sm .av-bolts { stroke-width: 2.2; }
 .av-bolts path { animation: av-flick 1.6s steps(1) infinite; }
 @keyframes av-flick { 0%, 100% { opacity: 1; } 18% { opacity: .15; } 24% { opacity: .9; } 55% { opacity: .35; } 70% { opacity: 1; } }
@@ -467,7 +499,7 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .zbar { grid-area: bar; position: relative; display: block; height: 10px; border-radius: 999px; background: var(--surface2); box-shadow: inset 0 0 0 1px var(--line); }
 .zbar i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent-deep), var(--accent)); box-shadow: var(--glow); }
 .zbar i.hot { background: linear-gradient(90deg, var(--elite), var(--elite-hot)); box-shadow: var(--glow-elite); }
-.zbar.elite i.full { border-radius: 999px 0 0 999px; box-shadow: none; }
+.zbar.elite i.full { width: 50%; border-radius: 999px 0 0 999px; box-shadow: none; }
 .zbar.elite i.hot { border-radius: 0 999px 999px 0; }
 /* sotto-esercizio in ELITE: la barra è solo la parte ELITE, arrotondata da entrambi i lati */
 .zbar.elite i.hot:first-child { border-radius: 999px; }
@@ -540,3 +572,10 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 .alert-t i { font-style: normal; display: inline-block; width: 1.3em; text-align: center; color: var(--danger); }
 .alert-t.record i { color: var(--elite); }
 .alert-t.no-plan i { color: var(--accent); }
+
+/* spaziature e titoli che prima erano scritti negli elementi (audit A23): in fondo, così vincono sulle regole dei componenti */
+.mt-8 { margin-top: 8px; } .mt-10 { margin-top: 10px; } .mt-12 { margin-top: 12px; } .mt-14 { margin-top: 14px; } .mt-16 { margin-top: 16px; }
+.between { justify-content: space-between; }
+.span-all { grid-column: 1 / -1; }
+.day-title { font-size: 22px; margin-top: 18px; }
+.copy-title { font-size: 20px; }

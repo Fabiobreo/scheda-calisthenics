@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useState, type InputHTMLAttributes, type ReactNode, type Ref } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from 'react';
 import { TYPE_LABEL, type ExerciseType } from '../data/types';
 
 /**
@@ -21,6 +21,27 @@ export function usePageTitle(title: string | null) {
     if (title === null) return;
     document.title = title ? `${title} · Scheda Calisthenics` : 'Scheda Calisthenics';
   }, [title]);
+}
+
+/**
+ * Segnaposto mentre i dati arrivano (audit A13): la forma della pagina al posto di "Caricamento…", così non c'è uno
+ * schermo vuoto e il contenuto non salta quando appare. `inline` = poche righe dentro una scheda già disegnata.
+ */
+export function Skeleton({ inline }: { inline?: boolean }) {
+  return inline ? (
+    <div className="skel skel-in" role="status" aria-label="Caricamento">
+      <i />
+      <i />
+      <i />
+    </div>
+  ) : (
+    <div className="skel" role="status" aria-label="Caricamento">
+      <i className="skel-hero" />
+      <i className="skel-card" />
+      <i className="skel-row" />
+      <i className="skel-row" />
+    </div>
+  );
 }
 
 export function Seg<T extends string>({
@@ -148,7 +169,14 @@ export function PasswordField({ label, aside, hint, error, ...input }: FieldProp
   );
 }
 
-type SelectOption<T> = { v: T; l: string; /** opzioni consecutive con lo stesso gruppo finiscono in un optgroup */ group?: string };
+type SelectOption<T> = {
+  v: T;
+  l: string;
+  /** opzioni consecutive con lo stesso gruppo finiscono in un optgroup */
+  group?: string;
+  /** altri nomi con cui si trova cercando (SearchSelect), es. "pull up" per Trazioni */
+  keywords?: string[];
+};
 
 export function Select<T extends string>({ label, value, options, onChange, hideLabel }: {
   label: string;
@@ -191,8 +219,134 @@ export function Select<T extends string>({ label, value, options, onChange, hide
 export function TypeChip({ type }: { type: ExerciseType }) {
   return (
     <span className="chip">
-      <i className="dot" style={{ background: `var(--${type})` }} />
+      <i className={`dot ${type}`} />
       {TYPE_LABEL[type]}
     </span>
+  );
+}
+
+/** Minuscole, senza accenti e spazi doppi: "Pistol  squàt" e "pistol squat" sono la stessa ricerca. */
+const fold = (t: string) => t.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * Scelta da un elenco lungo con ricerca (audit A17): si scrive e l'elenco si restringe, per nome, gruppo o sinonimo.
+ * Stesse opzioni e gruppi di `Select`. Combobox ARIA: frecce per muoversi, Invio per scegliere, Esc per chiudere.
+ */
+export function SearchSelect<T extends string>({ label, value, options, onChange, hideLabel, placeholder = 'Cerca…' }: {
+  label: string;
+  value: T;
+  options: SelectOption<T>[];
+  onChange: (v: T) => void;
+  hideLabel?: boolean;
+  placeholder?: string;
+}) {
+  const id = useId();
+  const listId = `${id}-list`;
+  const [query, setQuery] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  // in fondo alla pagina l'elenco si apre verso l'alto, invece di finire sotto la barra in basso
+  const [up, setUp] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
+  const selected = options.find((o) => o.v === value);
+  const q = query === null ? '' : fold(query);
+  const shown = q
+    ? options.filter((o) => [o.l, o.group ?? '', ...(o.keywords ?? [])].some((t) => fold(t).includes(q)))
+    : options;
+  const act = Math.min(active, Math.max(shown.length - 1, 0));
+
+  useEffect(() => {
+    listRef.current?.querySelector(`[data-i="${act}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [act, open]);
+
+  const choose = (o: SelectOption<T>) => {
+    onChange(o.v);
+    setQuery(null);
+    setOpen(false);
+  };
+
+  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) return setOpen(true);
+      setActive(Math.max(0, Math.min(shown.length - 1, act + (e.key === 'ArrowDown' ? 1 : -1))));
+    } else if (e.key === 'Enter' && open) {
+      e.preventDefault();
+      if (shown[act]) choose(shown[act]);
+    } else if (e.key === 'Escape' && open) {
+      e.preventDefault();
+      setQuery(null);
+      setOpen(false);
+    }
+  };
+
+  // intestazioni di gruppo quando cambia il gruppo, come gli optgroup
+  const items: ReactNode[] = [];
+  shown.forEach((o, i) => {
+    if (o.group && o.group !== shown[i - 1]?.group)
+      items.push(
+        <li key={`g-${o.group}-${i}`} className="ss-group" role="presentation">
+          {o.group}
+        </li>,
+      );
+    items.push(
+      <li
+        key={o.v}
+        id={`${id}-o${i}`}
+        data-i={i}
+        role="option"
+        aria-selected={o.v === value}
+        className={`ss-opt${i === act ? ' act' : ''}${o.v === value ? ' on' : ''}`}
+        // mousedown e non click: l'input non perde il fuoco prima della scelta
+        onMouseDown={(e) => {
+          e.preventDefault();
+          choose(o);
+        }}
+      >
+        {o.l}
+      </li>,
+    );
+  });
+
+  return (
+    <div className="fld ss">
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'fld-l'}>
+        {label}
+      </label>
+      <input
+        id={id}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={open && shown[act] ? `${id}-o${act}` : undefined}
+        autoComplete="off"
+        placeholder={placeholder}
+        value={query ?? selected?.l ?? ''}
+        onFocus={(e) => {
+          e.target.select();
+          const r = e.target.getBoundingClientRect();
+          const below = window.innerHeight - r.bottom - (document.querySelector('.tabbar')?.getBoundingClientRect().height ?? 0);
+          setUp(below < 280 && r.top > below);
+          setActive(Math.max(0, shown.findIndex((o) => o.v === value)));
+          setOpen(true);
+        }}
+        onBlur={() => {
+          setQuery(null);
+          setOpen(false);
+        }}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setActive(0);
+          setOpen(true);
+        }}
+        onKeyDown={onKey}
+      />
+      {open && (
+        <ul className={`ss-list${up ? ' up' : ''}`} id={listId} role="listbox" aria-label={label} ref={listRef}>
+          {items.length ? items : <li className="ss-none">Nessun esercizio con questo nome</li>}
+        </ul>
+      )}
+    </div>
   );
 }

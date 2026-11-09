@@ -3,7 +3,7 @@
 Registro allenamenti installabile sul telefono (PWA): programma settimanale, serie con peso e ripetizioni per ognuna,
 timer di recupero, record personali e grafici di progresso. Dati nel cloud (Supabase) con login, sincronizzati tra dispositivi.
 
-Stack: React 19 + TypeScript + Vite, TanStack Query, Supabase (Postgres + Auth + RLS), vite-plugin-pwa.
+Stack: React 19 + TypeScript + Vite, TanStack Query, Supabase (Postgres + Auth + RLS; client ridotto ad auth-js + postgrest-js in `src/lib/supabase.ts`), vite-plugin-pwa.
 
 ## Avvio in locale
 
@@ -102,7 +102,7 @@ supabase/migrations/  schema SQL
   ("pull up", "chin up"…) per riconoscere i nomi scritti a mano.
 - **coach_links** e **trainer_invites**: trainer e atleti. La modalità trainer è un flag del profilo (`is_trainer`),
   attivabile da chiunque. Il trainer genera un codice d'invito (uno per volta: rigenerarlo invalida il vecchio);
-  l'atleta vede il nome del trainer e conferma (`preview_invite`, `accept_invite`). Da lì il trainer **legge**
+  l'atleta vede il nome del trainer e conferma (`preview_invite`, `accept_invite`); chi apre il link senza account vede già il nome del trainer sulla schermata di accesso (`invite_trainer_name`, solo il nome). Da lì il trainer **legge**
   esercizi, registrazioni e programma dell'atleta (`is_coach_of` nelle policy), senza poterli modificare, finché uno
   dei due non chiude il collegamento (`end_coach_link`). Un solo trainer attivo per atleta. Collegamenti e codici
   cambiano solo tramite queste funzioni, mai con insert/update diretti.

@@ -1,4 +1,4 @@
-import { PageTitle } from '../../components/ui';
+import { PageTitle, Skeleton } from '../../components/ui';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useScope } from '../../app/session';
@@ -11,6 +11,7 @@ import { shortDate } from '../../lib/dates';
 import { subRule, validateBodyweight, LIMITS, type AvatarStage, type CategoryId, type CategoryScore, type SubId, type SubScore } from '../../lib/levels';
 import { AXES, categoryName, recordText, subPercentText } from './levelView';
 import { RecordSheet } from './RecordSheet';
+import { WeightSheet } from './WeightSheet';
 import type { LevelRecordRow } from '../../data/types';
 
 const ICON: Record<CategoryId, ReactNode> = {
@@ -41,7 +42,7 @@ export function HomeView() {
     return () => clearTimeout(id);
   }, [party]);
 
-  if (level.isLoading) return <p className="empty">Caricamento…</p>;
+  if (level.isLoading) return <Skeleton />;
 
   const { summary, records, weights, bodyweight } = level;
   const byId = new Map(summary.categories.map((c) => [c.categoryId, c]));
@@ -154,11 +155,18 @@ function Profile({
 
 /** Il peso dell'atleta visto dal trainer: solo lettura. */
 function WeightReadOnly({ current }: { current: { date: string; kg: number } | null }) {
+  const [history, setHistory] = useState(false);
   return (
     <div className="weight">
       <span className="fld-l">Peso</span>
       <b>{current ? `${fmt(current.kg)} kg` : '—'}</b>
+      {current && (
+        <button type="button" className="link" onClick={() => setHistory(true)}>
+          Storico
+        </button>
+      )}
       {current && <span className="hint">dal {shortDate(current.date)}</span>}
+      {history && <WeightSheet readOnly onClose={() => setHistory(false)} />}
     </div>
   );
 }
@@ -166,6 +174,7 @@ function WeightReadOnly({ current }: { current: { date: string; kg: number } | n
 function Weight({ current }: { current: { date: string; kg: number } | null }) {
   const [draft, setDraft] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [history, setHistory] = useState(false);
   const save = useSetBodyWeight();
 
   if (draft === null)
@@ -176,7 +185,13 @@ function Weight({ current }: { current: { date: string; kg: number } | null }) {
         <button type="button" className="link" onClick={() => setDraft(current ? numInput(current.kg) : '')} aria-label={current ? 'Modifica peso corporeo' : 'Inserisci peso corporeo'}>
           {current ? 'Modifica' : 'Inserisci'}
         </button>
+        {current && (
+          <button type="button" className="link" onClick={() => setHistory(true)}>
+            Storico
+          </button>
+        )}
         {current && <span className="hint">dal {shortDate(current.date)}</span>}
+        {history && <WeightSheet onClose={() => setHistory(false)} />}
       </div>
     );
 
@@ -230,7 +245,7 @@ function ZoneBar({ value, elite }: { value: number; elite: boolean }) {
     <span className={`zbar${elite ? ' elite' : ''}`} aria-hidden="true">
       {elite ? (
         <>
-          <i className="full" style={{ width: '50%' }} />
+          <i className="full" />
           <i className="hot" style={{ left: '50%', width: `${Math.min(100, value - 100) / 2}%` }} />
           <em />
         </>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useToast } from '../../app/toast';
 import { Field, PageTitle, PasswordField, Seg, usePageTitle } from '../../components/ui';
 import { recovery, supabase } from '../../lib/supabase';
@@ -32,8 +32,29 @@ function SubmitButton({ busy, disabled, children }: { busy: boolean; disabled?: 
   );
 }
 
-export function AuthScreen() {
-  const [mode, setMode] = useState<Mode>('signin');
+/**
+ * Nome del trainer di un codice d'invito, letto prima dell'accesso (audit A10). undefined = in lettura,
+ * null = codice non valido (o rete assente: in quel caso semplicemente non si mostra).
+ */
+function useInviter(code: string | undefined) {
+  const [name, setName] = useState<string | null | undefined>(code ? undefined : null);
+  useEffect(() => {
+    if (!code) return;
+    let live = true;
+    supabase
+      .rpc('invite_trainer_name', { invite_code: code })
+      .then(({ data, error }) => live && setName(error ? null : ((data as string | null) ?? null)));
+    return () => {
+      live = false;
+    };
+  }, [code]);
+  return name;
+}
+
+/** `invite`: codice del link d'invito aperto senza account. Chi arriva da un invito di solito è nuovo: parte da Registrati. */
+export function AuthScreen({ invite }: { invite?: string }) {
+  const [mode, setMode] = useState<Mode>(invite ? 'signup' : 'signin');
+  const inviter = useInviter(invite);
   usePageTitle(mode === 'signup' ? 'Registrati' : mode === 'signin' ? 'Accedi' : 'Recupero password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -148,6 +169,15 @@ export function AuthScreen() {
         </h1>
         <p className="lede">Programma, serie e record personali. Salvati nel cloud, uguali su telefono e computer.</p>
       </header>
+      {inviter && (
+        <div className="notice invite-note">
+          <p>
+            <b>{inviter}</b> ti ha invitato: vuole seguirti come tuo trainer.
+          </p>
+          <p>{mode === 'signin' ? 'Accedi' : 'Crea il tuo account'}, poi confermi il collegamento.</p>
+        </div>
+      )}
+      {invite && inviter === null && <p className="hint">Il codice d'invito non è valido o è stato cambiato: chiedine uno nuovo al trainer.</p>}
 
       <section className="card auth-card">
         {mode === 'sent' ? (
@@ -158,7 +188,7 @@ export function AuthScreen() {
             <p className="sub">
               Abbiamo mandato un link di conferma a <b className="em">{email.trim()}</b>. Aprilo, poi torna qui e accedi con la tua password.
             </p>
-            <p className="hint" style={{ marginTop: 12 }}>
+            <p className="hint mt-12">
               Non la trovi? Guarda nello spam, oppure fatti mandare un'altra email.
             </p>
             {notice}
@@ -245,10 +275,6 @@ export function AuthScreen() {
 }
 
 /** true dopo aver aperto il link di reimpostazione password ricevuto via email (anche dopo un ricaricamento). */
-export function usePasswordRecovery() {
-  return useSyncExternalStore(recovery.subscribe, recovery.get);
-}
-
 export function NewPasswordScreen({ email }: { email: string | null }) {
   const toast = useToast();
   const [password, setPassword] = useState('');

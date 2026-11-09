@@ -1,4 +1,4 @@
-import type { AuthError } from '@supabase/supabase-js';
+import type { AuthError } from '@supabase/auth-js';
 
 /**
  * Messaggio in italiano per un errore di Supabase Auth. Mai il testo grezzo: arriva in inglese.

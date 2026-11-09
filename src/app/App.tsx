@@ -1,20 +1,26 @@
-import { useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { LevelStrip } from '../components/LevelStrip';
 import { IconAtleti, IconEsercizi, IconGrafici, IconLivello, IconScheda } from '../components/icons';
 import { Avatar } from '../components/Avatar';
 import { useData, useLevel, useProfile } from '../data/hooks';
-import { AccountView } from '../features/account/AccountView';
-import { AtletaView, AtletiView } from '../features/atleti/AtletiView';
-import { SchedaModelloView } from '../features/atleti/SchedeView';
-import { AuthScreen, NewPasswordScreen, usePasswordRecovery } from '../features/auth/AuthScreen';
-import { EserciziView } from '../features/esercizi/EserciziView';
-import { GraficiView } from '../features/grafici/GraficiView';
+import { Skeleton } from '../components/ui';
 import { HomeView } from '../features/home/HomeView';
 import { LoggerProvider } from '../features/logger/Logger';
 import { SchedaView } from '../features/scheda/SchedaView';
-import { useSession } from './session';
+import { usePasswordRecovery, useSession } from './session';
+
+// Home, Scheda e registratore servono subito; il resto si scarica quando lo apri (audit A12): chi non è trainer non
+// scarica mai la parte trainer, chi è già dentro non scarica l'accesso. Il service worker li tiene comunque in cache.
+const AccountView = lazy(() => import('../features/account/AccountView').then((m) => ({ default: m.AccountView })));
+const AtletiView = lazy(() => import('../features/atleti/AtletiView').then((m) => ({ default: m.AtletiView })));
+const AtletaView = lazy(() => import('../features/atleti/AtletiView').then((m) => ({ default: m.AtletaView })));
+const SchedaModelloView = lazy(() => import('../features/atleti/SchedeView').then((m) => ({ default: m.SchedaModelloView })));
+const AuthScreen = lazy(() => import('../features/auth/AuthScreen').then((m) => ({ default: m.AuthScreen })));
+const NewPasswordScreen = lazy(() => import('../features/auth/AuthScreen').then((m) => ({ default: m.NewPasswordScreen })));
+const EserciziView = lazy(() => import('../features/esercizi/EserciziView').then((m) => ({ default: m.EserciziView })));
+const GraficiView = lazy(() => import('../features/grafici/GraficiView').then((m) => ({ default: m.GraficiView })));
 
 const TABS: { to: string; label: string; icon: ReactNode }[] = [
   { to: '/', label: 'Livello', icon: <IconLivello /> },
@@ -84,7 +90,9 @@ export function App() {
     return (
       <div className="wrap">
         <UpdateBanner />
-        <AuthScreen />
+        <Suspense fallback={null}>
+          <AuthScreen invite={invite?.toUpperCase()} />
+        </Suspense>
       </div>
     );
 
@@ -102,10 +110,12 @@ export function App() {
         {session.status === 'ready' && !recovery && <AccountBadge email={session.email} />}
       </header>
       <UpdateBanner />
-      {session.status === 'loading' && <p className="empty">Caricamento…</p>}
+      {session.status === 'loading' && <Skeleton />}
       {session.status === 'ready' &&
         (recovery ? (
-          <NewPasswordScreen email={session.email} />
+          <Suspense fallback={<Skeleton />}>
+            <NewPasswordScreen email={session.email} />
+          </Suspense>
         ) : (
           <LoggerProvider>
             <Main />
@@ -146,23 +156,25 @@ function Main() {
       {error && <div className="banner">Non riesco a leggere i dati. Controlla la connessione e riprova.</div>}
       <main>
         {isLoading ? (
-          <p className="empty">Caricamento…</p>
+          <Skeleton />
         ) : (
-          <Routes>
-            {/* Home "Livello" (ticket 10); la Scheda, che prima era qui, è a /scheda */}
-            <Route path="/" element={<HomeView />} />
-            <Route path="/scheda" element={<SchedaView />} />
-            <Route path="/grafici" element={<GraficiView />} />
-            {/* il Registro non c'è più (ticket 04): chi l'aveva salvato torna alla Scheda */}
-            <Route path="/registro" element={<Navigate to="/scheda" replace />} />
-            <Route path="/esercizi" element={<EserciziView />} />
-            <Route path="/account" element={<AccountView />} />
-            <Route path="/invito/:code" element={<InviteRoute />} />
-            <Route path="/atleti" element={<AtletiView />} />
-            <Route path="/atleti/:athleteId" element={<AtletaView />} />
-            <Route path="/schede/:programId" element={<SchedaModelloView />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<Skeleton />}>
+            <Routes>
+              {/* Home "Livello" (ticket 10); la Scheda, che prima era qui, è a /scheda */}
+              <Route path="/" element={<HomeView />} />
+              <Route path="/scheda" element={<SchedaView />} />
+              <Route path="/grafici" element={<GraficiView />} />
+              {/* il Registro non c'è più (ticket 04): chi l'aveva salvato torna alla Scheda */}
+              <Route path="/registro" element={<Navigate to="/scheda" replace />} />
+              <Route path="/esercizi" element={<EserciziView />} />
+              <Route path="/account" element={<AccountView />} />
+              <Route path="/invito/:code" element={<InviteRoute />} />
+              <Route path="/atleti" element={<AtletiView />} />
+              <Route path="/atleti/:athleteId" element={<AtletaView />} />
+              <Route path="/schede/:programId" element={<SchedaModelloView />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         )}
       </main>
     </>
@@ -182,7 +194,7 @@ function UpdateBanner() {
   } = useRegisterSW();
   if (!needRefresh) return null;
   return (
-    <div className="banner row" style={{ justifyContent: 'space-between' }}>
+    <div className="banner row between">
       <span>È disponibile una nuova versione.</span>
       <button className="btn small" onClick={() => updateServiceWorker(true)}>
         Aggiorna

@@ -54,7 +54,7 @@ function ProfileCard() {
         </button>
       </div>
       <p className="sub">{session.status === 'ready' ? session.email : ''}</p>
-      <div className="form" style={{ marginTop: 14 }}>
+      <div className="form mt-14">
         <Field
           label="Nome"
           value={value}
@@ -144,7 +144,7 @@ function ExportCard() {
         Scarica tutto in un file JSON: {plural(exercises.length, 'esercizio', 'esercizi')}, {plural(entries.length, 'registrazione', 'registrazioni')},{' '}
         {plural(plan.length, 'esercizio', 'esercizi')} in programma, peso corporeo e record di livello, più schede e collegamenti con i trainer.
       </p>
-      <div className="row" style={{ marginTop: 14 }}>
+      <div className="row mt-14">
         <button className="btn small ghost" disabled={busy} onClick={download}>
           {busy ? 'Preparo il file…' : 'Esporta i dati'}
         </button>
@@ -163,13 +163,13 @@ function DeleteCard() {
       <h2>Elimina account</h2>
       <p className="sub">Cancella l'account con esercizi, registrazioni, programma, peso e record. Non si può annullare: se vuoi tenere i dati, esportali prima.</p>
       {!open ? (
-        <div className="row" style={{ marginTop: 14 }}>
+        <div className="row mt-14">
           <button className="btn small ghost" onClick={() => setOpen(true)}>
             Elimina account…
           </button>
         </div>
       ) : (
-        <div className="form" style={{ marginTop: 14 }}>
+        <div className="form mt-14">
           <Field
             label={`Scrivi ${CONFIRM_WORD} per confermare`}
             value={word}

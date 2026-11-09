@@ -31,7 +31,7 @@ export function Avatar({
   // l'aura si nota davvero solo avvicinandosi a 100: a metà strada è un quarto
   const aura = avatar.aura * avatar.aura;
   return (
-    <div className={cls} style={{ ['--aura' as string]: aura }} aria-hidden="true" data-stage={avatar.stage}>
+    <div className={cls} style={{ ['--aura' as string]: aura, ['--shocks' as string]: avatar.shocks }} aria-hidden="true" data-stage={avatar.stage}>
       <Figure body={body} avatar={avatar} aura={aura} small={small} />
     </div>
   );
@@ -72,12 +72,12 @@ function Figure({ body, avatar, aura, small }: { body: AvatarBody; avatar: Avata
       <g transform="translate(50 40) scale(1.16) translate(-50 -40)">
         {/* aura attorno al corpo: il contorno sfocato, sempre più intenso verso il livello 100 */}
         {!small && aura > 0.02 && (
-          <g className="av-aura" filter={`url(#${uid}-h)`} style={{ opacity: aura }}>
+          <g className="av-aura" filter={`url(#${uid}-h)`}>
             <path d={f.outline} />
             <circle cx={f.head.cx} cy={f.head.cy} r={f.head.r} />
           </g>
         )}
-        <g className="av-body" fill={`url(#${uid}-b)`} style={{ strokeOpacity: 0.45 + 0.55 * aura }}>
+        <g className="av-body" fill={`url(#${uid}-b)`}>
           {f.bun && <circle cx={f.bun.cx} cy={f.bun.cy} r={f.bun.r} />}
           <path d={f.body} />
           <circle cx={f.head.cx} cy={f.head.cy} r={f.head.r} />
@@ -91,7 +91,7 @@ function Figure({ body, avatar, aura, small }: { body: AvatarBody; avatar: Avata
         )}
       </g>
       {sparks.length > 0 && (
-        <g className="av-bolts" style={{ opacity: 0.45 + 0.55 * avatar.shocks }} filter={small ? undefined : `url(#${uid}-g)`}>
+        <g className="av-bolts" filter={small ? undefined : `url(#${uid}-g)`}>
           {sparks.map((d, i) => (
             <path key={i} d={d} style={{ animationDelay: `${(i * 0.37) % 1.6}s` }} />
           ))}

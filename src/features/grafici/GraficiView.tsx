@@ -130,10 +130,10 @@ export function GraficiView() {
           {ex.name} · {m.label.toLowerCase()} {GRAIN_LABEL[grain]}
           {grain !== 'day' && `, ${howLabel(metric)}`}
         </p>
-        <div className="period" style={{ marginTop: 14 }}>
+        <div className="period mt-14">
           <Seg label="Periodo" value={period} options={PERIODS} onChange={setPeriod} />
         </div>
-        <div style={{ marginTop: 10 }}>
+        <div className="mt-10">
           <Seg
             label="Metrica"
             value={String(slot)}
@@ -141,7 +141,7 @@ export function GraficiView() {
             onChange={(v) => (setSlot(Number(v)), setSelected(null))}
           />
         </div>
-        <div style={{ marginTop: 14 }}>
+        <div className="mt-14">
           <Select label="Esercizio" value={ex.id} options={shown.map((e) => ({ v: e.id, l: e.name }))} onChange={pick} />
         </div>
         {!pts.length ? (
@@ -201,7 +201,7 @@ export function GraficiView() {
                 <EntryItem key={e.id} entry={e} record={prIds.has(e.id)} showDate onOpen={readOnly ? undefined : () => openLogger({ entry: e })} />
               ))}
               {!readout && sessions.length > limit && (
-                <div className="row" style={{ marginTop: 12 }}>
+                <div className="row mt-12">
                   <button className="btn small ghost" onClick={() => setLimit(limit + SESSIONS * 4)}>
                     Mostra altre ({sessions.length - limit})
                   </button>
@@ -221,7 +221,7 @@ export function GraficiView() {
         <div className="legend">
           {EXERCISE_TYPES.map((t) => (
             <span key={t}>
-              <i className="dot" style={{ background: `var(--${t})` }} />
+              <i className={`dot ${t}`} />
               {TYPE_LABEL[t]}
             </span>
           ))}

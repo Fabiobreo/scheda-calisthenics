@@ -1,9 +1,9 @@
-import type { Session } from '@supabase/supabase-js';
+import type { Session } from '@supabase/auth-js';
 import { useQueryClient } from '@tanstack/react-query';
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Repo } from '../data/repo';
 import { createSupabaseRepo } from '../data/supabaseRepo';
-import { supabase } from '../lib/supabase';
+import { recovery, supabase } from '../lib/supabase';
 
 type SessionState =
   | { status: 'loading' }
@@ -73,3 +73,8 @@ export function useScope(): Scope {
 }
 
 export const useRepo = (): Repo => useScope().repo;
+
+/** Si è aperto il link per reimpostare la password: finché non la cambia, l'utente vede solo quella schermata. */
+export function usePasswordRecovery() {
+  return useSyncExternalStore(recovery.subscribe, recovery.get);
+}

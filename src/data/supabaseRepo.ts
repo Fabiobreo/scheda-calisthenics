@@ -1,5 +1,5 @@
 import { isAvatarBody } from '../lib/avatarFigure';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Db } from '../lib/supabase';
 import type { Repo } from './repo';
 import type {
   BodyWeight,
@@ -290,7 +290,7 @@ type Table = 'exercises' | 'entries' | 'plan_items' | 'body_weights' | 'level_re
  * Repo dei dati di `userId`. Ogni query filtra per utente in modo esplicito: le policy RLS non bastano a
  * delimitare i dati, perché un trainer può leggere anche quelli dei suoi atleti.
  */
-export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
+export function createSupabaseRepo(sb: Db, userId: string): Repo {
   const select = (t: Table, cols = '*') => sb.from(t).select(cols).eq('user_id', userId);
   const update = (t: Table, patch: Record<string, unknown>) => sb.from(t).update(patch).eq('user_id', userId);
   const remove = (t: Table) => sb.from(t).delete().eq('user_id', userId);

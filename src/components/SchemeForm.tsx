@@ -62,7 +62,7 @@ export function SchemeForm({
   };
 
   return (
-    <div className="form" style={{ gridColumn: '1 / -1', marginTop: 8 }}>
+    <div className="form span-all mt-8">
       <div className="fld">
         <span>Tipo</span>
         <Seg label="Tipo" value={type} options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))} onChange={setType} />

@@ -240,7 +240,7 @@ export function TypeChart({ data, label = shortDate }: { data: TypeTotals[]; lab
               const v = d[t];
               if (!v) return null;
               const rect = (
-                <rect key={t} className="g-bar" x={cx - bw / 2} y={y(acc + v)} width={bw} height={y(acc) - y(acc + v)} rx={3} style={{ fill: `var(--${t})` }}>
+                <rect key={t} className={`g-bar ${t}`} x={cx - bw / 2} y={y(acc + v)} width={bw} height={y(acc) - y(acc + v)} rx={3}>
                   <title>{`${TYPE_LABEL[t]}: ${fmt(v)} rip.`}</title>
                 </rect>
               );

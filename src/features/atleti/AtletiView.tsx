@@ -7,7 +7,7 @@ import { useExercisePicker } from '../../components/ExercisePicker';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
-import { ConfirmButton, NestedView, PageTitle, Seg, TypeChip } from '../../components/ui';
+import { ConfirmButton, NestedView, PageTitle, Seg, Skeleton, TypeChip } from '../../components/ui';
 import {
   useCatalog,
   useCoachAddPlanItem,
@@ -64,7 +64,7 @@ export function AtletiView() {
         <h2>Atleti</h2>
         <p className="sub">Gli atleti che segui: programmi i loro giorni, vedi storico, note, grafici e livello. I loro dati restano loro.</p>
         {links.isLoading ? (
-          <p className="empty">Caricamento…</p>
+          <Skeleton inline />
         ) : !athletes.length ? (
           <p className="empty">
             Nessun atleta. Manda il tuo link d'invito da <Link to="/account">Account</Link>.
@@ -185,7 +185,7 @@ export function AtletaView() {
   const [tab, setTab] = useState<Tab>('programma');
   const link = links.data?.find((l) => l.trainerId === myId && l.athleteId === athleteId);
 
-  if (links.isLoading) return <p className="empty">Caricamento…</p>;
+  if (links.isLoading) return <Skeleton />;
   if (!link)
     return (
       <section className="card">
@@ -207,7 +207,7 @@ export function AtletaView() {
           </Link>
         </div>
         <p className="sub">Programmi i suoi giorni e vedi cosa ha fatto, anche fuori programma; registrazioni, grafici e livello sono in sola lettura.</p>
-        <div style={{ marginTop: 14 }}>
+        <div className="mt-14">
           <Seg
             label="Sezione"
             value={tab}
@@ -236,7 +236,7 @@ function AthleteData({ tab }: { tab: Tab }) {
         <HomeView />
       </NestedView>
     );
-  if (isLoading) return <p className="empty">Caricamento…</p>;
+  if (isLoading) return <Skeleton />;
   if (error) return <div className="banner">Non riesco a leggere i dati dell'atleta. Riprova.</div>;
   if (tab === 'grafici')
     return (
@@ -315,7 +315,7 @@ function AthletePlan() {
           {monday === thisMonday ? 'Questa settimana' : 'Settimana'}: <b>{adherenceText(weekAdh)}</b> del programma
         </p>
       )}
-      <h3 style={{ fontSize: 22, marginTop: 18 }}>{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
+      <h3 className="day-title">{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
       <div className="plan">
         {items.length === 0 && !extra.length && <p className="empty">Niente in programma.</p>}
         {items.map((p) => {
@@ -348,7 +348,7 @@ function AthletePlan() {
                 </div>
                 {saved?.note && <div className="pmeta">Nota dell'atleta: {saved.note}</div>}
                 {p.note && (
-                  <p className="coach-note" style={{ marginTop: 8 }}>
+                  <p className="coach-note mt-8">
                     <b>{mine ? 'La tua nota:' : p.assignedBy ? 'Nota di un altro trainer:' : "Nota dell'atleta:"}</b> {p.note}
                   </p>
                 )}
@@ -411,7 +411,7 @@ function AthletePlan() {
           ))}
         </div>
       )}
-      <div className="form" style={{ marginTop: 12 }}>
+      <div className="form mt-12">
         {picker.view}
         {!adding ? (
           <div className="row">

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CATEGORY_LABEL, type CatalogExercise, type ExerciseRef } from '../data/types';
 import { byCategory, matchCatalog } from '../lib/catalog';
-import { Field, Select } from './ui';
+import { Field, SearchSelect } from './ui';
 
 const CUSTOM = '__custom';
 
@@ -25,11 +25,12 @@ export function useExercisePicker(catalog: CatalogExercise[], exclude: (ref: Exe
 
   const view = (
     <>
-      <Select
+      <SearchSelect
         label="Esercizio"
+        placeholder="Cerca esercizio…"
         value={value}
         options={[
-          ...options.map((c) => ({ v: c.id, l: c.name, group: CATEGORY_LABEL[c.category] })),
+          ...options.map((c) => ({ v: c.id, l: c.name, group: CATEGORY_LABEL[c.category], keywords: c.aliases })),
           { v: CUSTOM, l: 'Personalizzato…', group: 'Altro' },
         ]}
         onChange={setSel}

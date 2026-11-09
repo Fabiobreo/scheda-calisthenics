@@ -4,7 +4,7 @@ import { useToast } from '../../app/toast';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
-import { PageTitle, Seg, Select, TypeChip } from '../../components/ui';
+import { PageTitle, SearchSelect, Seg, Select, TypeChip } from '../../components/ui';
 import {
   useAddCatalogToPlan,
   useAddPlanItem,
@@ -122,21 +122,21 @@ function Records() {
         </div>
       ) : (
         active.length === 0 && (
-          <p className="hint" style={{ marginTop: 12 }}>
+          <p className="hint mt-12">
             Crea prima gli esercizi nella sezione <Link to="/esercizi">Esercizi</Link>.
           </p>
         )
       )}
 
       {history.length > 0 && (
-        <div className="row" style={{ marginTop: 12 }}>
+        <div className="row mt-12">
           <button className="btn small ghost" onClick={() => setHistoryOpen(!historyOpen)}>
             {historyOpen ? 'Nascondi progressione' : `Progressione record (${history.length})`}
           </button>
         </div>
       )}
       {historyOpen && (
-        <div style={{ marginTop: 10 }}>
+        <div className="mt-10">
           {history.map((e) => {
             const ex = active.find((x) => x.id === e.exerciseId)!;
             return (
@@ -196,8 +196,8 @@ function Programma() {
   const activeCatalog = new Set(active.map((e) => e.catalogId));
   const fromCatalog = byCategory(catalog.filter((c) => !activeCatalog.has(c.id)));
   const addOptions = [
-    ...avail.map((e) => ({ v: e.id, l: e.name, group: 'I tuoi esercizi' })),
-    ...fromCatalog.map((c) => ({ v: `cat:${c.id}`, l: c.name, group: `Catalogo · ${CATEGORY_LABEL[c.category]}` })),
+    ...avail.map((e) => ({ v: e.id, l: e.name, group: 'I tuoi esercizi', keywords: catalog.find((c) => c.id === e.catalogId)?.aliases })),
+    ...fromCatalog.map((c) => ({ v: `cat:${c.id}`, l: c.name, group: `Catalogo · ${CATEGORY_LABEL[c.category]}`, keywords: c.aliases })),
   ];
   const addId = addOptions.some((o) => o.v === adding) ? adding : (addOptions[0]?.v ?? '');
   const addCatalogItem = addId.startsWith('cat:') ? catalog.find((c) => `cat:${c.id}` === addId) : undefined;
@@ -248,7 +248,7 @@ function Programma() {
           {monday === thisMonday ? 'Questa settimana' : 'Settimana'}: <b>{adherenceText(weekAdh)}</b> del programma
         </p>
       )}
-      <h3 style={{ fontSize: 22, marginTop: 18 }}>{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
+      <h3 className="day-title">{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
 
       <div className="plan">
         {items.length === 0 && !extra.length && <p className="empty">Nessun esercizio per {dayName}. Aggiungine uno qui sotto.</p>}
@@ -293,7 +293,7 @@ function Programma() {
                   )
                 )}
                 {p.note && (
-                  <p className="coach-note" style={{ marginTop: 8 }}>
+                  <p className="coach-note mt-8">
                     <b>{p.assignedBy ? 'Dal trainer:' : 'Nota:'}</b> {p.note}
                   </p>
                 )}
@@ -361,7 +361,7 @@ function Programma() {
 
       {addOptions.length > 0 && (
         <div className="addrow">
-          <Select label="Aggiungi esercizio" hideLabel value={addId} options={addOptions} onChange={setAdding} />
+          <SearchSelect label="Aggiungi esercizio" hideLabel placeholder="Cerca esercizio…" value={addId} options={addOptions} onChange={setAdding} />
           {!addOpen && (
             <button className="btn" disabled={!addId} onClick={() => setAddOpen(true)}>
               Aggiungi
@@ -386,7 +386,7 @@ function Programma() {
       )}
 
       {weekCount > 0 && !copyOpen && (
-        <div className="row" style={{ marginTop: 16 }}>
+        <div className="row mt-16">
           <button className="btn small ghost" onClick={() => setCopyOpen(true)}>
             Copia questa settimana…
           </button>
@@ -447,9 +447,9 @@ function CopyWeek({
   };
 
   return (
-    <div className="form" style={{ marginTop: 16 }}>
+    <div className="form mt-16">
       <div className="card-h">
-        <h3 style={{ fontSize: 20 }}>Copia {weekLabel(from)}</h3>
+        <h3 className="copy-title">Copia {weekLabel(from)}</h3>
         <button className="link small" onClick={() => setPicked(new Set(weeks.slice(0, 4)))}>
           Prossime 4
         </button>

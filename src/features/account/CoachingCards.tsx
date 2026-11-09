@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRepo, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
@@ -43,6 +43,14 @@ export function MyTrainerCard({ inviteCode }: { inviteCode?: string }) {
     }
   };
 
+  // arrivando dal link d'invito il codice c'è già: la domanda "Collegarti a …?" compare subito, senza "Continua"
+  const autoChecked = useRef(false);
+  useEffect(() => {
+    if (!inviteCode || autoChecked.current || links.isLoading || mine) return;
+    autoChecked.current = true;
+    void check();
+  });
+
   return (
     <section className="card">
       <h2>Il tuo trainer</h2>
@@ -52,7 +60,7 @@ export function MyTrainerCard({ inviteCode }: { inviteCode?: string }) {
             Ti segue <b>{mine.trainerName ?? 'un trainer senza nome'}</b> dal {shortDate(mine.createdAt.slice(0, 10))}: vede {TRAINER_SEES}, senza
             poterli modificare.
           </p>
-          <div className="row" style={{ marginTop: 14 }}>
+          <div className="row mt-14">
             <ConfirmButton confirmLabel="Scollegare?" onConfirm={() => end.mutate(mine.id)}>
               Scollega
             </ConfirmButton>
@@ -64,7 +72,7 @@ export function MyTrainerCard({ inviteCode }: { inviteCode?: string }) {
             Collegarti a <b>{preview.trainerName ?? 'questo trainer'}</b>? Potrà vedere {TRAINER_SEES}. Puoi scollegarti quando vuoi, e i dati
             restano tuoi.
           </p>
-          <div className="row" style={{ marginTop: 14 }}>
+          <div className="row mt-14">
             <button
               className="btn small"
               disabled={accept.isPending}
@@ -80,7 +88,7 @@ export function MyTrainerCard({ inviteCode }: { inviteCode?: string }) {
       ) : (
         <>
           <p className="sub">Hai un trainer? Inserisci il codice d'invito che ti ha dato, o apri il suo link.</p>
-          <div className="form" style={{ marginTop: 14 }}>
+          <div className="form mt-14">
             <Field
               label="Codice d'invito"
               value={code}
@@ -135,8 +143,8 @@ export function TrainerModeCard() {
         <p className="sub">
           Segui altri atleti: li inviti con un link e vedi {TRAINER_SEES}. I loro dati restano loro, e possono scollegarsi quando vogliono.
         </p>
-        {!profile.data.displayName && <p className="hint" style={{ marginTop: 10 }}>Prima scegli il tuo nome qui sopra: è quello che vedranno gli atleti.</p>}
-        <div className="row" style={{ marginTop: 14 }}>
+        {!profile.data.displayName && <p className="hint mt-10">Prima scegli il tuo nome qui sopra: è quello che vedranno gli atleti.</p>}
+        <div className="row mt-14">
           <button className="btn small ghost" disabled={!profile.data.displayName} onClick={() => setMode.mutate({ isTrainer: true })}>
             Attiva modalità trainer
           </button>
@@ -156,7 +164,7 @@ export function TrainerModeCard() {
           'Nessun atleta per ora. Manda il link qui sotto a chi vuoi seguire.'
         )}
       </p>
-      <div className="form" style={{ marginTop: 14 }}>
+      <div className="form mt-14">
         {code ? (
           <>
             <div className="fld">

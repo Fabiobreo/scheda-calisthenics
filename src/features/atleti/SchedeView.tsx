@@ -4,7 +4,7 @@ import { useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { refName, useExercisePicker } from '../../components/ExercisePicker';
 import { SchemeForm } from '../../components/SchemeForm';
-import { ConfirmButton, Field, PageTitle, Select, TypeChip } from '../../components/ui';
+import { ConfirmButton, Field, PageTitle, Select, Skeleton, TypeChip } from '../../components/ui';
 import {
   useAddProgramItems,
   useAssignProgram,
@@ -45,7 +45,7 @@ export function SchedeCard() {
       </div>
       <p className="sub">Prepari una scheda una volta, settimana per settimana, e la assegni a uno o più atleti da un lunedì.</p>
       {programs.isLoading ? (
-        <p className="empty">Caricamento…</p>
+        <Skeleton inline />
       ) : !programs.data?.length ? (
         <p className="empty">Nessuna scheda per ora.</p>
       ) : (
@@ -75,7 +75,7 @@ export function SchedaModelloView() {
   const programs = usePrograms();
   const program = programs.data?.find((p) => p.id === programId);
 
-  if (programs.isLoading) return <p className="empty">Caricamento…</p>;
+  if (programs.isLoading) return <Skeleton />;
   if (!program)
     return (
       <section className="card">
@@ -155,7 +155,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
             ‹ Atleti
           </Link>
         </div>
-        <div className="form" style={{ marginTop: 14 }}>
+        <div className="form mt-14">
           <Field label="Nome" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} />
           <div className="grid2">
             <Field label="Settimane" inputMode="numeric" value={weeksText} onChange={(e) => setWeeksText(e.target.value)} />
@@ -212,7 +212,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
             );
           })}
         </div>
-        <h3 style={{ fontSize: 22, marginTop: 18 }}>
+        <h3 className="day-title">
           Settimana {shownWeek} · {DAY_LONG[day]}
         </h3>
 
@@ -230,7 +230,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
                     </button>
                   )}
                 </div>
-                {i.note && <p className="coach-note" style={{ marginTop: 8 }}>{i.note}</p>}
+                {i.note && <p className="coach-note mt-8">{i.note}</p>}
                 <div className="chips">
                   <TypeChip type={i.scheme.type} />
                 </div>
@@ -270,7 +270,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
           ))}
         </div>
 
-        <div className="form" style={{ marginTop: 12 }}>
+        <div className="form mt-12">
           {picker.view}
           {!adding ? (
             <div className="row">
@@ -301,7 +301,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
         </div>
 
         {shownWeek < weeks && weekItems.length > 0 && (
-          <div className="row" style={{ marginTop: 16 }}>
+          <div className="row mt-16">
             <ConfirmButton confirmLabel={`Sostituire le settimane ${shownWeek + 1}–${weeks}?`} onConfirm={copyToNext}>
               Copia la settimana {shownWeek} nelle successive
             </ConfirmButton>
@@ -336,7 +336,7 @@ function AssignCard({ programId, programName, weeks, empty }: { programId: strin
           Non segui ancora nessun atleta: invitali da <Link to="/account">Account</Link>.
         </p>
       ) : (
-        <div className="form" style={{ marginTop: 14 }}>
+        <div className="form mt-14">
           <div className="grid2">
             <Select label="Atleta" value={athleteId} options={athletes.map((a) => ({ v: a.athleteId, l: a.athleteName ?? 'Atleta senza nome' }))} onChange={setAthlete} />
             <Select

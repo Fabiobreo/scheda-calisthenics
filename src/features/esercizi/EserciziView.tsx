@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
-import { ConfirmButton, Field, PageTitle, Seg, Select } from '../../components/ui';
+import { ConfirmButton, Field, PageTitle, SearchSelect, Seg } from '../../components/ui';
 import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useTrainerLock, useUpdateExercise } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
 import { CATEGORY_LABEL, MEASURE_LABEL, MEASURES, type CatalogExercise, type Exercise, type Measure } from '../../data/types';
@@ -135,10 +135,11 @@ export function EserciziView() {
                 </p>
               ) : free.length ? (
                 <>
-                  <Select
+                  <SearchSelect
                     label="Esercizio"
+                    placeholder="Cerca nel catalogo…"
                     value={form.catalogId}
-                    options={free.map((c) => ({ v: c.id, l: c.name, group: CATEGORY_LABEL[c.category] }))}
+                    options={free.map((c) => ({ v: c.id, l: c.name, group: CATEGORY_LABEL[c.category], keywords: c.aliases }))}
                     onChange={pickCatalog}
                   />
                   <p className="hint">
@@ -225,11 +226,11 @@ export function EserciziView() {
             </div>
           </div>
         ))}
-        {active.length > 0 && <p className="hint" style={{ marginTop: 12 }}>Archiviare toglie l'esercizio da programma e liste, ma conserva lo storico e i grafici. Quelli che il tuo trainer ha in programma li toglie lui.</p>}
+        {active.length > 0 && <p className="hint mt-12">Archiviare toglie l'esercizio da programma e liste, ma conserva lo storico e i grafici. Quelli che il tuo trainer ha in programma li toglie lui.</p>}
 
         {archived.length > 0 && (
           <>
-            <div className="row" style={{ marginTop: 16 }}>
+            <div className="row mt-16">
               <button className="btn small ghost" onClick={() => setShowArchived(!showArchived)}>
                 {showArchived ? 'Nascondi archiviati' : `Archiviati (${archived.length})`}
               </button>
