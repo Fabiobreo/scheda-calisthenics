@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup carattere visivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Mockup statico per il ticket 21: stessi token dell'app (src/styles.css), primo blocco applicato.
+   Non è codice dell'app: serve solo a decidere la direzione. */
+:root {
+  --bg: #0a1013; --surface: #111a1f; --surface2: #18242a; --line: #26353c; --line-strong: #3a4d55;
+  --fg: #eef4f5; --muted: #8da0a7; --accent: #2fd6e8; --accent-deep: #1f7fe0; --accent-fg: #03181c;
+  --elite: #ffad33; --ok: #3ddc97; --danger: #ff6b6b;
+  --forza: #5b8dff; --volume: #c084fc; --tecnico: #3ddc97;
+  --glow: 0 0 14px rgb(47 214 232 / .35);
+  --f-display: 'Barlow Condensed', 'Arial Narrow', sans-serif; --f-body: 'Barlow', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #05090b; color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.4; padding: 32px 16px 64px; }
+.intro { max-width: 1240px; margin: 0 auto 28px; }
+.intro h1 { font-family: var(--f-display); text-transform: uppercase; font-size: 34px; margin: 0 0 6px; }
+.intro p { color: var(--muted); margin: 0; max-width: 760px; }
+.stage { display: flex; flex-wrap: wrap; gap: 40px 32px; justify-content: center; max-width: 1240px; margin: 0 auto; }
+.col { display: flex; flex-direction: column; gap: 14px; width: 375px; max-width: 100%; }
+.cap { font-family: var(--f-display); text-transform: uppercase; font-size: 20px; letter-spacing: .04em; color: var(--muted); }
+.notes { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+.notes li { margin: 4px 0; } .notes b { color: var(--fg); font-weight: 600; }
+
+/* telefono */
+.phone { position: relative; width: 375px; max-width: 100%; height: 910px; border-radius: 36px; overflow: hidden; border: 1px solid var(--line);
+  background: var(--bg); box-shadow: 0 30px 80px rgb(0 0 0 / .6); display: flex; flex-direction: column; }
+.screen { flex: 1; overflow: hidden; padding: 18px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+.screen > * { flex: none; }
+.screen > .empty { flex: 1; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.brand { font-family: var(--f-display); font-weight: 700; font-size: 22px; text-transform: uppercase; }
+.badge { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line-strong); display: grid; place-items: center; background: var(--surface); }
+.tabbar { display: flex; border-top: 1px solid var(--line); background: var(--surface); padding: 6px 8px 14px; }
+.tabbar span { flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); padding-top: 26px; position: relative; }
+.tabbar span::before { content: ''; position: absolute; top: 4px; left: 50%; width: 20px; height: 18px; margin-left: -10px; border: 2px solid currentColor; border-radius: 5px; opacity: .8; }
+.tabbar span.on { color: var(--accent); }
+
+/* 1. livelli di superficie: protagonista, normale, piatto */
+.hero { position: relative; border-radius: 22px; padding: 18px; overflow: hidden;
+  background: radial-gradient(120% 90% at 100% 0%, rgb(47 214 232 / .22), transparent 60%), linear-gradient(160deg, #13303a, #0f1d23 70%);
+  border: 1px solid rgb(47 214 232 / .35); box-shadow: 0 12px 30px rgb(0 0 0 / .4), inset 0 1px 0 rgb(255 255 255 / .06); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+.flat { padding: 4px 2px; }
+.t-hero { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; font-size: 30px; line-height: 1; margin: 0; }
+.t-card { font-family: var(--f-body); font-weight: 600; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0; display: flex; justify-content: space-between; align-items: center; }
+.sub { color: var(--muted); font-size: 14px; margin: 2px 0 0; }
+.help { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line-strong); display: inline-grid; place-items: center; font-size: 13px; color: var(--muted); letter-spacing: 0; }
+
+/* anello */
+.hero-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.ring { position: relative; width: 74px; height: 74px; flex: none; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .bg { stroke: rgb(255 255 255 / .08); }
+.ring .fg { stroke: var(--accent); filter: drop-shadow(0 0 5px rgb(47 214 232 / .6)); }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); font-size: 24px; line-height: 1; }
+.ring b small { display: block; font-family: var(--f-body); font-size: 11px; color: var(--muted); font-weight: 500; text-align: center; }
+
+/* 4. esercizi con striscia per tipo e serie a blocchetti */
+.ex { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 16px; border-radius: 14px; background: rgb(0 0 0 / .22); margin-top: 8px; }
+.ex::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 4px; background: var(--c); }
+.ex.forza { --c: var(--forza); } .ex.volume { --c: var(--volume); } .ex.tecnico { --c: var(--tecnico); }
+.ex-t { flex: 1; min-width: 0; }
+.ex-t b { display: block; font-weight: 600; }
+.ex-t small { color: var(--muted); font-size: 13px; }
+.sets { display: flex; gap: 4px; margin-top: 6px; }
+.sets i { width: 18px; height: 8px; border-radius: 3px; background: rgb(255 255 255 / .1); }
+.sets i.on { background: var(--c); box-shadow: 0 0 6px color-mix(in srgb, var(--c) 60%, transparent); }
+.ex.done .ex-t b::after { content: ' ✓'; color: var(--ok); }
+.btn { border: 0; border-radius: 12px; min-height: 44px; padding: 0 16px; font: inherit; font-weight: 700; background: var(--accent); color: var(--accent-fg); box-shadow: var(--glow); }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line-strong); box-shadow: none; font-weight: 600; }
+.btn.wide { width: 100%; }
+
+/* livello */
+.lvl { display: flex; gap: 14px; align-items: center; }
+.fig { width: 70px; height: 84px; flex: none; border-radius: 16px; background: radial-gradient(circle at 50% 30%, var(--surface2), var(--bg)); border: 1px solid var(--line-strong); display: grid; place-items: center; box-shadow: 0 0 18px rgb(47 214 232 / .25); }
+.lvl-n { font-family: var(--f-display); font-weight: 700; font-size: 52px; line-height: .9; }
+.lvl-k { font-size: 12px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+.delta { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--ok); background: rgb(61 220 151 / .12); border-radius: 999px; padding: 2px 8px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.stat { background: var(--surface2); border-radius: 12px; padding: 8px 10px; }
+.stat b { display: block; font-family: var(--f-display); font-size: 22px; line-height: 1.05; }
+.stat small { color: var(--muted); font-size: 12px; }
+.stat .fire { color: var(--elite); }
+
+/* 3. settimana con i pallini */
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+.d { text-align: center; padding: 8px 0 9px; border-radius: 12px; border: 1px solid transparent; }
+.d span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
+.d i { display: block; font-style: normal; font-family: var(--f-display); font-size: 20px; line-height: 1.15; }
+.d.on { border-color: var(--accent); background: var(--surface2); box-shadow: var(--glow); }
+.d.past i { color: var(--muted); }
+.dots { display: flex; gap: 3px; justify-content: center; height: 7px; margin-top: 3px; }
+.dots em { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--c); }
+.dots em.f { background: var(--c); }
+.dots em.fo { --c: var(--forza); } .dots em.vo { --c: var(--volume); } .dots em.te { --c: var(--tecnico); }
+.legend { display: flex; gap: 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.legend span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; background: var(--c); }
+
+/* categorie con pittogrammi */
+.cat { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+.cat:first-of-type { border-top: 0; }
+.ico { width: 34px; height: 34px; flex: none; border-radius: 10px; background: var(--surface2); display: grid; place-items: center; color: var(--accent); }
+.ico svg { width: 20px; height: 20px; }
+.cat-t { flex: 1; font-size: 15px; font-weight: 600; }
+.bar { height: 5px; border-radius: 3px; background: rgb(255 255 255 / .08); margin-top: 5px; overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent-deep), var(--accent)); }
+.cat-v { font-family: var(--f-display); font-size: 22px; width: 32px; text-align: right; }
+
+/* scheda */
+.weeknav { display: flex; justify-content: space-between; align-items: center; }
+.weeknav b { font-family: var(--f-display); font-size: 22px; }
+.arrow { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line-strong); display: grid; place-items: center; color: var(--muted); }
+.day-h { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; }
+.day-h h3 { font-family: var(--f-display); text-transform: uppercase; font-size: 22px; margin: 0; }
+.pill { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: rgb(47 214 232 / .14); color: var(--accent); }
+.rec { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.rec:first-of-type { border-top: 0; }
+.rec-t { flex: 1; } .rec-t b { display: block; font-weight: 600; } .rec-t small { color: var(--muted); font-size: 13px; }
+.rec-v { text-align: right; font-family: var(--f-display); font-size: 24px; line-height: 1; }
+.rec-v small { display: block; font-family: var(--f-body); font-size: 12px; font-weight: 700; color: var(--ok); margin-top: 3px; }
+.rec.new .rec-v { color: var(--elite); text-shadow: 0 0 12px rgb(255 173 51 / .5); }
+.rec.new .rec-v small { color: var(--elite); }
+.search { display: flex; gap: 8px; margin-top: 12px; }
+.search .in { flex: 1; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 11px 14px; color: var(--muted); font-size: 15px; }
+
+/* stato vuoto */
+.empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 0 22px 40px; }
+.empty h2 { font-family: var(--f-display); text-transform: uppercase; font-size: 28px; margin: 0; }
+.empty p { margin: 0; color: var(--muted); }
+.ghost-chart { width: 240px; height: 140px; }
+
+@media (max-width: 420px) { body { padding: 20px 8px; } .phone { height: auto; min-height: 760px; border-radius: 24px; } }
+</style>
+</head>
+<body>
+<header class="intro">
+  <h1>Ticket 21 · Mockup del primo blocco</h1>
+  <p>Stessi colori e caratteri dell'app, dati di esempio. Statico: niente di cliccabile. Sotto ogni telefono i numeri rimandano agli interventi proposti.</p>
+</header>
+
+<main class="stage">
+
+  <!-- HOME -->
+  <section class="col">
+    <div class="cap">Livello (Home)</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="top"><span class="brand">Scheda Calisthenics</span><span class="badge">
+          <svg width="22" height="26" viewBox="0 0 22 26" fill="none" stroke="#2fd6e8" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="5" r="3.2"/><path d="M11 9v8M4 11l7 2 7-2M7 25l4-8 4 8"/></svg></span></div>
+
+        <section class="hero">
+          <div class="hero-h">
+            <div>
+              <h2 class="t-hero">Oggi</h2>
+              <p class="sub">Lunedì 9 novembre · Forza</p>
+            </div>
+            <div class="ring">
+              <svg viewBox="0 0 74 74"><circle class="bg" cx="37" cy="37" r="31" fill="none" stroke-width="7"/><circle class="fg" cx="37" cy="37" r="31" fill="none" stroke-width="7" stroke-linecap="round" stroke-dasharray="194.8" stroke-dashoffset="129.9"/></svg>
+              <b><span>1/3<small>fatti</small></span></b>
+            </div>
+          </div>
+          <div class="ex forza done">
+            <div class="ex-t"><b>Trazioni prone</b><small>5 × 5 · 7,5 kg</small>
+              <div class="sets"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
+            <button class="btn ghost">Apri</button>
+          </div>
+          <div class="ex forza">
+            <div class="ex-t"><b>Dip</b><small>4 × 8 · 10 kg</small>
+              <div class="sets"><i></i><i></i><i></i><i></i></div></div>
+            <button class="btn">Registra</button>
+          </div>
+          <div class="ex tecnico">
+            <div class="ex-t"><b>Verticale al muro</b><small>3 × 40 s</small>
+              <div class="sets"><i></i><i></i><i></i></div></div>
+            <button class="btn">Registra</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="lvl">
+            <div class="fig"><svg width="44" height="62" viewBox="0 0 44 62" fill="none" stroke="#2fd6e8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="9" r="6"/><path d="M22 17v20M8 22l14 4 14-4M12 58l10-21 10 21"/></svg></div>
+            <div>
+              <div class="lvl-k">Livello</div>
+              <div style="display:flex;align-items:baseline;gap:10px"><span class="lvl-n">34</span><span class="delta">▲ 2 questa settimana</span></div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat"><b class="fire">3 sett.</b><small>di fila</small></div>
+            <div class="stat"><b>92%</b><small>del programma</small></div>
+            <div class="stat"><b>72,4</b><small>kg · −0,6</small></div>
+          </div>
+        </section>
+
+        <section class="flat">
+          <h3 class="t-card">Categorie <span class="help">?</span></h3>
+          <div class="cat"><span class="ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4h14M10 6v11M6 13l4 4 4-4"/></svg></span><div class="cat-t">Fondamentali tirata<div class="bar"><i style="width:48%"></i></div></div><span class="cat-v">48</span></div>
+          <div class="cat"><span class="ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16h14M10 14V3M6 7l4-4 4 4"/></svg></span><div class="cat-t">Fondamentali spinta<div class="bar"><i style="width:41%"></i></div></div><span class="cat-v">41</span></div>
+        </section>
+      </div>
+      <nav class="tabbar"><span class="on">Livello</span><span>Scheda</span><span>Grafici</span><span>Esercizi</span><span>Account</span></nav>
+    </div>
+    <ol class="notes">
+      <li><b>Un protagonista:</b> "Oggi" ha la superficie illuminata, il livello è un riquadro normale, le categorie sono piatte.</li>
+      <li><b>Anello</b> al posto di "1 di 3": si chiude e diventa verde a giornata finita.</li>
+      <li><b>Serie a blocchetti</b> che si accendono man mano, <b>striscia del tipo</b> a sinistra.</li>
+      <li><b>Avatar con la figura</b> anche a livello basso, <b>tendenza</b> (+2), <b>serie di settimane</b> e aderenza.</li>
+      <li><b>Spiegazioni dietro la "?"</b>, <b>pittogrammi</b> per le categorie.</li>
+    </ol>
+  </section>
+
+  <!-- SCHEDA -->
+  <section class="col">
+    <div class="cap">Scheda</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="top"><span class="brand">Scheda</span><span class="badge">
+          <svg width="22" height="26" viewBox="0 0 22 26" fill="none" stroke="#2fd6e8" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="5" r="3.2"/><path d="M11 9v8M4 11l7 2 7-2M7 25l4-8 4 8"/></svg></span></div>
+
+        <section class="card">
+          <h3 class="t-card">Programma <span class="help">?</span></h3>
+          <div class="weeknav" style="margin-top:10px"><span class="arrow">‹</span><b>9–15 nov</b><span class="arrow">›</span></div>
+          <div class="week">
+            <div class="d on"><span>Lun</span><i>9</i><div class="dots"><em class="fo f"></em><em class="fo"></em><em class="te"></em></div></div>
+            <div class="d"><span>Mar</span><i>10</i><div class="dots"></div></div>
+            <div class="d"><span>Mer</span><i>11</i><div class="dots"><em class="vo"></em><em class="vo"></em></div></div>
+            <div class="d"><span>Gio</span><i>12</i><div class="dots"></div></div>
+            <div class="d"><span>Ven</span><i>13</i><div class="dots"><em class="fo"></em><em class="te"></em></div></div>
+            <div class="d"><span>Sab</span><i>14</i><div class="dots"><em class="vo"></em></div></div>
+            <div class="d"><span>Dom</span><i>15</i><div class="dots"></div></div>
+          </div>
+          <div class="legend"><span style="--c:var(--forza)">Forza</span><span style="--c:var(--volume)">Volume</span><span style="--c:var(--tecnico)">Tecnico</span><span style="--c:transparent">● fatto ○ da fare</span></div>
+
+          <div class="day-h" style="margin-top:16px"><h3>Lunedì 9</h3><span class="pill">1 di 3</span></div>
+          <div class="ex forza done">
+            <div class="ex-t"><b>Trazioni prone</b><small>5 × 5 · 7,5 kg · rec. 150 s</small>
+              <div class="sets"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
+          </div>
+          <div class="ex forza">
+            <div class="ex-t"><b>Dip</b><small>4 × 8 · 10 kg · rec. 120 s</small>
+              <div class="sets"><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="ex tecnico">
+            <div class="ex-t"><b>Verticale al muro</b><small>3 × 40 s · rec. 90 s</small>
+              <div class="sets"><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="search"><span class="in">Cerca un esercizio…</span><button class="btn">Aggiungi</button></div>
+        </section>
+
+        <section class="flat">
+          <h3 class="t-card">Record personali <span class="help">?</span></h3>
+          <div class="rec new"><div class="rec-t"><b>Trazioni prone</b><small>oggi · ★ nuovo record</small></div><div class="rec-v">5 × 7,5 kg<small>+2,5 kg</small></div></div>
+          <div class="rec"><div class="rec-t"><b>Dip</b><small>2 nov</small></div><div class="rec-v">8 × 10 kg<small>+1 rip.</small></div></div>
+        </section>
+      </div>
+      <nav class="tabbar"><span>Livello</span><span class="on">Scheda</span><span>Grafici</span><span>Esercizi</span><span>Account</span></nav>
+    </div>
+    <ol class="notes" start="6">
+      <li><b>Settimana con i pallini</b>: uno per esercizio, colore del tipo, pieno se fatto.</li>
+      <li><b>Titoli dei riquadri piccoli</b>: il condensato grande resta per il giorno e i protagonisti.</li>
+      <li><b>Le 4 righe di spiegazione</b> sotto "Programma" e "Record" passano nella "?".</li>
+      <li><b>Record con il progresso</b> (+2,5 kg) e quello nuovo in ambra.</li>
+    </ol>
+  </section>
+
+  <!-- STATO VUOTO -->
+  <section class="col">
+    <div class="cap">Grafici, senza dati</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="top"><span class="brand">Grafici</span><span class="badge">
+          <svg width="22" height="26" viewBox="0 0 22 26" fill="none" stroke="#2fd6e8" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="5" r="3.2"/><path d="M11 9v8M4 11l7 2 7-2M7 25l4-8 4 8"/></svg></span></div>
+        <div class="empty">
+          <svg class="ghost-chart" viewBox="0 0 240 140" fill="none">
+            <path d="M10 130H230" stroke="#26353c" stroke-width="2"/>
+            <path d="M10 95H230M10 60H230M10 25H230" stroke="#26353c" stroke-dasharray="4 6"/>
+            <path d="M14 118 L60 104 L100 108 L140 78 L180 70 L226 34" stroke="#2fd6e8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 8" opacity=".55"/>
+            <circle cx="226" cy="34" r="7" fill="#ffad33" style="filter:drop-shadow(0 0 8px rgb(255 173 51 / .7))"/>
+          </svg>
+          <h2>Qui vedrai i tuoi progressi</h2>
+          <p>Dopo il primo allenamento registrato compaiono la curva, i record e la ripartizione per tipo.</p>
+          <button class="btn wide">Registra il primo allenamento</button>
+          <button class="btn ghost wide">Prepara la settimana</button>
+        </div>
+      </div>
+      <nav class="tabbar"><span>Livello</span><span>Scheda</span><span class="on">Grafici</span><span>Esercizi</span><span>Account</span></nav>
+    </div>
+    <ol class="notes" start="10">
+      <li><b>Stato vuoto con un disegno e un'azione</b>, non una frase su un fondo nero.</li>
+      <li>Stesso schema per Scheda vuota, Esercizi vuoti e Atleti senza nessuno collegato.</li>
+    </ol>
+  </section>
+
+</main>
+</body>
+</html>

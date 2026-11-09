@@ -5,10 +5,11 @@ import { useScope } from '../../app/session';
 import { Avatar } from '../../components/Avatar';
 import { Pentagon } from '../../components/Pentagon';
 import { IconFondSpinta, IconFondTirata, IconHandbalance, IconSkillSpinta, IconSkillTirata } from '../../components/icons';
-import { useLevel, useProfile, useSetBodyWeight } from '../../data/hooks';
+import { useData, useLevel, useProfile, useSetBodyWeight } from '../../data/hooks';
+import { adherence, weekStreak } from '../../lib/adherence';
 import { fmt, numInput, parseNum } from '../../lib/format';
-import { shortDate } from '../../lib/dates';
-import { subRule, validateBodyweight, LIMITS, type AvatarStage, type CategoryId, type CategoryScore, type SubId, type SubScore } from '../../lib/levels';
+import { mondayOf, shortDate, todayStr } from '../../lib/dates';
+import { levelSummary, subRule, validateBodyweight, LIMITS, type AvatarStage, type CategoryId, type CategoryScore, type SubId, type SubScore } from '../../lib/levels';
 import { AXES, categoryName, recordText, subPercentText } from './levelView';
 import { RecordSheet } from './RecordSheet';
 import { TodayCard } from './TodayCard';
@@ -50,6 +51,8 @@ export function HomeView() {
   const byId = new Map(summary.categories.map((c) => [c.categoryId, c]));
   const axes = AXES.map((id) => byId.get(id)!);
   const fresh = records.length === 0;
+  // tendenza (ticket 21): il livello di adesso contro quello con i soli record di prima di lunedì
+  const before = levelSummary(records.filter((r) => r.date < mondayOf(todayStr()))).level;
 
   return (
     <>
@@ -59,7 +62,7 @@ export function HomeView() {
       <div className={nested ? 'flat' : 'cols'}>
       <div className={nested ? 'flat' : 'col'}>
       {!readOnly && <TodayCard />}
-      <Profile level={summary.level} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} readOnly={readOnly} />
+      <Profile level={summary.level} gain={summary.level - before} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} readOnly={readOnly} />
 
       <div className="party-slot" role="status" aria-live="polite">
         {party.length > 0 && (
@@ -126,12 +129,15 @@ export function HomeView() {
 /** Intestazione: avatar (segnaposto finché non c'è il ticket 11), nome, livello, peso con modifica rapida. */
 function Profile({
   level,
+  gain,
   elite,
   avatar,
   bodyweight,
   readOnly,
 }: {
   level: number;
+  /** punti guadagnati da lunedì */
+  gain: number;
   elite: boolean;
   avatar: AvatarStage;
   bodyweight: { date: string; kg: number } | null;
@@ -139,6 +145,10 @@ function Profile({
 }) {
   const profile = useProfile().data;
   const name = profile?.displayName;
+  const { entries, plan } = useData();
+  const today = todayStr();
+  const streak = weekStreak(entries, today);
+  const adh = adherence(plan, entries, today);
   return (
     <section className="card hero" aria-label="Profilo">
       <Avatar name={name} avatar={avatar} elite={elite} body={profile?.avatarBody} />
@@ -154,8 +164,26 @@ function Profile({
           <span className="eyebrow">Livello</span>
           <b className={elite ? 'elite' : undefined}>{level}</b>
           {elite && <span className="tag-elite">ELITE</span>}
+          {gain > 0 && <span className="delta">▲ {gain} questa settimana</span>}
         </p>
       </div>
+      {!readOnly && !profile?.avatarBody && (
+        <Link className="link small pick-fig" to="/account">
+          Scegli la figura del tuo avatar
+        </Link>
+      )}
+      {(streak > 0 || adh.pct !== null) && (
+        <div className="stats">
+          <div className="stat">
+            <b className={streak >= 2 ? 'fire' : undefined}>{streak} {streak === 1 ? 'settimana' : 'settimane'}</b>
+            <small>di fila con un allenamento</small>
+          </div>
+          <div className="stat">
+            <b>{adh.pct === null ? '—' : `${adh.pct}%`}</b>
+            <small>del programma, ultime 4 sett.</small>
+          </div>
+        </div>
+      )}
       {readOnly ? <WeightReadOnly current={bodyweight} /> : <Weight current={bodyweight} />}
     </section>
   );

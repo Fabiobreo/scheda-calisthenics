@@ -181,3 +181,33 @@ export function niceScale(max: number): { top: number; step: number } {
   const step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
   return { top: Math.ceil(max / step) * step, step };
 }
+
+export interface RecordStep {
+  /** data dell'ultimo record */
+  date: string;
+  /** di quanto ha superato il record precedente, già scritto ("+2,5 kg", "+1 rip.", "+5 s"); null se è il primo */
+  gain: string | null;
+}
+
+/**
+ * Ultimo record di un esercizio e di quanto ha battuto quello prima (ticket 21): il progresso si legge accanto al
+ * record, senza aprire lo storico. Conta il primo criterio che cambia: peso, poi ripetizioni, poi secondi.
+ */
+export function lastRecordStep(entries: Entry[], exerciseId: string): RecordStep | null {
+  const ids = recordEntryIds(entries);
+  const recs = entries.filter((e) => e.exerciseId === exerciseId && ids.has(e.id)).sort(chrono);
+  const last = recs.at(-1);
+  if (!last) return null;
+  const prev = recs.at(-2);
+  if (!prev) return { date: last.date, gain: null };
+  const a = bestSet(last.sets)!;
+  const b = bestSet(prev.sets)!;
+  const num = (v: number) => String(Math.round(v * 100) / 100).replace('.', ',');
+  const gain =
+    a.weight !== b.weight
+      ? `+${num(a.weight - b.weight)} kg`
+      : a.reps !== b.reps
+        ? `+${a.reps - b.reps} rip.`
+        : `+${a.seconds - b.seconds} s`;
+  return { date: last.date, gain };
+}

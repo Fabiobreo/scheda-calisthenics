@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useScope } from '../../app/session';
 import { EntryItem } from '../../components/EntryItem';
 import { LineChart, TypeChart } from '../../components/charts';
-import { PageTitle, Seg, Select, useNested } from '../../components/ui';
+import { EmptyState, PageTitle, Seg, Select, useNested } from '../../components/ui';
+import { Link } from 'react-router-dom';
 import { useData } from '../../data/hooks';
 import { EXERCISE_TYPES, TYPE_LABEL, type Measure } from '../../data/types';
 import { todayStr } from '../../lib/dates';
@@ -89,7 +90,26 @@ export function GraficiView() {
         <PageTitle title="Grafici" />
         <section className="card">
           <h2>Andamento</h2>
-          <p className="empty">Aggiungi un esercizio e registra un allenamento per vedere i grafici.</p>
+          {/* stato vuoto con un disegno e cosa fare (ticket 21) */}
+          <EmptyState
+            title={readOnly ? 'Ancora niente da mostrare' : 'Qui vedrai i tuoi progressi'}
+            actions={
+              !readOnly && (
+                <>
+                  <Link className="btn" to="/scheda">
+                    Prepara la settimana
+                  </Link>
+                  <Link className="btn ghost" to="/esercizi">
+                    Scegli gli esercizi
+                  </Link>
+                </>
+              )
+            }
+          >
+            {readOnly
+              ? 'Quando registra il primo allenamento compaiono qui la curva, i record e la ripartizione per tipo.'
+              : 'Dopo il primo allenamento registrato compaiono la curva, i record e la ripartizione per tipo.'}
+          </EmptyState>
         </section>
       </>
     );

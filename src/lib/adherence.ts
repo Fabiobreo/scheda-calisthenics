@@ -1,6 +1,6 @@
 import type { Entry, LevelRecordRow, PlanItem } from '../data/types';
 import { addDays, DAY_SHORT, daysBetween, mondayOf, parseDate, shortDate, weekdayIndex } from './dates';
-import { weekItems } from './plan';
+import { byDay, offPlan, weekItems } from './plan';
 import { chrono, recordEntryIds } from './stats';
 
 /**
@@ -166,4 +166,44 @@ export function athleteAlerts({
       text: `${unique.length === 1 ? 'Nuovo record' : 'Nuovi record'}: ${unique.slice(0, 3).join(', ')}${unique.length > 3 ? ` e altri ${unique.length - 3}` : ''}`,
     });
   return out;
+}
+
+/**
+ * Settimane di fila (lun–dom) con almeno un allenamento, contando all'indietro (ticket 21). La settimana in corso
+ * conta se c'è già un allenamento; se non c'è ancora, la serie parte da quella scorsa: non è persa finché la
+ * settimana non finisce.
+ */
+export function weekStreak(entries: Entry[], today: string): number {
+  const weeks = new Set(entries.filter((e) => e.kind === 'training' && e.date <= today).map((e) => mondayOf(e.date)));
+  let m = mondayOf(today);
+  if (!weeks.has(m)) m = addDays(m, -7);
+  let n = 0;
+  while (weeks.has(m)) {
+    n++;
+    m = addDays(m, -7);
+  }
+  return n;
+}
+
+/**
+ * Pallini di un giorno nella settimana (ticket 21): gli esercizi in programma nell'ordine del giorno, col tipo dello
+ * schema e lo stato (uno spostato conta come fatto), poi gli allenamenti fuori programma, fatti per definizione.
+ */
+export function dayMarks(
+  plan: PlanItem[],
+  entries: Entry[],
+  statuses: Map<string, ItemStatus>,
+  date: string,
+): { type: Entry['type']; state: 'done' | 'missed' | 'pending' }[] {
+  const planned = plan
+    .filter((p) => p.date === date)
+    .sort(byDay)
+    .map((p) => {
+      const k = statuses.get(p.id)?.kind ?? 'pending';
+      return { type: p.scheme.type, state: k === 'done' || k === 'moved' ? ('done' as const) : k };
+    });
+  const extra = offPlan(entries, plan, date)
+    .filter((e) => e.kind === 'training')
+    .map((e) => ({ type: e.type, state: 'done' as const }));
+  return [...planned, ...extra];
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Entry, PlanItem } from '../data/types';
-import { adherence, adherenceText, athleteAlerts, lastTrainingDate, summarizeStatuses, weekStatuses } from './adherence';
+import { adherence, adherenceText, athleteAlerts, lastTrainingDate, summarizeStatuses, weekStatuses, weekStreak, dayMarks } from './adherence';
 
 // lunedì 2 novembre 2026 … domenica 8; oggi = giovedì 5
 const MON = '2026-11-02';
@@ -145,5 +145,31 @@ describe('lastTrainingDate', () => {
       '2026-11-01',
     );
     expect(lastTrainingDate([], TODAY)).toBeNull();
+  });
+});
+
+describe('weekStreak', () => {
+  it('conta le settimane di fila con un allenamento, compresa quella in corso', () => {
+    const es = [entry('a', '2026-10-20'), entry('a', '2026-10-27'), entry('b', '2026-10-29'), entry('a', '2026-11-03')];
+    expect(weekStreak(es, TODAY)).toBe(3);
+  });
+  it('senza allenamenti in questa settimana parte da quella scorsa', () => {
+    expect(weekStreak([entry('a', '2026-10-26'), entry('a', '2026-10-30')], TODAY)).toBe(1);
+  });
+  it('una settimana vuota interrompe la serie; tentativi e date future non contano', () => {
+    const es = [entry('a', '2026-10-12'), entry('a', '2026-10-26', { kind: 'attempt' }), entry('a', '2026-11-07')];
+    expect(weekStreak(es, TODAY)).toBe(0);
+    expect(weekStreak([], TODAY)).toBe(0);
+  });
+});
+
+describe('dayMarks', () => {
+  it('un pallino per esercizio in programma, col suo stato, più gli allenamenti fuori programma', () => {
+    const plan = [item('a', MON), item('b', MON), item('c', '2026-11-03')];
+    const es = [entry('a', MON), entry('c', '2026-11-04'), entry('z', MON), entry('y', MON, { kind: 'attempt' })];
+    const st = weekStatuses(plan, es, MON, TODAY);
+    expect(dayMarks(plan, es, st, MON).map((m) => m.state)).toEqual(['done', 'missed', 'done']);
+    expect(dayMarks(plan, es, st, '2026-11-03')).toEqual([{ type: 'forza', state: 'done' }]);
+    expect(dayMarks(plan, es, st, '2026-11-06')).toEqual([]);
   });
 });

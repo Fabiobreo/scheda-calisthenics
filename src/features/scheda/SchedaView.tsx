@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { useToast } from '../../app/toast';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
-import { WeekDays } from '../../components/WeekDays';
-import { Cols, PageTitle, SearchSelect, Seg, Select, TypeChip } from '../../components/ui';
+import { DotsLegend, WeekDays } from '../../components/WeekDays';
+import { CardHead, Cols, PageTitle, SearchSelect, Seg, Select, SetBlocks, TypeChip } from '../../components/ui';
 import {
   useAddCatalogToPlan,
   useAddPlanItem,
@@ -21,8 +21,8 @@ import { byCategory, defaultType } from '../../lib/catalog';
 import { addDays, inWeek, longDate, mondayOf, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
 import { fmt, fmtScheme, fmtSets } from '../../lib/format';
 import { byDay, copyWeek, dayCount, offPlan, weekItems, type CopyMode } from '../../lib/plan';
-import { adherenceText, movedText, summarizeStatuses, weekStatuses } from '../../lib/adherence';
-import { lastTraining, personalBest, recordEntryIds, suggestScheme } from '../../lib/stats';
+import { adherenceText, dayMarks, movedText, summarizeStatuses, weekStatuses } from '../../lib/adherence';
+import { lastRecordStep, lastTraining, personalBest, recordEntryIds, suggestScheme } from '../../lib/stats';
 import { useLogger } from '../logger/Logger';
 
 export function SchedaView() {
@@ -52,23 +52,24 @@ function Records() {
 
   return (
     <section className="card">
-      <div className="card-h">
-        <h2>Record personali</h2>
+      <CardHead title="Record personali" help="Miglior serie singola: più peso, a parità di peso più ripetizioni (o più secondi, nelle tenute). Conta anche gli allenamenti. In ambra i record di questa settimana.">
         {tracked.length > 0 && (
           <button className="btn small" onClick={() => openLogger({ kind: 'attempt' })}>
             + Tentativo
           </button>
         )}
-      </div>
-      <p className="sub">Miglior serie singola: più peso, a parità di peso più ripetizioni (o più secondi, nelle tenute). Conta anche gli allenamenti.</p>
+      </CardHead>
 
       <div className="rlist">
         {tracked.length === 0 && <p className="empty">Nessun esercizio nei record. Aggiungine uno qui sotto.</p>}
         {tracked.map((ex) => {
           const pb = personalBest(entries, ex.id);
           const n = entries.filter((e) => e.exerciseId === ex.id).length;
+          // progresso sul record precedente; quello di questa settimana è in ambra (ticket 21)
+          const step = lastRecordStep(entries, ex.id);
+          const fresh = !!step && step.date >= mondayOf(todayStr());
           return (
-            <div className="rrow" key={ex.id}>
+            <div className={`rrow${fresh ? ' new' : ''}`} key={ex.id}>
               <div className="rname">{ex.name}</div>
               {pb ? (
                 <div className="rval">
@@ -81,6 +82,7 @@ function Records() {
                       {fmt(pb.set.weight)} <small>kg × {pb.set.seconds > 0 ? `${pb.set.seconds} s` : pb.set.reps}</small>
                     </>
                   )}
+                  {step?.gain && <span className="rgain">{step.gain}</span>}
                 </div>
               ) : (
                 <div className="rval none">—</div>
@@ -221,20 +223,19 @@ function Programma() {
 
   return (
     <section className="card">
-      <div className="card-h">
-        <h2>Programma</h2>
+      <CardHead title="Programma" help="Scegli gli esercizi di ogni giorno con serie, ripetizioni (o secondi), peso e recupero. Prepara una settimana e copiala in quelle dopo. Sotto ogni giorno un pallino per esercizio: pieno se fatto.">
         {active.length > 0 && (
           <button className="btn small ghost" onClick={() => openLogger({ date })}>
             + Fuori programma
           </button>
         )}
-      </div>
-      <p className="sub">Scegli gli esercizi di ogni giorno con serie, ripetizioni (o secondi), peso e recupero. Prepara una settimana e copiala in quelle dopo.</p>
+      </CardHead>
 
       <WeekDays
         monday={monday}
         day={day}
         count={(dt) => dayCount(entries, visible, dt)}
+        marks={(dt) => dayMarks(visible, entries, statuses, dt)}
         onChange={(m, d) => {
           if (m !== monday) goWeek(m, d);
           else {
@@ -243,6 +244,7 @@ function Programma() {
           }
         }}
       />
+      <DotsLegend />
       {weekAdh.pct !== null && (
         <p className="adh">
           {monday === thisMonday ? 'Questa settimana' : 'Settimana'}: <b>{adherenceText(weekAdh)}</b> del programma
@@ -261,9 +263,10 @@ function Programma() {
           const fromTrainer = locked(p);
           const st = statuses.get(p.id);
           return (
-            <div className="pitem" key={p.id}>
+            <div className={`pitem stripe t-${sc.type}`} key={p.id}>
               <div>
                 <div className="pname">{ex.name}</div>
+                <SetBlocks total={sc.sets} done={saved && !future ? saved.sets.length : 0} type={sc.type} />
                 <div className="pmeta">
                   {fmtScheme(sc)}{' '}
                   {!fromTrainer && editing !== p.id && (

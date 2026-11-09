@@ -182,7 +182,7 @@ export function AuthScreen({ invite }: { invite?: string }) {
       <section className="card auth-card">
         {mode === 'sent' ? (
           <>
-            <h2 ref={titleRef} tabIndex={-1}>
+            <h2 className="big" ref={titleRef} tabIndex={-1}>
               Controlla la posta
             </h2>
             <p className="sub">
@@ -205,7 +205,7 @@ export function AuthScreen({ invite }: { invite?: string }) {
           <>
             {mode === 'reset' ? (
               <>
-                <h2>Password dimenticata</h2>
+                <h2 className="big">Password dimenticata</h2>
                 <p className="sub">Ti mandiamo un link per sceglierne una nuova.</p>
               </>
             ) : (
@@ -303,7 +303,7 @@ export function NewPasswordScreen({ email }: { email: string | null }) {
     <div className="auth-page">
       <PageTitle title="Nuova password" />
       <section className="card auth-card">
-        <h2>Nuova password</h2>
+        <h2 className="big">Nuova password</h2>
         <p className="sub">Scegline una di almeno 8 caratteri.</p>
         <form className="form" onSubmit={submit} noValidate>
           <fieldset disabled={busy}>

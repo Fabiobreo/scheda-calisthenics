@@ -3,6 +3,7 @@ import { useData } from '../../data/hooks';
 import { longDate, shortDate, todayStr } from '../../lib/dates';
 import { fmtScheme, fmtSets } from '../../lib/format';
 import { byDay } from '../../lib/plan';
+import { Ring, SetBlocks } from '../../components/ui';
 import { useLogger } from '../logger/Logger';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -28,7 +29,7 @@ export function TodayCard() {
     return (
       <section className="card today" aria-labelledby="today-h">
         <div className="card-h">
-          <h2 id="today-h">Oggi</h2>
+          <h2 id="today-h" className="big">Oggi</h2>
           <Link className="btn small ghost" to="/scheda">
             Scheda
           </Link>
@@ -43,23 +44,25 @@ export function TodayCard() {
   }
 
   return (
-    <section className="card today" aria-labelledby="today-h">
-      <div className="card-h">
-        <h2 id="today-h">Oggi</h2>
-        <span className={`today-count${doneCount === items.length ? ' all' : ''}`}>
-          {doneCount === items.length ? 'Fatto ✓' : `${doneCount} di ${items.length}`}
-        </span>
+    <section className="card today star" aria-labelledby="today-h">
+      {/* protagonista della Home (ticket 21): anello di avanzamento, striscia del tipo e serie a blocchetti */}
+      <div className="today-h">
+        <div>
+          <h2 id="today-h">Oggi</h2>
+          <p className="sub">{cap(longDate(today))}</p>
+        </div>
+        <Ring done={doneCount} total={items.length} label={doneCount === items.length ? 'Allenamento di oggi fatto' : `${doneCount} di ${items.length} esercizi fatti`} />
       </div>
-      <p className="sub">{cap(longDate(today))}</p>
       <ul className="today-list">
         {items.map((p) => {
           const ex = byId.get(p.exerciseId)!;
           const saved = doneToday(ex.id);
           return (
-            <li key={p.id} className={saved ? 'done' : undefined}>
+            <li key={p.id} className={`stripe t-${p.scheme.type}${saved ? ' done' : ''}`}>
               <span className="today-txt">
                 <b>{ex.name}</b>
                 <small>{saved ? `Registrato: ${fmtSets(saved.sets)}` : fmtScheme(p.scheme)}</small>
+                <SetBlocks total={p.scheme.sets} done={saved?.sets.length ?? 0} type={p.scheme.type} />
               </span>
               <button
                 className={`btn small${saved ? ' ghost' : ''}`}

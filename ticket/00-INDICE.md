@@ -116,3 +116,14 @@ Non spostano il punteggio A–F ma il voto da coach; vanno decisi con l'utente p
 | C03 | Superserie/circuiti, riscaldamento e mobilità, scarico, giorni di test | Programmazione | da fare |
 | C04 | Progressioni mancanti nel catalogo (back lever, bandiera, archer, pseudo planche lean, preparazione spalle e polsi…) | Catalogo | da fare |
 | C05 | Video di controllo tecnica allegato alla registrazione; segnale di dolore strutturato | Coach–atleta | da fare |
+
+## Carattere visivo (dopo l'audit)
+
+L'audit misura accessibilità, velocità e completezza, non quanto l'app trasmette energia: a novembre l'app risultava
+"piatta" (schede tutte uguali, molto testo, dati scritti invece che disegnati, stati vuoti vuoti).
+
+| # | Intervento | Ticket | Stato |
+|---|---|---|---|
+| V01 | Primo blocco: un protagonista per pagina, titoli piccoli, spiegazioni dietro "?", anello in Oggi, serie a blocchetti, striscia del tipo, settimana con i pallini, record con il progresso, tendenza e settimane di fila, stati vuoti con disegno e azione | [21](21-carattere-visivo.md) | fatto 9/11 |
+| V02 | Secondo blocco: animazioni brevi (spunta, numeri che salgono, record che lampeggia, transizioni), pittogrammi negli esercizi, stati vuoti anche in Esercizi e Scheda | — | da fare |
+| V03 | Sezione "carattere visivo" nell'audit con criteri verificabili | — | da decidere |

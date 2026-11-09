@@ -378,3 +378,102 @@ export function SearchSelect<T extends string>({ label, value, options, onChange
     </div>
   );
 }
+
+/**
+ * Testata di una scheda (ticket 21): titolo piccolo, azioni a destra e, se c'è, la spiegazione dietro una "?" invece
+ * di righe sempre visibili. `big`: titolo grande, per la scheda protagonista della pagina.
+ */
+export function CardHead({ title, help, big, children }: { title: string; help?: ReactNode; big?: boolean; children?: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <>
+      <div className="card-h">
+        <span className="card-t">
+          <h2 className={big ? 'big' : undefined}>{title}</h2>
+          {help && (
+            <button type="button" className="help" aria-expanded={open} aria-controls={id} aria-label={open ? `Nascondi la spiegazione di ${title}` : `Cos'è ${title}`} onClick={() => setOpen(!open)}>
+              <span aria-hidden="true">?</span>
+            </button>
+          )}
+        </span>
+        {children}
+      </div>
+      {help && open && (
+        <p className="sub help-txt" id={id}>
+          {help}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** Serie come blocchetti (ticket 21): `total` previste, `done` registrate, nel colore del tipo. Decorativo. */
+export function SetBlocks({ total, done, type }: { total: number; done: number; type: ExerciseType }) {
+  const n = Math.min(Math.max(total, done), 12);
+  if (!n) return null;
+  return (
+    <span className={`blocks ${type}`} aria-hidden="true">
+      {Array.from({ length: n }, (_, i) => (
+        <i key={i} className={i < done ? 'on' : undefined} />
+      ))}
+    </span>
+  );
+}
+
+/** Anello di avanzamento: `done` su `total`, verde quando è pieno. */
+export function Ring({ done, total, label }: { done: number; total: number; label: string }) {
+  const r = 31;
+  const c = 2 * Math.PI * r;
+  const full = total > 0 && done >= total;
+  return (
+    <div className={`ring${full ? ' full' : ''}`} role="img" aria-label={label}>
+      <svg viewBox="0 0 74 74" aria-hidden="true">
+        <circle className="ring-bg" cx="37" cy="37" r={r} />
+        <circle className="ring-fg" cx="37" cy="37" r={r} strokeDasharray={c} strokeDashoffset={c * (1 - (total ? Math.min(done, total) / total : 0))} />
+      </svg>
+      <b aria-hidden="true">
+        {full ? '✓' : `${done}/${total}`}
+        <small>{full ? 'fatto' : 'fatti'}</small>
+      </b>
+    </div>
+  );
+}
+
+/** Stato vuoto (ticket 21): un disegno, cosa comparirà qui e cosa fare per arrivarci. */
+export function EmptyState({ art, title, children, actions }: { art?: ReactNode; title: string; children: ReactNode; actions?: ReactNode }) {
+  return (
+    <div className="empty-state">
+      {art ?? <EmptyChart />}
+      <h3>{title}</h3>
+      <p>{children}</p>
+      {actions && <div className="empty-act">{actions}</div>}
+    </div>
+  );
+}
+
+/** Grafico tratteggiato che sale verso un punto ambra: "qui vedrai i progressi". */
+export function EmptyChart() {
+  return (
+    <svg className="empty-art" viewBox="0 0 240 140" aria-hidden="true">
+      <path className="ea-axis" d="M10 130H230" />
+      <path className="ea-grid" d="M10 95H230M10 60H230M10 25H230" />
+      <path className="ea-line" d="M14 118 L60 104 L100 108 L140 78 L180 70 L226 34" />
+      <circle className="ea-dot" cx="226" cy="34" r="7" />
+    </svg>
+  );
+}
+
+/** Tre figure stilizzate: "qui vedrai i tuoi atleti". */
+export function EmptyPeople() {
+  return (
+    <svg className="empty-art" viewBox="0 0 240 140" aria-hidden="true">
+      {[60, 120, 180].map((x, i) => (
+        <g key={x} className={i === 1 ? 'ea-main' : 'ea-side'}>
+          <circle cx={x} cy={i === 1 ? 44 : 58} r={i === 1 ? 16 : 12} />
+          <path d={i === 1 ? `M${x - 30} 122 q30 -56 60 0` : `M${x - 22} 122 q22 -42 44 0`} />
+        </g>
+      ))}
+    </svg>
+  );
+}

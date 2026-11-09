@@ -6,8 +6,8 @@ import { Avatar } from '../../components/Avatar';
 import { useExercisePicker } from '../../components/ExercisePicker';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
-import { WeekDays } from '../../components/WeekDays';
-import { ConfirmButton, NestedView, PageTitle, Seg, Skeleton, TypeChip, useWide } from '../../components/ui';
+import { DotsLegend, WeekDays } from '../../components/WeekDays';
+import { CardHead, ConfirmButton, EmptyPeople, EmptyState, NestedView, PageTitle, Seg, SetBlocks, Skeleton, TypeChip, useWide } from '../../components/ui';
 import {
   useCatalog,
   useCoachAddPlanItem,
@@ -27,7 +27,7 @@ import { fmtScheme, fmtSets } from '../../lib/format';
 import { blankScheme, recordEntryIds, suggestType } from '../../lib/stats';
 import { defaultType } from '../../lib/catalog';
 import { byDay, dayCount, offPlan } from '../../lib/plan';
-import { adherence, adherenceText, athleteAlerts, lastTrainingDate, movedText, summarizeStatuses, weekStatuses, type Alert } from '../../lib/adherence';
+import { adherence, adherenceText, athleteAlerts, dayMarks, lastTrainingDate, movedText, summarizeStatuses, weekStatuses, type Alert } from '../../lib/adherence';
 import { subRule } from '../../lib/levels';
 import { GraficiView } from '../grafici/GraficiView';
 import { HomeView } from '../home/HomeView';
@@ -123,14 +123,21 @@ function AthletesCard({ selected }: { selected?: string }) {
   const end = useEndLink('Atleta scollegato');
   return (
     <section className="card">
-      <h2>Atleti</h2>
-      <p className="sub">Gli atleti che segui: programmi i loro giorni, vedi storico, note, grafici e livello. I loro dati restano loro.</p>
+      <CardHead title="Atleti" help="Gli atleti che segui: programmi i loro giorni, vedi storico, note, grafici e livello. I loro dati restano loro." />
       {links.isLoading ? (
         <Skeleton inline />
       ) : !athletes.length ? (
-        <p className="empty">
-          Nessun atleta. Manda il tuo link d'invito da <Link to="/account">Account</Link>.
-        </p>
+        <EmptyState
+          art={<EmptyPeople />}
+          title="Qui vedrai i tuoi atleti"
+          actions={
+            <Link className="btn" to="/account">
+              Invita un atleta
+            </Link>
+          }
+        >
+          Manda il tuo link d'invito: quando l'atleta accetta, compare qui con il suo programma e i suoi progressi.
+        </EmptyState>
       ) : (
         athletes.map((l) => (
           <div className={`entry${l.athleteId === selected ? ' on' : ''}`} key={l.id}>
@@ -266,7 +273,7 @@ export function AtletaView() {
       <PageTitle title={link.athleteName || 'Atleta'} />
       <section className="card">
         <div className="card-h">
-          <h2>{nameOf(link.athleteName)}</h2>
+          <h2 className="big">{nameOf(link.athleteName)}</h2>
           {/* su schermo largo l'elenco degli atleti è già a sinistra */}
           <Link className="link small only-narrow" to="/atleti">
             ‹ Atleti
@@ -401,7 +408,8 @@ function AthletePlan() {
   return (
     <section className="card">
       <h2>Programma</h2>
-      <WeekDays monday={monday} day={day} count={(dt) => dayCount(entries, visible, dt)} onChange={go} detail={wide ? board : undefined} />
+      <WeekDays monday={monday} day={day} count={(dt) => dayCount(entries, visible, dt)} onChange={go} detail={wide ? board : undefined} marks={(dt) => dayMarks(visible, entries, statuses, dt)} />
+      {!wide && <DotsLegend />}
       {weekAdh.pct !== null && (
         <p className="adh">
           {monday === thisMonday ? 'Questa settimana' : 'Settimana'}: <b>{adherenceText(weekAdh)}</b> del programma
@@ -417,9 +425,10 @@ function AthletePlan() {
           const saved = entries.find((e) => e.exerciseId === ex.id && e.kind === 'training' && e.date === date);
           const st = statuses.get(p.id);
           return (
-            <div className="pitem" key={p.id}>
+            <div className={`pitem stripe t-${sc.type}`} key={p.id}>
               <div>
                 <div className="pname">{ex.name}</div>
+                <SetBlocks total={sc.sets} done={saved && date <= todayStr() ? saved.sets.length : 0} type={sc.type} />
                 <div className="pmeta">
                   Previsto: {fmtScheme(sc)}{' '}
                   {mine && editing !== p.id && (

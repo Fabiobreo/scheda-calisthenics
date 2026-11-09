@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Entry, PlanItem } from '../data/types';
-import { niceScale, personalBest, recordEntryIds, repsByType, series, suggestedRest, suggestScheme, suggestType } from './stats';
+import { lastRecordStep, niceScale, personalBest, recordEntryIds, repsByType, series, suggestedRest, suggestScheme, suggestType } from './stats';
 import { fmtSets } from './format';
 import { addDays, mondayOf, weekLabel } from './dates';
 import { copyWeek } from './plan';
@@ -224,5 +224,17 @@ describe('suggestType', () => {
 
   it('senza programma né allenamenti usa il predefinito', () => {
     expect(suggestType([], [], 'dip', '2026-11-02', 'tecnico')).toBe('tecnico');
+  });
+});
+
+describe('lastRecordStep', () => {
+  it('dice di quanto l’ultimo record ha battuto il precedente', () => {
+    const es = [dip([[40, 8]], '2026-11-02'), dip([[40, 6]], '2026-11-04'), dip([[42.5, 5]], '2026-11-09')];
+    expect(lastRecordStep(es, 'dip')).toEqual({ date: '2026-11-09', gain: '+2,5 kg' });
+  });
+  it('a parità di peso conta le ripetizioni; il primo record non ha progresso', () => {
+    expect(lastRecordStep([dip([[0, 8]], '2026-11-02'), dip([[0, 9]], '2026-11-03')], 'dip')?.gain).toBe('+1 rip.');
+    expect(lastRecordStep([dip([[0, 8]], '2026-11-02')], 'dip')).toEqual({ date: '2026-11-02', gain: null });
+    expect(lastRecordStep([], 'dip')).toBeNull();
   });
 });
