@@ -45,3 +45,30 @@ Togliere la sezione senza ricollocare queste funzioni vorrebbe dire non poter pi
 2. La **difficoltà** serve ancora? Nel documento non è citata; se nessuno la usa la togliamo invece di spostarla.
 3. Le **note dell'atleta** sulla sessione (lette dal trainer) dove si scrivono e leggono dopo la rimozione? Proposta: nel
    logger e nel giorno del calendario.
+
+## Stato
+
+**Fatto il 9 novembre 2026.** Nessuna migration: cambia solo l'app.
+
+Decisioni dell'utente sulle domande:
+
+1. Ricollocazione: **calendario della Scheda + logger + elenco delle sessioni sotto il grafico**.
+2. Difficoltà: **si tiene**, si sceglie nel logger (lì c'era già) e si vede nel calendario e dal trainer.
+3. Note dell'atleta: restano nel logger; si leggono nel giorno del calendario ("La tua nota" / "Nota dell'atleta").
+
+Dove sono finite le funzioni del Registro:
+
+- **Giorno del calendario** (Scheda e calendario dell'atleta lato trainer): sotto gli esercizi in programma c'è
+  "Registrato fuori programma" con gli allenamenti fuori programma e i tentativi di record del giorno. Le righe in
+  programma mostrano difficoltà, nota e ★ Record. Il numero sotto ogni giorno conta anche il fuori programma.
+- **Logger**: aprendo una registrazione esistente c'è "Elimina" (con conferma).
+- **Grafici**: sotto il grafico grande, le sessioni dell'esercizio dalla più recente (5, poi "Mostra altre"); toccando
+  un punto restano quelle di quel giorno. "Apri" porta al logger; il trainer le vede senza "Apri".
+- `/registro` rimanda alla Scheda; la scheda "Storico" del trainer non c'è più.
+
+Note per chi viene dopo:
+
+- Calcolo del fuori programma in `offPlan` / `dayCount` ([plan.ts](../src/lib/plan.ts)), testati in `plan.test.ts`.
+- Riga di una registrazione riusabile: [EntryItem.tsx](../src/components/EntryItem.tsx).
+- Non c'è più una vista "tutte le sessioni di tutti gli esercizi in ordine": si passa per giorno (calendario) o per
+  esercizio (grafici). Il ticket 13 può arricchire l'elenco sotto il grafico (periodo).

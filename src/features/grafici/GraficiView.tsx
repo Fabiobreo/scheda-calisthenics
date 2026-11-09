@@ -1,11 +1,17 @@
 import { useState } from 'react';
+import { useScope } from '../../app/session';
+import { EntryItem } from '../../components/EntryItem';
 import { LineChart, TypeChart } from '../../components/charts';
 import { Seg, Select } from '../../components/ui';
 import { useData } from '../../data/hooks';
 import { EXERCISE_TYPES, TYPE_LABEL, type Measure } from '../../data/types';
 import { shortDate } from '../../lib/dates';
 import { fmt } from '../../lib/format';
-import { METRICS, METRICS_BY_MEASURE, repsByType, series, type Point } from '../../lib/stats';
+import { METRICS, METRICS_BY_MEASURE, recordEntryIds, repsByType, series, type Point } from '../../lib/stats';
+import { useLogger } from '../logger/Logger';
+
+/** Sessioni mostrate sotto il grafico, e quante in più a ogni "Mostra altre". */
+const SESSIONS = 5;
 
 /** Metrica nella posizione `slot` per un esercizio che si misura in `m` (0 = miglior risultato, 1 = totale, 2 = l'altra). */
 const metricOf = (m: Measure, slot: number) => METRICS_BY_MEASURE[m][slot];
@@ -16,6 +22,15 @@ export function GraficiView() {
   const [slot, setSlot] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [selected, setSelected] = useState<Point | null>(null);
+  const [limit, setLimit] = useState(SESSIONS);
+  const openLogger = useLogger();
+  // un atleta visto dal trainer: le sessioni si leggono soltanto
+  const { readOnly } = useScope();
+  const pick = (id: string) => {
+    setPicked(id);
+    setSelected(null);
+    setLimit(SESSIONS);
+  };
 
   // archiviati inclusi solo se hanno dati da mostrare
   const withData = new Set(entries.map((e) => e.exerciseId));
@@ -38,6 +53,9 @@ export function GraficiView() {
   const last = pts[pts.length - 1];
   const readout = selected && pts.some((p) => p.date === selected.date) ? selected : null;
   const types = repsByType(entries);
+  // le sessioni dell'esercizio, dalla più recente; toccando un punto restano quelle di quel giorno
+  const sessions = entries.filter((e) => e.exerciseId === ex.id && (!readout || e.date === readout.date));
+  const prIds = recordEntryIds(entries);
 
   return (
     <>
@@ -55,7 +73,7 @@ export function GraficiView() {
           />
         </div>
         <div style={{ marginTop: 14 }}>
-          <Select label="Esercizio" value={ex.id} options={shown.map((e) => ({ v: e.id, l: e.name }))} onChange={(v) => (setPicked(v), setSelected(null))} />
+          <Select label="Esercizio" value={ex.id} options={shown.map((e) => ({ v: e.id, l: e.name }))} onChange={pick} />
         </div>
         {!pts.length ? (
           <p className="empty">Nessuna registrazione per questo esercizio.</p>
@@ -67,7 +85,13 @@ export function GraficiView() {
             <p className="readout">
               {readout ? (
                 <>
-                  {fmt(readout.v)} {m.unit} <span>· {shortDate(readout.date)}</span>
+                  {fmt(readout.v)} {m.unit}{' '}
+                  <span>
+                    · {shortDate(readout.date)} ·{' '}
+                    <button className="link small" onClick={() => setSelected(null)}>
+                      tutte le sessioni
+                    </button>
+                  </span>
                 </>
               ) : (
                 <>
@@ -79,6 +103,19 @@ export function GraficiView() {
                 </>
               )}
             </p>
+            <div className="sessions">
+              <h4>{readout ? `Sessioni del ${shortDate(readout.date)}` : 'Sessioni'}</h4>
+              {sessions.slice(0, readout ? undefined : limit).map((e) => (
+                <EntryItem key={e.id} entry={e} record={prIds.has(e.id)} showDate onOpen={readOnly ? undefined : () => openLogger({ entry: e })} />
+              ))}
+              {!readout && sessions.length > limit && (
+                <div className="row" style={{ marginTop: 12 }}>
+                  <button className="btn small ghost" onClick={() => setLimit(limit + SESSIONS * 4)}>
+                    Mostra altre ({sessions.length - limit})
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         )}
       </section>
@@ -119,8 +156,7 @@ export function GraficiView() {
                 key={x.id}
                 className={`mini${x.id === ex.id ? ' on' : ''}`}
                 onClick={() => {
-                  setPicked(x.id);
-                  setSelected(null);
+                  pick(x.id);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >

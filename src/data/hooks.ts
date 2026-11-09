@@ -170,7 +170,7 @@ export const useCreateEntry = (okMsg = 'Salvato') =>
 export const useUpdateEntry = (okMsg?: string) =>
   useRepoMutation((r, a: { id: string; patch: Partial<EntryInput> }) => r.updateEntry(a.id, a.patch), [K.entries], okMsg);
 
-export const useDeleteEntry = () => useRepoMutation((r, id: string) => r.deleteEntry(id), [K.entries]);
+export const useDeleteEntry = () => useRepoMutation((r, id: string) => r.deleteEntry(id), [K.entries], 'Registrazione eliminata');
 
 export const useAddPlanItem = () =>
   useRepoMutation(

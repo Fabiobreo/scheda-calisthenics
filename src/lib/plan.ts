@@ -1,4 +1,4 @@
-import type { PlanChanges, PlanItem } from '../data/types';
+import type { Entry, PlanChanges, PlanItem } from '../data/types';
 import { addDays, daysBetween, inWeek } from './dates';
 
 /** replace: la settimana di destinazione diventa uguale a quella copiata. merge: aggiunge solo gli esercizi che mancano. */
@@ -9,6 +9,20 @@ export const byDay = (a: PlanItem, b: PlanItem) => (a.date < b.date ? -1 : a.dat
 
 /** Esercizi della settimana che inizia dal lunedì `monday`, in ordine di calendario. */
 export const weekItems = (plan: PlanItem[], monday: string) => plan.filter((p) => inWeek(p.date, monday)).sort(byDay);
+
+/**
+ * Registrazioni del giorno `date` che non rispondono a un esercizio in programma: allenamenti fuori programma e tentativi
+ * di record. Dalla prima salvata.
+ */
+export function offPlan(entries: Entry[], plan: PlanItem[], date: string): Entry[] {
+  const planned = new Set(plan.filter((p) => p.date === date).map((p) => p.exerciseId));
+  return entries
+    .filter((e) => e.date === date && !(e.kind === 'training' && planned.has(e.exerciseId)))
+    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
+}
+
+/** Quanti esercizi ha il giorno nel calendario: quelli in programma più quelli registrati fuori programma. */
+export const dayCount = (entries: Entry[], plan: PlanItem[], date: string) => plan.filter((p) => p.date === date).length + offPlan(entries, plan, date).length;
 
 /** Cosa togliere e aggiungere per copiare la settimana `from` (un lunedì) sulle settimane `targets` (lunedì). */
 /**

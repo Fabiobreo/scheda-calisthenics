@@ -2,8 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { useRestTimer } from '../../app/restTimer';
 import { unlockAudio } from '../../app/sound';
 import { useToast } from '../../app/toast';
-import { Field, Select, Seg } from '../../components/ui';
-import { useCatalog, useCreateEntry, useData, useUpdateEntry } from '../../data/hooks';
+import { ConfirmButton, Field, Select, Seg } from '../../components/ui';
+import { useCatalog, useCreateEntry, useData, useDeleteEntry, useUpdateEntry } from '../../data/hooks';
 import {
   DEFAULT_REST,
   DIFFICULTIES,
@@ -185,6 +185,7 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
   const toast = useToast();
   const create = useCreateEntry(draft.kind === 'attempt' ? 'Tentativo salvato' : 'Allenamento salvato');
   const update = useUpdateEntry('Modifica salvata');
+  const del = useDeleteEntry();
   const ex = exercises.find((e) => e.id === draft.exerciseId);
   const editing = draft.entryId !== null;
   const attempt = draft.kind === 'attempt';
@@ -404,6 +405,17 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
             <button className="btn ghost" onClick={close}>
               Annulla
             </button>
+            {draft.entryId && (
+              <span className="push">
+                <ConfirmButton
+                  confirmLabel="Eliminare?"
+                  onConfirm={() => {
+                    del.mutate(draft.entryId!);
+                    setDraft(null);
+                  }}
+                />
+              </span>
+            )}
           </div>
         </div>
       </div>

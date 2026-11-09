@@ -82,6 +82,7 @@ a.link { text-decoration: none; }
 /* area di tocco di 44px senza spostare il layout */
 .link.tap, .link.small.tap { padding: 12px 0; margin: -12px 0; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.row .push { margin-left: auto; }
 
 .fld { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .fld > span:not(.fld-hint):not(.fld-err), .fld-l { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
@@ -131,6 +132,11 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .weeks .check-row:first-child { border-top: 0; }
 .weeks .check-row .hint { margin-left: auto; }
 .plan { margin-top: 6px; }
+/* registrato nel giorno fuori dal programma; sessioni sotto il grafico */
+.extra, .sessions { margin-top: 18px; padding-top: 6px; border-top: 1px solid var(--line); }
+/* giorno senza programma: niente riga di separazione in cima */
+.plan:empty + .extra { margin-top: 6px; padding-top: 0; border-top: 0; }
+.extra h4, .sessions h4 { margin: 8px 0 0; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
 .pitem { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 14px 0; border-top: 1px solid var(--line); }
 .pitem:first-child { border-top: 0; }
 .pname { font-weight: 600; font-size: 18px; margin: 0; }
@@ -163,11 +169,6 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .mini .none { color: var(--muted); font-size: 14px; min-height: 52px; display: flex; align-items: center; }
 
 /* registro */
-.grp { margin-top: 20px; }
-.grp:first-of-type { margin-top: 12px; }
-.grp-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
-.grp-h h3 { font-size: 24px; }
-.grp-h span { color: var(--muted); font-size: 15px; white-space: nowrap; }
 .entry { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start; }
 .entry:last-child { border-bottom: 0; }
 .entry b { font-size: 20px; font-weight: 600; }

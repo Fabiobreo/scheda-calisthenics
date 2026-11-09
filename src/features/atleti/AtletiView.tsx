@@ -3,18 +3,18 @@ import { Link, useParams } from 'react-router-dom';
 import { AthleteScope, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { useExercisePicker } from '../../components/ExercisePicker';
+import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
 import { ConfirmButton, Seg, TypeChip } from '../../components/ui';
 import { useCatalog, useCoachAddPlanItem, useData, useEndLink, useLinks, useRemovePlanItem, useSetPlanNote, useSetPlanScheme } from '../../data/hooks';
-import { type ExerciseRef, type Measure } from '../../data/types';
+import { DIFFICULTY_LABEL, type ExerciseRef, type Measure } from '../../data/types';
 import { addDays, longDate, mondayOf, shortDate, todayStr, weekdayIndex } from '../../lib/dates';
 import { fmtScheme, fmtSets } from '../../lib/format';
-import { blankScheme, suggestType } from '../../lib/stats';
+import { blankScheme, recordEntryIds, suggestType } from '../../lib/stats';
 import { defaultType } from '../../lib/catalog';
-import { byDay } from '../../lib/plan';
+import { byDay, dayCount, offPlan } from '../../lib/plan';
 import { GraficiView } from '../grafici/GraficiView';
-import { RegistroView } from '../registro/RegistroView';
 import { SchedeCard } from './SchedeView';
 
 const nameOf = (n: string | null) => n ?? 'Atleta senza nome';
@@ -62,7 +62,7 @@ export function AtletiView() {
   );
 }
 
-type Tab = 'programma' | 'registro' | 'grafici';
+type Tab = 'programma' | 'grafici';
 
 /** Un atleta visto dal suo trainer: le viste dentro leggono i suoi dati, senza poterli modificare. */
 export function AtletaView() {
@@ -93,14 +93,13 @@ export function AtletaView() {
             ‹ Atleti
           </Link>
         </div>
-        <p className="sub">Programmi i suoi giorni; storico e grafici sono in sola lettura.</p>
+        <p className="sub">Programmi i suoi giorni e vedi cosa ha fatto, anche fuori programma; registrazioni e grafici sono in sola lettura.</p>
         <div style={{ marginTop: 14 }}>
           <Seg
             label="Sezione"
             value={tab}
             options={[
               { v: 'programma', l: 'Programma' },
-              { v: 'registro', l: 'Storico' },
               { v: 'grafici', l: 'Grafici' },
             ]}
             onChange={setTab}
@@ -118,7 +117,6 @@ function AthleteData({ tab }: { tab: Tab }) {
   const { isLoading, error } = useData();
   if (isLoading) return <p className="empty">Caricamento…</p>;
   if (error) return <div className="banner">Non riesco a leggere i dati dell'atleta. Riprova.</div>;
-  if (tab === 'registro') return <RegistroView />;
   if (tab === 'grafici') return <GraficiView />;
   return <AthletePlan />;
 }
@@ -148,6 +146,9 @@ function AthletePlan() {
   const visible = plan.filter((p) => byId.has(p.exerciseId));
   const date = addDays(monday, day);
   const items = visible.filter((p) => p.date === date).sort(byDay);
+  // quello che l'atleta ha registrato quel giorno fuori dal programma, tentativi compresi
+  const extra = offPlan(entries, visible, date);
+  const prIds = recordEntryIds(done);
   const title = longDate(date);
   // gli esercizi già nel giorno non si propongono di nuovo
   const inDay = items.map((p) => byId.get(p.exerciseId)).filter((e) => e !== undefined);
@@ -179,10 +180,10 @@ function AthletePlan() {
   return (
     <section className="card">
       <h2>Programma</h2>
-      <WeekDays monday={monday} day={day} count={(dt) => visible.filter((p) => p.date === dt).length} onChange={go} />
+      <WeekDays monday={monday} day={day} count={(dt) => dayCount(entries, visible, dt)} onChange={go} />
       <h3 style={{ fontSize: 22, marginTop: 18 }}>{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
       <div className="plan">
-        {items.length === 0 && <p className="empty">Niente in programma.</p>}
+        {items.length === 0 && !extra.length && <p className="empty">Niente in programma.</p>}
         {items.map((p) => {
           const ex = byId.get(p.exerciseId)!;
           const sc = p.scheme;
@@ -200,7 +201,10 @@ function AthletePlan() {
                     </button>
                   )}
                 </div>
-                <div className="pmeta">{saved ? `Fatto: ${fmtSets(saved.sets)}` : date < today ? 'Non registrato' : 'Da fare'}</div>
+                <div className="pmeta">
+                  {saved ? `${saved.date > today ? 'Programmato' : 'Fatto'}: ${fmtSets(saved.sets)}` : date < today ? 'Non registrato' : 'Da fare'}
+                  {saved?.difficulty && ` · ${DIFFICULTY_LABEL[saved.difficulty]}`}
+                </div>
                 {saved?.note && <div className="pmeta">Nota dell'atleta: {saved.note}</div>}
                 {p.note && (
                   <p className="coach-note" style={{ marginTop: 8 }}>
@@ -210,6 +214,7 @@ function AthletePlan() {
                 <div className="chips">
                   <TypeChip type={sc.type} />
                   {!mine && <span className="chip mut">{p.assignedBy ? 'Da un altro trainer' : "Dell'atleta"}</span>}
+                  {saved && prIds.has(saved.id) && <span className="chip pr">★ Record</span>}
                 </div>
               </div>
               {mine && (
@@ -238,6 +243,14 @@ function AthletePlan() {
           );
         })}
       </div>
+      {extra.length > 0 && (
+        <div className="extra">
+          <h4>Fatto fuori programma</h4>
+          {extra.map((e) => (
+            <EntryItem key={e.id} entry={e} name={byId.get(e.exerciseId)?.name ?? 'Esercizio rimosso'} record={prIds.has(e.id)} noteLabel="Nota dell'atleta" />
+          ))}
+        </div>
+      )}
       <div className="form" style={{ marginTop: 12 }}>
         {picker.view}
         {!adding ? (

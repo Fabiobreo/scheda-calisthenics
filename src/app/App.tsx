@@ -9,7 +9,6 @@ import { AuthScreen, NewPasswordScreen, usePasswordRecovery } from '../features/
 import { EserciziView } from '../features/esercizi/EserciziView';
 import { GraficiView } from '../features/grafici/GraficiView';
 import { LoggerProvider } from '../features/logger/Logger';
-import { RegistroView } from '../features/registro/RegistroView';
 import { SchedaView } from '../features/scheda/SchedaView';
 import { supabase } from '../lib/supabase';
 import { useSession } from './session';
@@ -17,7 +16,6 @@ import { useSession } from './session';
 const TABS = [
   { to: '/', label: 'Scheda' },
   { to: '/grafici', label: 'Grafici' },
-  { to: '/registro', label: 'Registro' },
   { to: '/esercizi', label: 'Esercizi' },
 ];
 
@@ -137,7 +135,8 @@ function Main() {
           <Routes>
             <Route path="/" element={<SchedaView />} />
             <Route path="/grafici" element={<GraficiView />} />
-            <Route path="/registro" element={<RegistroView />} />
+            {/* il Registro non c'è più (ticket 04): chi l'aveva salvato torna alla Scheda */}
+            <Route path="/registro" element={<Navigate to="/" replace />} />
             <Route path="/esercizi" element={<EserciziView />} />
             <Route path="/account" element={<AccountView />} />
             <Route path="/invito/:code" element={<InviteRoute />} />

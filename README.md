@@ -88,7 +88,7 @@ Dal telefono: apri il sito → menu del browser → **Aggiungi a schermata Home*
 src/
   app/          sessione/login, toast, timer di recupero, shell e navigazione
   data/         tipi, interfaccia Repo, implementazioni Supabase e locale, hook React Query
-  features/     scheda (record + programma), logger a serie, grafici, registro, esercizi, auth
+  features/     scheda (record + programma con quanto registrato), logger a serie, grafici (con le sessioni), esercizi, auth
   lib/          date, formattazione, statistiche (pure e testate)
 supabase/migrations/  schema SQL
 ```

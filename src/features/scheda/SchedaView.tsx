@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../app/toast';
+import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { WeekDays } from '../../components/WeekDays';
 import { Seg, Select, TypeChip } from '../../components/ui';
@@ -19,7 +20,7 @@ import { CATEGORY_LABEL, DIFFICULTY_LABEL, type PlanChanges, type PlanItem } fro
 import { byCategory, defaultType } from '../../lib/catalog';
 import { addDays, inWeek, longDate, mondayOf, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
 import { fmt, fmtScheme, fmtSets } from '../../lib/format';
-import { byDay, copyWeek, weekItems, type CopyMode } from '../../lib/plan';
+import { byDay, copyWeek, dayCount, offPlan, weekItems, type CopyMode } from '../../lib/plan';
 import { lastTraining, personalBest, recordEntryIds, suggestScheme } from '../../lib/stats';
 import { useLogger } from '../logger/Logger';
 
@@ -168,6 +169,9 @@ function Programma() {
   // il giorno scelto nella settimana mostrata: registrare da qui usa questa data, anche se futura
   const date = addDays(monday, day);
   const items = visible.filter((p) => p.date === date).sort(byDay);
+  // registrato quel giorno senza essere in programma: fuori programma e tentativi
+  const extra = offPlan(entries, visible, date);
+  const prIds = recordEntryIds(done);
   const weekCount = visible.filter((p) => inWeek(p.date, monday)).length;
   // si aggiunge uno dei propri esercizi, oppure una voce del catalogo che diventa un esercizio al volo
   const avail = active.filter((e) => !items.some((p) => p.exerciseId === e.id));
@@ -212,7 +216,7 @@ function Programma() {
       <WeekDays
         monday={monday}
         day={day}
-        count={(dt) => visible.filter((p) => p.date === dt).length}
+        count={(dt) => dayCount(entries, visible, dt)}
         onChange={(m, d) => {
           if (m !== monday) goWeek(m, d);
           else {
@@ -224,7 +228,7 @@ function Programma() {
       <h3 style={{ fontSize: 22, marginTop: 18 }}>{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
 
       <div className="plan">
-        {items.length === 0 && <p className="empty">Nessun esercizio per {dayName}. Aggiungine uno qui sotto.</p>}
+        {items.length === 0 && !extra.length && <p className="empty">Nessun esercizio per {dayName}. Aggiungine uno qui sotto.</p>}
         {items.map((p) => {
           const ex = byId.get(p.exerciseId)!;
           const sc = p.scheme;
@@ -245,9 +249,13 @@ function Programma() {
                   )}
                 </div>
                 {saved ? (
-                  <div className="pmeta">
-                    {future ? 'Programmato' : 'Registrato'}: {fmtSets(saved.sets)}
-                  </div>
+                  <>
+                    <div className="pmeta">
+                      {future ? 'Programmato' : 'Registrato'}: {fmtSets(saved.sets)}
+                      {saved.difficulty && ` · ${DIFFICULTY_LABEL[saved.difficulty]}`}
+                    </div>
+                    {saved.note && <div className="pmeta">La tua nota: {saved.note}</div>}
+                  </>
                 ) : (
                   last && (
                     <div className="pmeta">
@@ -264,6 +272,7 @@ function Programma() {
                 <div className="chips">
                   <TypeChip type={sc.type} />
                   {fromTrainer && <span className="chip mut">Dal trainer</span>}
+                  {saved && prIds.has(saved.id) && <span className="chip pr">★ Record</span>}
                 </div>
               </div>
               <div className="pact">
@@ -296,6 +305,14 @@ function Programma() {
           );
         })}
       </div>
+      {extra.length > 0 && (
+        <div className="extra">
+          <h4>{future ? 'Fuori programma' : 'Registrato fuori programma'}</h4>
+          {extra.map((e) => (
+            <EntryItem key={e.id} entry={e} name={byId.get(e.exerciseId)?.name ?? 'Esercizio rimosso'} record={prIds.has(e.id)} onOpen={() => openLogger({ entry: e })} />
+          ))}
+        </div>
+      )}
 
       {addOptions.length > 0 && (
         <div className="addrow">
