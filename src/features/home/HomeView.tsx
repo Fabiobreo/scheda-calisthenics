@@ -232,7 +232,8 @@ function ZoneBar({ value, elite }: { value: number; elite: boolean }) {
           <em />
         </>
       ) : (
-        <i style={{ width: `${Math.min(100, value)}%` }} />
+        // a zero niente barra: il bagliore farebbe una macchia luminosa all'inizio del binario vuoto
+        value > 0 && <i style={{ width: `${Math.min(100, value)}%` }} />
       )}
     </span>
   );
@@ -287,7 +288,7 @@ function SubRow({ s, onPick, readOnly }: { s: SubScore<Row>; onPick: () => void;
         <span className="sub-name">{rule.name}</span>
         <span className={`sub-pc${elite ? ' elite' : ''}`}>{subPercentText(s)}</span>
         <span className={`zbar thin${elite ? ' elite' : ''}`} aria-hidden="true">
-          <i className={elite ? 'hot' : undefined} style={{ width: `${s.percent}%` }} />
+          {s.percent > 0 && <i className={elite ? 'hot' : undefined} style={{ width: `${s.percent}%` }} />}
         </span>
         <span className="sub-best">
           {s.best ? `${recordText(s.best)} · ${shortDate(s.best.date)}` : readOnly ? 'Nessun record' : 'Nessun record: tocca per inserirlo'}

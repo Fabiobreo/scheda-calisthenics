@@ -24,7 +24,7 @@ Ogni file ha la stessa struttura:
 | 03 | [Esercizi a tempo (secondi) oltre a ripetizioni e peso](03-esercizi-a-tempo.md) — fatto 9/11 | 1, 5 (implicito) | Full-stack | L |
 | 04 | [Eliminare il Registro senza perdere funzioni](04-eliminare-registro.md) — fatto 9/11 | 4 | UX designer + frontend | M |
 | 05 | [Specifica del sistema di livelli](05-specifica-livelli.md) — approvato 9/11 | 5, 6 | Product owner + coach di calisthenics | S (ma bloccante) |
-| 06 | [Identità visiva e design system](06-design-system.md) | 9, 10 | UI / brand designer | L |
+| 06 | [Identità visiva e design system](06-design-system.md) — fatto 9/11 | 9, 10 | UI / brand designer | L |
 | 07 | [Navigazione in basso (tab bar)](07-navigazione-in-basso.md) — fatto 9/11 | 8 | UX mobile + frontend | S |
 | 08 | [Motore di calcolo dei punteggi](08-motore-punteggi.md) — fatto 9/11 | 5, 6 | Sviluppatore TypeScript (logica + test) | M |
 | 09 | [Dati: peso corporeo e record di livello](09-dati-peso-e-record.md) — fatto 9/11 | 5 | Backend (Postgres/Supabase, RLS) | M |
@@ -62,7 +62,7 @@ Ogni file ha la stessa struttura:
 
 1. **Tema chiaro**: oggi l'app ha tema scuro e chiaro automatici. L'esempio del pentagono è scuro. Teniamo entrambi o
    l'app diventa solo scura? (06, 10, 14) — consiglio: solo scuro nella prima versione, è coerente con l'identità
-   "seria e accattivante" e dimezza il lavoro di design.
+   "seria e accattivante" e dimezza il lavoro di design. **Deciso il 9/11: solo scuro** (06).
 2. **Lingua dei nomi**: nel catalogo convivono italiano e inglese ("Trazioni prone", "Push up", "Tuck planche").
    Va bene così (è come si parla in palestra) o vogliamo una regola? (02, 05)
 3. **Trainer**: tutto ciò che è nuovo (livello, record, peso) il trainer lo vede in sola lettura come il resto? (15)

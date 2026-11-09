@@ -53,6 +53,8 @@ const poly = (pts: [number, number][]) => pts.map(([x, y]) => `${x.toFixed(1)},$
 /**
  * Grafico a pentagono (ticket 10), SVG senza librerie. Scala 0–200 a due tratti con l'anello del 100 in evidenza;
  * area e punti nel colore base, punti e lati verso una categoria in zona ELITE nel colore elite.
+ * Stile del design system (06): area sfumata, lati con bagliore (copia sfocata sotto), alone sui punti; nel mini niente
+ * bagliore né aloni (è piccolo e sta in ogni intestazione).
  * I valori sono anche nel testo alternativo e nelle etichette.
  */
 export function Pentagon({ axes, title = 'Livello per categoria', mini }: { axes: PentagonAxis[]; title?: string; /** piccolo, senza etichette né griglia fine, decorativo */ mini?: boolean }) {
@@ -82,9 +84,16 @@ export function Pentagon({ axes, title = 'Livello per categoria', mini }: { axes
         return <line key={i} className="penta-grid" x1={CX} y1={CY} x2={x} y2={y} />;
       })}
 
-      <polygon className="penta-area" points={poly(pts)} />
-      {/* lati uno per uno: verso un vertice ELITE il colore sfuma nel colore elite */}
       <defs>
+        <radialGradient id={`${uid}-a`} cx={CX} cy={CY} r={R} gradientUnits="userSpaceOnUse">
+          <stop offset="0" className="penta-area-in" />
+          <stop offset="1" className="penta-area-out" />
+        </radialGradient>
+        {!mini && (
+          <filter id={`${uid}-g`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" />
+          </filter>
+        )}
         {pts.map((p, i) => {
           const j = (i + 1) % n;
           if (!elite[i] && !elite[j]) return null;
@@ -97,22 +106,29 @@ export function Pentagon({ axes, title = 'Livello per categoria', mini }: { axes
           );
         })}
       </defs>
-      {pts.map((p, i) => {
-        const j = (i + 1) % n;
-        const q = pts[j];
-        const grad = elite[i] || elite[j];
-        return (
-          <line
-            key={i}
-            className={grad ? 'penta-edge hot' : 'penta-edge'}
-            x1={p[0]}
-            y1={p[1]}
-            x2={q[0]}
-            y2={q[1]}
-            stroke={grad ? `url(#${uid}-e${i})` : undefined}
-          />
-        );
-      })}
+      <polygon className="penta-area" points={poly(pts)} fill={`url(#${uid}-a)`} />
+      {/* lati uno per uno: verso un vertice ELITE il colore sfuma nel colore elite. Il gradiente va in style: un
+          attributo stroke perderebbe contro il colore della classe nel CSS. Sotto, la stessa linea sfocata fa il bagliore. */}
+      {(mini ? [false] : [true, false]).map((glow) =>
+        pts.map((p, i) => {
+          const j = (i + 1) % n;
+          const q = pts[j];
+          const grad = elite[i] || elite[j];
+          return (
+            <line
+              key={`${glow ? 'g' : 'e'}${i}`}
+              className={`penta-edge${grad ? ' hot' : ''}${glow ? ' penta-glow' : ''}`}
+              x1={p[0]}
+              y1={p[1]}
+              x2={q[0]}
+              y2={q[1]}
+              style={grad ? { stroke: `url(#${uid}-e${i})` } : undefined}
+              filter={glow ? `url(#${uid}-g)` : undefined}
+            />
+          );
+        }),
+      )}
+      {!mini && pts.map(([x, y], i) => <circle key={i} className={elite[i] ? 'penta-halo elite' : 'penta-halo'} cx={x} cy={y} r={elite[i] ? 12 : 9} />)}
       {pts.map(([x, y], i) => (
         <circle key={i} className={elite[i] ? 'penta-dot elite' : 'penta-dot'} cx={x} cy={y} r={mini ? 9 : elite[i] ? 5.5 : 4.5} />
       ))}

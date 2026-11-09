@@ -1,0 +1,709 @@
+<title>Scheda Calisthenics Design</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: colonna di lettura con schermate di telefono affiancate; un solo tema, scuro, per scelta (ticket 06). */
+:root {
+  /* fondo e superfici: neri con una punta di blu-petrolio, non grigi neutri */
+  --bg: #0a1013; --surface: #111a1f; --surface2: #18242a; --line: #26353c; --line-strong: #3a4d55;
+  --fg: #eef4f5; --muted: #8da0a7; --faint: #5f7178;
+  /* accento base (0–100) e accento ELITE (101–200) */
+  --accent: #2fd6e8; --accent-deep: #1f7fe0; --accent-fg: #03181c;
+  --elite: #ffad33; --elite-hot: #ff7a1a; --elite-fg: #1f1200;
+  /* stati e serie dei grafici (l'ambra resta solo all'ELITE e ai record) */
+  --ok: #3ddc97; --danger: #ff6b6b;
+  --forza: #5b8dff; --volume: #c084fc; --tecnico: #3ddc97;
+  /* bagliori */
+  --glow: 0 0 14px rgb(47 214 232 / .35); --glow-elite: 0 0 16px rgb(255 173 51 / .45);
+  --topo-o: .07;
+  --f-display: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  --f-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --r-ctl: 12px; --r-tile: 14px; --r-card: 18px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: dark;
+}
+.sober { --glow: none; --glow-elite: none; --topo-o: 0; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; background-color: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.topo-bg { position: relative; isolation: isolate; }
+.topo-bg::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: var(--topo-o);
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20720%201080%22%20fill%3D%22none%22%20stroke%3D%22%238ad8e2%22%20stroke-width%3D%221%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M336%200L320%2014L307%2030L295%2050L287%2070L284%20100L289%20130L300%20150L310%20161L330%20173L360%20179L390%20175L410%20169L433%20160L457%20150L479%20140L499%20130L516%20120L530%20109L544%2090L548%2060L540%2039L526%2020L510%206L502%200M269%200L255%2020L245%2040L237%2060L231%2090L231%20120L238%20150L247%20170L260%20189L271%20200L290%20215L310%20225L335%20230L353%20230L380%20225L400%20218L420%20209L441%20200L465%20190L490%20180L510%20173L530%20166L550%20159L572%20150L590%20139L608%20120L617%20100L617%2070L610%2047L600%2028L586%2010L577%200M220%200L209%2020L200%2040L191%2070L187%2090L187%20120L190%20143L198%20170L208%20190L220%20208L230%20220L250%20240L264%20250L282%20260L309%20270L330%20274L360%20272L380%20268L400%20260L420%20250L440%20240L461%20230L484%20220L510%20212L530%20206L560%20200L580%20196L602%20190L626%20180L642%20170L660%20152L670%20135L677%20110L676%2080L670%2057L660%2036L650%2020L634%200M177%200L167%2020L159%2040L150%2070L147%2090L145%20120L149%20150L154%20170L162%20190L173%20210L187%20230L200%20244L216%20260L230%20271L250%20285L270%20296L290%20304L311%20310L340%20314L370%20311L390%20306L410%20298L430%20288L450%20276L470%20266L490%20257L510%20250L540%20243L564%20240L590%20237L620%20232L640%20226L660%20217L680%20205L697%20190L710%20174L720%20159M687%200L700%2016L710%2030L720%2048M137%200L128%2020L119%2040L110%2070L107%2090L104%20120L107%20150L111%20170L120%20194L130%20214L140%20230L156%20250L170%20265L186%20280L200%20291L220%20305L240%20318L260%20328L280%20336L300%20343L330%20349L350%20351L371%20350L400%20345L420%20338L440%20329L460%20318L480%20307L500%20298L525%20290L550%20285L580%20282L600%20279L630%20274L650%20268L672%20260L691%20250L710%20238L720%20230M98%200L88%2020L79%2040L70%2069L65%2090L62%20120L63%20150L69%20180L76%20200L87%20220L99%20240L110%20253L125%20270L140%20285L158%20300L170%20310L190%20324L210%20336L230%20347L250%20357L270%20366L290%20373L318%20380L340%20384L370%20386L400%20384L422%20380L450%20372L470%20364L490%20355L510%20347L531%20340L560%20332L580%20328L610%20322L630%20317L653%20310L678%20300L699%20290L717%20280L720%20278M57%200L46%2020L37%2040L29%2060L20%2090L16%20110L13%20140L16%20170L21%20190L30%20213L40%20231L53%20250L70%20269L81%20280L100%20298L115%20310L130%20321L150%20335L170%20348L190%20360L209%20370L229%20380L250%20389L270%20397L290%20404L313%20410L340%20416L370%20419L400%20420L430%20417L460%20411L480%20406L500%20400L529%20390L550%20383L570%20377L592%20370L620%20361L640%20354L660%20347L680%20338L700%20329L720%20318M593%201080L570%201073L550%201068L520%201063L494%201060L470%201059L446%201060L420%201063L390%201069L370%201074L351%201080M720%20355L700%20365L680%20374L660%20383L640%20391L618%20400L592%20410L570%20418L550%20425L530%20431L500%20440L480%20444L450%20450L430%20452L400%20452L370%20450L350%20448L320%20442L300%20436L279%20430L251%20420L230%20411L210%20402L190%20393L170%20383L150%20372L130%20361L112%20350L96%20340L80%20330L60%20316L40%20301L25%20290L10%20277L0%20267M662%201080L640%201070L620%201063L600%201055L580%201049L550%201042L530%201038L500%201034L470%201032L440%201034L410%201038L390%201042L360%201050L340%201056L320%201064L300%201073L285%201080M720%20389L700%20399L680%20408L660%20417L640%20426L620%20434L600%20442L580%20450L552%20460L530%20467L510%20472L480%20479L460%20482L430%20484L400%20484L370%20481L350%20477L320%20471L300%20466L280%20459L253%20450L230%20441L210%20433L190%20425L170%20416L150%20406L130%20397L110%20387L90%20377L70%20368L50%20358L30%20348L10%20339L0%20335M720%201079L700%201069L680%201060L658%201050L633%201040L610%201031L590%201025L570%201019L540%201012L520%201009L490%201006L460%201005L430%201007L410%201010L380%201017L360%201022L337%201030L311%201040L290%201049L270%201058L250%201068L230%201079L228%201080M720%20422L700%20432L680%20441L660%20450L638%20460L615%20470L590%20480L570%20488L550%20494L530%20501L500%20508L480%20512L450%20515L420%20515L390%20513L366%20510L340%20505L320%20500L290%20491L270%20485L250%20478L228%20470L202%20460L180%20451L160%20443L140%20435L120%20427L100%20419L76%20410L50%20401L30%20395L10%20389L0%20387M720%201049L700%201040L678%201030L654%201020L630%201010L610%201003L590%20997L567%20990L540%20984L518%20980L490%20977L460%20977L430%20979L410%20982L380%20988L360%20994L340%201001L316%201010L292%201020L270%201030L250%201039L230%201049L210%201060L190%201070L171%201080M720%20455L700%20464L680%20474L660%20483L640%20492L620%20501L598%20510L573%20520L550%20528L530%20534L507%20540L480%20545L450%20548L420%20548L390%20545L362%20540L340%20535L320%20530L290%20520L270%20514L250%20507L230%20500L203%20490L180%20482L160%20475L140%20468L117%20460L90%20451L70%20446L44%20440L20%20436L0%20434M720%201019L700%201010L677%201000L653%20990L630%20981L610%20973L590%20967L567%20960L540%20953L520%20950L490%20946L460%20946L430%20948L410%20952L380%20959L360%20965L340%20972L319%20980L295%20990L273%201000L251%201010L230%201020L210%201029L190%201039L170%201049L150%201058L130%201068L110%201077L102%201080M720%20488L700%20497L680%20507L660%20516L640%20526L620%20535L600%20544L580%20552L560%20560L530%20570L510%20575L486%20580L460%20583L430%20583L400%20580L380%20577L353%20570L330%20563L310%20557L290%20550L261%20540L240%20532L220%20525L200%20519L174%20510L150%20502L130%20497L105%20490L80%20485L50%20480L30%20478L0%20479M720%20987L700%20978L680%20970L657%20960L632%20950L610%20941L590%20934L570%20928L541%20920L520%20916L490%20912L460%20911L430%20914L404%20920L380%20927L360%20934L340%20941L319%20950L297%20960L275%20970L253%20980L231%20990L210%201000L190%201009L170%201017L150%201026L130%201034L110%201041L84%201050L60%201056L40%201060L10%201063L0%201063M720%20523L700%20533L680%20542L660%20552L640%20563L620%20572L600%20582L580%20591L560%20600L534%20610L510%20617L490%20622L460%20625L430%20624L405%20620L380%20614L360%20608L339%20600L313%20590L290%20581L270%20573L250%20566L230%20559L205%20550L180%20542L160%20536L135%20530L110%20525L80%20520L60%20519L30%20519L10%20522L0%20524M720%20953L700%20945L680%20936L660%20927L640%20918L620%20909L598%20900L571%20890L550%20883L530%20877L500%20872L470%20870L440%20873L410%20880L390%20886L370%20894L350%20903L330%20913L310%20922L290%20932L270%20942L250%20951L230%20961L209%20970L185%20980L160%20990L140%20997L120%201003L97%201010L70%201016L40%201019L10%201019L0%201017M720%20562L700%20572L680%20583L660%20594L640%20605L620%20617L600%20629L581%20640L563%20650L545%20660L525%20670L500%20680L480%20685L450%20685L427%20680L400%20670L380%20661L360%20650L340%20640L321%20630L301%20620L280%20610L260%20601L240%20593L220%20585L200%20579L170%20570L150%20565L123%20560L100%20557L70%20556L40%20558L20%20563L0%20570M720%20916L700%20907L680%20897L660%20887L640%20876L620%20866L600%20855L580%20845L560%20835L540%20826L520%20818L490%20811L470%20809L450%20812L427%20820L406%20830L388%20840L370%20851L350%20863L330%20875L310%20887L290%20899L270%20910L251%20920L230%20930L210%20939L190%20947L170%20954L150%20961L120%20969L100%20974L70%20977L40%20978L10%20973L0%20970M0%20918L20%20928L40%20934L70%20938L100%20937L130%20932L150%20928L176%20920L200%20911L220%20902L240%20892L260%20880L276%20870L290%20860L310%20844L326%20830L340%20814L351%20800L362%20780L368%20750L360%20723L350%20707L335%20690L320%20676L300%20661L284%20650L267%20640L248%20630L225%20620L200%20610L180%20604L160%20599L130%20594L100%20593L70%20594L42%20600L20%20608L0%20620M720%20607L700%20619L684%20630L670%20640L650%20656L634%20670L620%20685L608%20700L596%20720L592%20750L600%20772L612%20790L630%20809L643%20820L660%20833L680%20847L700%20860L718%20870L720%20871M0%20852L17%20870L32%20880L54%20890L80%20896L110%20898L140%20894L160%20890L189%20880L210%20871L229%20860L244%20850L260%20837L277%20820L290%20802L300%20782L304%20760L300%20732L290%20712L280%20699L261%20680L247%20670L230%20660L210%20650L183%20640L160%20634L130%20630L110%20630L90%20632L60%20639L40%20649L23%20660L10%20672L0%20685M720%20675L707%20690L695%20710L689%20730L690%20756L700%20779L710%20793L720%20804M90%20679L70%20689L57%20700L40%20720L32%20740L28%20760L30%20785L40%20810L50%20824L70%20840L90%20849L110%20852L140%20852L160%20848L183%20840L201%20830L220%20816L234%20800L244%20780L247%20750L240%20729L226%20710L210%20696L190%20685L170%20678L140%20673L110%20674L90%20679%22%2F%3E%3C%2Fsvg%3E") top center / 720px auto repeat-y;
+}
+.page { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 64px; }
+h1, h2, h3 { font-family: var(--f-display); text-transform: uppercase; margin: 0; font-weight: 700; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(44px, 9vw, 84px); line-height: .92; }
+h2 { font-size: clamp(30px, 5vw, 40px); line-height: 1; }
+h3 { font-size: 22px; }
+p { margin: 0; }
+.lede { font-size: 19px; color: var(--muted); max-width: 62ch; }
+.lede b { color: var(--fg); font-weight: 600; }
+.eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+.eyebrow.elite { color: var(--elite); }
+section { display: flex; flex-direction: column; gap: 20px; }
+.sec-h { display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }
+.sec-h p { color: var(--muted); }
+code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: .88em; color: var(--fg); background: var(--surface2); padding: 1px 6px; border-radius: 6px; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.hero { display: flex; flex-direction: column; gap: 18px; }
+.hero h1 span { color: var(--accent); text-shadow: var(--glow); }
+.hero h1 em { font-style: normal; color: var(--elite); text-shadow: var(--glow-elite); }
+.toggle { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; color: var(--muted); cursor: pointer; align-self: flex-start; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--accent); }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.rule b { font-family: var(--f-display); font-size: 21px; text-transform: uppercase; letter-spacing: .02em; }
+.rule p { color: var(--muted); font-size: 15px; }
+
+/* ---------- telefoni ---------- */
+.phones { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 28px 20px; align-items: start; }
+.phone-w { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.phone-w > p { color: var(--muted); font-size: 14px; }
+.phone-w > h3 { font-size: 18px; color: var(--muted); letter-spacing: .08em; }
+.phone {
+  width: 100%; max-width: 375px; border: 1px solid var(--line-strong); border-radius: 30px; overflow: hidden; background: var(--bg);
+  display: flex; flex-direction: column; position: relative; box-shadow: 0 24px 60px rgb(0 0 0 / .45);
+}
+.scr { padding: 14px 14px 10px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+
+/* ---------- componenti dell'app (stessa grammatica che andrebbe in styles.css) ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 14px; min-width: 0; }
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.card h4 { font-family: var(--f-display); text-transform: uppercase; font-size: 24px; margin: 0; letter-spacing: .02em; line-height: 1.05; }
+.lbl { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.mut { color: var(--muted); }
+.num { font-family: var(--f-display); font-weight: 700; font-variant-numeric: tabular-nums; }
+.app-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.brand { font-family: var(--f-display); font-weight: 700; font-size: 21px; text-transform: uppercase; letter-spacing: .02em; }
+.badge { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--surface2); border: 1px solid var(--line); font-family: var(--f-display); font-weight: 700; font-size: 18px; flex: none; }
+
+.avatar {
+  --a: .5; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: radial-gradient(circle at 50% 35%, var(--surface2), var(--bg));
+  border: 2px solid color-mix(in srgb, var(--accent) calc(var(--a) * 100%), var(--line));
+  box-shadow: 0 0 calc(var(--a) * 24px) rgb(47 214 232 / .45);
+  font-family: var(--f-display); font-weight: 700; font-size: 30px;
+}
+.sober .avatar { box-shadow: none; }
+.avatar.sm { width: 38px; height: 38px; font-size: 17px; border-width: 1.5px; box-shadow: 0 0 calc(var(--a) * 10px) rgb(47 214 232 / .45); }
+.hero-c { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; align-items: center; }
+.hero-c .lv { display: flex; align-items: baseline; gap: 8px; }
+.hero-c .lv b { font-family: var(--f-display); font-size: 50px; line-height: .9; font-variant-numeric: tabular-nums; }
+.weight { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.weight b { font-family: var(--f-display); font-size: 22px; }
+.weight .link { margin-left: auto; }
+.link { color: var(--accent); font-weight: 600; font-size: 15px; background: none; border: 0; padding: 0; font-family: inherit; }
+
+.strip { display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; flex: 1; min-width: 0; }
+.strip-t { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
+.strip-t span:first-child { font-weight: 600; font-size: 14px; }
+.strip-t span:last-child { color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.strip-t b { font-family: var(--f-display); font-size: 19px; color: var(--fg); letter-spacing: 0; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: var(--r-ctl); padding: 11px 18px; font: 600 16px var(--f-body); color: var(--accent-fg); cursor: pointer; white-space: nowrap;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent)); box-shadow: var(--glow); }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line-strong); box-shadow: none; }
+.btn.danger { background: transparent; color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 70%, transparent); box-shadow: none; }
+.btn.small { padding: 7px 13px; font-size: 14px; }
+.btn.elite { background: linear-gradient(180deg, var(--elite), var(--elite-hot)); color: var(--elite-fg); box-shadow: var(--glow-elite); }
+.btn:disabled { opacity: .45; box-shadow: none; cursor: not-allowed; }
+.inp { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 10px 12px; min-height: 46px; width: 100%; font: 500 18px var(--f-body); color: var(--fg); font-variant-numeric: tabular-nums; }
+.inp.focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(47 214 232 / .22); }
+.inp.done { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); }
+.seg { display: flex; gap: 3px; background: var(--bg); border: 1px solid var(--line); border-radius: 13px; padding: 3px; }
+.seg span { flex: 1 1 0; text-align: center; padding: 8px 2px; border-radius: 10px; color: var(--muted); font-weight: 600; font-size: 14px; white-space: nowrap; }
+.seg span.on { background: var(--surface2); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line-strong), 0 -2px 0 0 var(--accent) inset; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border-radius: 999px; padding: 4px 11px; font-size: 14px; font-weight: 500; }
+.chip.on { background: color-mix(in srgb, var(--accent) 16%, var(--surface2)); color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
+.chip.pr { color: var(--elite); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--elite) 45%, transparent); }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.tag-elite { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px; font: 700 11px var(--f-body); letter-spacing: .1em; color: var(--elite); border: 1px solid color-mix(in srgb, var(--elite) 55%, transparent); background: color-mix(in srgb, var(--elite) 10%, transparent); vertical-align: middle; }
+.tag-elite svg { width: 10px; height: 10px; }
+
+/* barra di categoria: blu → ciano fino a 100, ambra → arancio nella zona ELITE */
+.cat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-tile); overflow: hidden; }
+.cat.elite { border-color: color-mix(in srgb, var(--elite) 60%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--elite) 7%, var(--surface)), var(--surface)); box-shadow: 0 0 0 1px rgb(255 173 51 / .08), 0 0 22px -6px rgb(255 173 51 / .35); }
+.sober .cat.elite { box-shadow: none; }
+.cat-h { display: grid; grid-template-columns: auto 1fr auto auto; grid-template-areas: 'ico name val chev' 'bar bar bar bar' 'sc sc sc sc'; gap: 8px 9px; align-items: center; padding: 12px 13px; }
+.cat-ico { grid-area: ico; color: var(--accent); display: grid; }
+.cat.elite .cat-ico { color: var(--elite); }
+.cat-n { grid-area: name; font-weight: 600; font-size: 15px; }
+.cat-v { grid-area: val; color: var(--muted); font-weight: 600; font-size: 14px; white-space: nowrap; }
+.cat-v b { font-family: var(--f-display); font-size: 22px; color: var(--accent); }
+.cat.elite .cat-v b { color: var(--elite); }
+.chev { grid-area: chev; color: var(--muted); font-size: 20px; line-height: 1; }
+.cat.open .chev { transform: rotate(90deg); }
+.zbar { grid-area: bar; position: relative; height: 9px; border-radius: 999px; background: var(--surface2); box-shadow: inset 0 0 0 1px var(--line); }
+.zbar i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent-deep), var(--accent)); box-shadow: var(--glow); }
+.zbar i.hot { background: linear-gradient(90deg, var(--elite), var(--elite-hot)); box-shadow: var(--glow-elite); }
+.zbar.elite i.full { border-radius: 999px 0 0 999px; box-shadow: none; }
+.zbar.elite i.hot { border-radius: 0 999px 999px 0; }
+.zbar em { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--bg); }
+.zbar.thin { height: 6px; }
+.scale { grid-area: sc; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: -4px; font-variant-numeric: tabular-nums; }
+.scale .e { color: var(--elite); font-weight: 700; letter-spacing: .08em; }
+.subs { list-style: none; margin: 0; padding: 0 13px 4px; border-top: 1px solid var(--line); }
+.subs li { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'n p' 'b b' 'r r'; gap: 5px 8px; padding: 10px 0; }
+.subs li + li { border-top: 1px solid var(--line); }
+.subs .n { grid-area: n; font-weight: 600; font-size: 14px; }
+.subs .p { grid-area: p; font-family: var(--f-display); font-weight: 700; font-size: 18px; color: var(--accent); }
+.subs .p.elite { color: var(--elite); }
+.subs .zbar { grid-area: b; }
+.subs .r { grid-area: r; font-size: 13px; color: var(--muted); }
+
+.tabbar { display: flex; gap: 2px; padding: 6px 6px 10px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 92%, transparent); }
+.tabbar span { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0 4px; font-size: 11px; font-weight: 600; letter-spacing: .03em; color: var(--muted); position: relative; border-radius: 10px; }
+.tabbar span.on { color: var(--accent); }
+.tabbar span.on::before { content: ''; position: absolute; top: -7px; left: 30%; right: 30%; height: 2px; border-radius: 2px; background: var(--accent); box-shadow: var(--glow); }
+.tabbar svg { width: 22px; height: 22px; }
+
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.day { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 6px 0 5px; text-align: center; color: var(--muted); font-weight: 600; font-size: 12px; }
+.day i { display: block; font-style: normal; font-family: var(--f-display); font-size: 18px; color: var(--fg); }
+.day.on { border-color: var(--accent); background: var(--surface2); box-shadow: var(--glow); }
+.day.done i { color: var(--ok); }
+.pitem { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 11px 0; border-top: 1px solid var(--line); align-items: center; }
+.pitem:first-of-type { border-top: 0; }
+.pname { font-weight: 600; font-size: 16px; }
+.pmeta { color: var(--muted); font-size: 13px; grid-column: 1; }
+.pitem .btn, .pitem .ok { grid-row: 1 / span 2; grid-column: 2; }
+.ok { color: var(--ok); font-weight: 600; font-size: 14px; display: inline-flex; gap: 5px; align-items: center; }
+.typ { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 1px 6px; border-radius: 6px; margin-left: 6px; vertical-align: 2px; }
+.typ.forza { color: var(--forza); background: color-mix(in srgb, var(--forza) 14%, transparent); }
+.typ.volume { color: var(--volume); background: color-mix(in srgb, var(--volume) 14%, transparent); }
+.typ.tecnico { color: var(--tecnico); background: color-mix(in srgb, var(--tecnico) 14%, transparent); }
+
+.minis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mini { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-tile); padding: 10px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mini.on { border-color: var(--accent); box-shadow: var(--glow); }
+.mini b { font-size: 13px; font-weight: 600; }
+.mini .v { font-family: var(--f-display); font-weight: 700; font-size: 22px; line-height: 1; }
+.mini .v small { font-size: 13px; color: var(--muted); }
+.mini svg { width: 100%; height: auto; display: block; }
+.cmp { font-size: 14px; color: var(--muted); }
+.cmp .up { color: var(--ok); font-weight: 600; }
+
+.sheet { background: var(--surface); border-top: 1px solid var(--line-strong); border-radius: 22px 22px 0 0; padding: 14px; display: flex; flex-direction: column; gap: 12px; margin-top: auto; box-shadow: 0 -20px 40px rgb(0 0 0 / .5); }
+.grab { width: 40px; height: 4px; border-radius: 4px; background: var(--line-strong); align-self: center; }
+.set-h, .set { display: grid; grid-template-columns: 24px 1fr 1fr 44px; gap: 7px; align-items: center; }
+.set-h span { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.set-n { font-family: var(--f-display); font-weight: 700; font-size: 19px; color: var(--muted); text-align: center; }
+.set.done .set-n { color: var(--ok); }
+.check { width: 44px; height: 44px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 18px; font-weight: 700; display: grid; place-items: center; }
+.check.on { background: var(--ok); border-color: var(--ok); color: #04210f; }
+.timer { border: 1px solid var(--line-strong); border-radius: 16px; background: var(--surface2); overflow: hidden; }
+.timer-bar { height: 3px; background: linear-gradient(90deg, var(--accent-deep), var(--accent)); width: 62%; box-shadow: var(--glow); }
+.timer-b { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; }
+.timer-b b { font-family: var(--f-display); font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.party { text-align: center; padding: 10px 12px; border-radius: 16px; background: color-mix(in srgb, var(--elite) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--elite) 50%, transparent); box-shadow: var(--glow-elite); }
+.party b { font-family: var(--f-display); font-size: 22px; text-transform: uppercase; color: var(--elite); display: block; }
+.party span { font-size: 13px; color: var(--muted); }
+
+.exlist { display: flex; flex-direction: column; }
+.exrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.exrow:first-child { border-top: 0; }
+.exrow b { font-weight: 600; font-size: 15px; }
+.exrow small { color: var(--muted); font-size: 13px; }
+.exrow .pr-v { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-family: var(--f-display); font-size: 22px; font-weight: 700; text-align: right; }
+.exrow .pr-v small { font-family: var(--f-body); font-size: 12px; display: block; text-align: right; }
+.exrow .pr-v.elite { color: var(--elite); }
+
+/* ---------- pentagono ---------- */
+.penta { display: block; width: 100%; height: auto; overflow: visible; }
+.p-grid { fill: none; stroke: var(--line); stroke-width: 1; }
+.p-100 { fill: none; stroke: color-mix(in srgb, var(--accent) 55%, var(--line)); stroke-width: 1.4; }
+.p-band { fill: rgb(255 173 51 / .06); }
+.p-area { fill: url(#gArea); }
+.p-edge { stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; fill: none; }
+.p-glow { stroke-width: 7; opacity: .45; filter: url(#blur); }
+.sober .p-glow, .sober .g-glow, .sober .halo { display: none; }
+.p-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.p-dot.elite { fill: var(--elite); }
+.halo { fill: var(--accent); opacity: .22; }
+.halo.elite { fill: var(--elite); opacity: .3; }
+.p-lbl { fill: var(--fg); font: 600 12px var(--f-body); }
+.p-val { fill: var(--accent); font: 700 15px var(--f-display); }
+.p-val.elite { fill: var(--elite); }
+
+/* ---------- grafici (anteprima del 14) ---------- */
+.g-grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
+.g-base { stroke: var(--line-strong); stroke-width: 1; }
+.g-txt { fill: var(--muted); font: 500 11px var(--f-body); }
+.g-line { stroke: var(--accent); stroke-width: 2.4; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.g-glow { stroke: var(--accent); stroke-width: 7; fill: none; opacity: .4; filter: url(#blur); stroke-linejoin: round; }
+.g-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.g-rec { fill: var(--elite); stroke: var(--surface); stroke-width: 2; }
+.g-rec-t { fill: var(--elite); font: 700 11px var(--f-body); letter-spacing: .06em; }
+.g-sel { stroke: var(--fg); stroke-width: 1; opacity: .55; }
+.g-tip rect { fill: var(--surface2); stroke: var(--line-strong); }
+.g-tip text { fill: var(--fg); font: 600 12px var(--f-body); }
+.g-tip text.s { fill: var(--muted); font-weight: 500; font-size: 11px; }
+.chart-big { touch-action: pan-y; cursor: crosshair; }
+.readout { font-weight: 600; font-size: 15px; min-height: 1.5em; }
+.readout span { color: var(--muted); font-weight: 400; }
+.bars-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.bars-legend span { display: inline-flex; gap: 6px; align-items: center; }
+
+/* ---------- token ---------- */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.sw { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-tile); overflow: hidden; display: flex; flex-direction: column; }
+.sw i { display: block; height: 54px; border-bottom: 1px solid var(--line); }
+.sw div { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.sw b { font-weight: 600; }
+.sw code { align-self: flex-start; font-size: 12px; }
+.sw small { color: var(--muted); font-size: 13px; }
+.sw .aa { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.grp-t { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-top: 8px; }
+.typescale { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+.ts { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 14px 16px; border-top: 1px solid var(--line); align-items: baseline; min-width: 0; }
+.ts:first-child { border-top: 0; }
+.ts small { color: var(--muted); font-size: 13px; }
+.ts > div { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .ts { grid-template-columns: 1fr; gap: 4px; } }
+.tokgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.tok { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.tok h3 { font-size: 19px; }
+.tok ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); }
+.tok li b { color: var(--fg); font-weight: 600; }
+.radii { display: flex; gap: 10px; align-items: flex-end; }
+.radii span { width: 52px; height: 52px; border: 1px solid var(--line-strong); background: var(--surface2); display: grid; place-items: center; font-size: 11px; color: var(--muted); }
+.space { display: flex; gap: 6px; align-items: flex-end; }
+.space span { background: var(--accent); opacity: .7; width: 10px; border-radius: 2px; }
+.glows { display: flex; gap: 14px; }
+.glows span { width: 60px; height: 34px; border-radius: 10px; background: var(--surface2); display: grid; place-items: center; font-size: 11px; }
+.comp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.comp { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.comp > .lbl { color: var(--faint); color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ic { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-tile); padding: 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; font-size: 14px; font-weight: 600; }
+.ic .box { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface2)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
+.ic .box.elite { color: var(--elite); background: color-mix(in srgb, var(--elite) 10%, var(--surface2)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--elite) 35%, transparent); }
+.appicons { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
+.appicons figure { margin: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.appicons svg { display: block; }
+.a11y { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.a11y div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.a11y b { font-family: var(--f-display); text-transform: uppercase; font-size: 19px; }
+.a11y p { color: var(--muted); font-size: 15px; }
+.tbl-w { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-card); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; background: var(--surface); }
+th, td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-top: 0; }
+td.m { color: var(--muted); }
+.ask { background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-card); padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.ask ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: var(--muted); }
+.ask li b { color: var(--fg); }
+footer { color: var(--muted); font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) {
+  .grow .p-area, .grow .p-edge, .grow .p-glow { animation: grow .7s var(--ease) both; transform-origin: 190px 158px; }
+  @keyframes grow { from { transform: scale(.2); opacity: .2; } }
+}
+</style>
+
+<div class="page topo-bg" id="page">
+  <header class="hero">
+    <span class="eyebrow">Ticket 06 · proposta da approvare · 9 novembre 2026</span>
+    <h1>Scheda Calisthenics:<br><span>la luce</span> è il progresso,<br><em>l'ambra</em> è l'élite</h1>
+    <p class="lede">Una direzione sola, presa dall'esempio del pentagono: fondo scuro con <b>linee topografiche</b> appena visibili, <b>ciano</b> con un bagliore leggero per tutto ciò che va da 0 a 100, <b>ambra</b> solo per la zona ELITE e i record. Solo tema scuro. Niente di questa pagina è ancora nell'app: è la proposta da approvare prima di toccare il codice.</p>
+    <label class="toggle" for="sober"><input type="checkbox" id="sober"> Mostra la variante sobria (senza texture e bagliori)</label>
+  </header>
+
+  <section aria-labelledby="h-rules">
+    <div class="sec-h"><span class="eyebrow">Le regole</span><h2 id="h-rules">Quattro regole che tengono insieme tutto</h2></div>
+    <div class="rules">
+      <div class="rule"><b>Ciano = in corsa</b><p>Accento unico per livelli 0–100, azioni principali, voce attiva. Un solo colore che "si accende", non cinque.</p></div>
+      <div class="rule"><b>Ambra = ELITE e record</b><p>Mai usata per altro: niente avvisi o tipi esercizio arancioni. Chi la vede sa che è un traguardo. Sempre con la scritta "ELITE" o "Record".</p></div>
+      <div class="rule"><b>La luce si guadagna</b><p>Il bagliore sta su dati e progressi (pentagono, barre, ultimo punto, pulsante principale), non su testi e bordi. Il resto è sobrio.</p></div>
+      <div class="rule"><b>Numeri grandi, parole piccole</b><p>Barlow Condensed per livelli, kg e ripetizioni; Barlow per il resto. Etichette maiuscole piccole con spaziatura.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-screens">
+    <div class="sec-h"><span class="eyebrow">Schermate chiave</span><h2 id="h-screens">Come diventa l'app</h2><p>Stessi contenuti e comportamenti di oggi, cambia solo l'aspetto. Dati di esempio dell'atleta di prova.</p></div>
+    <div class="phones">
+      <div class="phone-w">
+        <h3>Home · Livello</h3>
+        <div class="phone"><div class="scr">
+          <div class="app-top"><span class="brand">Scheda Calisthenics</span><span class="badge">F</span></div>
+          <div class="party"><b>Skill tirata in ELITE</b><span>Front lever: nuovo record 12 s</span></div>
+          <div class="card hero-c">
+            <span class="avatar" style="--a:.48">F</span>
+            <div><div style="font-weight:600">Fabio</div><div class="lv"><span class="lbl">Livello</span><b>48</b></div></div>
+            <div class="weight"><span class="lbl">Peso</span><b>72,4</b><span class="mut">kg</span><button class="link" type="button">Modifica</button></div>
+          </div>
+          <div class="card" style="padding:6px 2px 2px"><div id="penta1" class="grow"></div></div>
+          <div class="cat"><div class="cat-h"><span class="cat-ico" data-ico="fs"></span><span class="cat-n">Fondamentali spinta</span><span class="cat-v"><b>88</b> / 100</span><span class="chev">›</span><span class="zbar"><i style="width:88%"></i></span></div></div>
+          <div class="cat elite open"><div class="cat-h"><span class="cat-ico" data-ico="st"></span><span class="cat-n">Skill tirata</span><span class="cat-v"><b>105</b> / 200</span><span class="chev">›</span><span class="zbar elite"><i class="full" style="width:50%"></i><i class="hot" style="left:50%;width:2.5%"></i><em></em></span><span class="scale"><span>0</span><span>100</span><span class="e">ELITE 200</span></span></div>
+            <ul class="subs">
+              <li><span class="n">Front lever</span><span class="p elite">ELITE 66%</span><span class="zbar thin elite"><i class="full" style="width:50%"></i><i class="hot" style="left:50%;width:16%"></i><em></em></span><span class="r">Record 12 s · 8 nov <span class="tag-elite">ELITE</span></span></li>
+              <li><span class="n">Muscle up</span><span class="p">40%</span><span class="zbar thin"><i style="width:40%"></i></span><span class="r">Record 2 rip. · 2 nov</span></li>
+            </ul>
+          </div>
+          <div class="cat"><div class="cat-h"><span class="cat-ico" data-ico="ft"></span><span class="cat-n">Fondamentali tirata</span><span class="cat-v"><b>92</b> / 100</span><span class="chev">›</span><span class="zbar"><i style="width:92%"></i></span></div></div>
+        </div><div class="tabbar" data-on="0"></div></div>
+        <p>Il pentagono e le barre si "accendono"; la categoria ELITE ha bordo e alone ambra. L'avatar resta il segnaposto finché non arrivano le illustrazioni (ticket 11).</p>
+      </div>
+
+      <div class="phone-w">
+        <h3>Grafici</h3>
+        <div class="phone"><div class="scr">
+          <div class="app-top"><a class="strip"><span class="avatar sm" style="--a:.48">F</span><span class="strip-t"><span>Fabio</span><span>Livello <b>48</b></span></span><span id="pmini" style="width:44px;flex:none"></span></a><span class="badge">F</span></div>
+          <div class="card" style="display:flex;flex-direction:column;gap:10px">
+            <div class="card-h"><h4>Trazioni<br>zavorrate</h4><span class="chip">kg</span></div>
+            <div class="seg"><span>4 sett.</span><span class="on">3 mesi</span><span>6 mesi</span><span>1 anno</span><span>Tutto</span></div>
+            <div id="chart1"></div>
+            <p class="readout" id="read1"></p>
+            <p class="cmp"><b style="font-family:var(--f-display);font-size:22px;color:var(--fg)">18 kg</b> massimo, ultimi 3 mesi · 21 sessioni<br><span class="up">+20%</span> rispetto ai 3 mesi prima</p>
+          </div>
+          <div class="minis">
+            <div class="mini on"><b>Trazioni zavorrate</b><span class="v">18 <small>kg</small></span><span id="sp1"></span></div>
+            <div class="mini"><b>Dip</b><span class="v">14 <small>rip.</small></span><span id="sp2"></span></div>
+            <div class="mini"><b>Front lever tuck</b><span class="v">12 <small>s</small></span><span id="sp3"></span></div>
+            <div class="mini"><b>Push up</b><span class="v">32 <small>rip.</small></span><span id="sp4"></span></div>
+          </div>
+        </div><div class="tabbar" data-on="2"></div></div>
+        <p>Area sfumata, linea con bagliore, record in ambra. Tocca o trascina il dito sul grafico: data e valore seguono il dito.</p>
+      </div>
+
+      <div class="phone-w">
+        <h3>Scheda</h3>
+        <div class="phone"><div class="scr">
+          <div class="app-top"><a class="strip"><span class="avatar sm" style="--a:.48">F</span><span class="strip-t"><span>Fabio</span><span>Livello <b>48</b></span></span><span class="pm2" style="width:44px;flex:none"></span></a><span class="badge">F</span></div>
+          <div class="card" style="display:flex;flex-direction:column;gap:12px">
+            <div class="card-h"><button class="btn ghost small" type="button">‹</button><div style="text-align:center"><div class="num" style="font-size:19px">9 – 15 nov</div><div class="mut" style="font-size:13px">Settimana 3 di 6</div></div><button class="btn ghost small" type="button">›</button></div>
+            <div class="days">
+              <span class="day done">Lu<i>9</i></span><span class="day">Ma<i>10</i></span><span class="day on">Me<i>11</i></span><span class="day">Gi<i>12</i></span><span class="day">Ve<i>13</i></span><span class="day">Sa<i>14</i></span><span class="day">Do<i>15</i></span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-h" style="margin-bottom:4px"><h4>Mercoledì</h4><span class="mut" style="font-size:13px">2 di 4 fatti</span></div>
+            <div class="pitem"><span class="pname">Trazioni zavorrate<span class="typ forza">Forza</span></span><span class="pmeta">5 × 5 · 15 kg</span><span class="ok">✓ Fatto</span></div>
+            <div class="pitem"><span class="pname">Dip<span class="typ volume">Volume</span></span><span class="pmeta">4 × max</span><span class="ok">✓ Fatto</span></div>
+            <div class="pitem"><span class="pname">Front lever tuck<span class="typ tecnico">Tecnico</span></span><span class="pmeta">5 × 10 s</span><button class="btn small" type="button">Registra</button></div>
+            <div class="pitem"><span class="pname">Push up</span><span class="pmeta">3 × 25</span><button class="btn ghost small" type="button">Registra</button></div>
+          </div>
+        </div><div class="tabbar" data-on="1"></div></div>
+        <p>Il giorno scelto si accende; solo il primo esercizio da fare ha il pulsante pieno, gli altri sono "ghost": l'occhio sa da dove partire.</p>
+      </div>
+
+      <div class="phone-w">
+        <h3>Registra le serie</h3>
+        <div class="phone" style="background:color-mix(in srgb, var(--bg) 60%, black)"><div class="scr" style="padding-bottom:0;opacity:.35"><div class="card" style="height:120px"></div></div>
+          <div class="sheet">
+            <div class="grab"></div>
+            <div><span class="lbl">Tecnico · obiettivo 5 × 10 s</span><h4 style="font-family:var(--f-display);text-transform:uppercase;font-size:26px;margin:2px 0 0">Front lever tuck</h4></div>
+            <div class="sets">
+              <div class="set-h"><span>#</span><span>Secondi</span><span>Kg</span><span></span></div>
+              <div class="set done"><span class="set-n">1</span><input class="inp done" value="11" readonly aria-label="Secondi serie 1"><input class="inp done" value="0" readonly aria-label="Kg serie 1"><span class="check on">✓</span></div>
+              <div class="set done"><span class="set-n">2</span><input class="inp done" value="10" readonly aria-label="Secondi serie 2"><input class="inp done" value="0" readonly aria-label="Kg serie 2"><span class="check on">✓</span></div>
+              <div class="set"><span class="set-n">3</span><input class="inp focus" value="" placeholder="10" readonly aria-label="Secondi serie 3"><input class="inp" value="0" readonly aria-label="Kg serie 3"><span class="check">✓</span></div>
+            </div>
+            <div class="row"><button class="btn ghost small" type="button">+ Serie</button><button class="btn" type="button" style="margin-left:auto">Salva</button></div>
+            <div class="timer"><div class="timer-bar"></div><div class="timer-b"><span class="lbl">Recupero</span><b>1:12</b><button class="link" type="button">Salta</button></div></div>
+          </div>
+          <div class="tabbar" data-on="1"></div></div>
+        <p>Campi grandi, serie fatte in verde (stato "fatto", distinto dall'ambra del record), timer con barra luminosa.</p>
+      </div>
+
+      <div class="phone-w">
+        <h3>Esercizi</h3>
+        <div class="phone"><div class="scr">
+          <div class="app-top"><a class="strip"><span class="avatar sm" style="--a:.48">F</span><span class="strip-t"><span>Fabio</span><span>Livello <b>48</b></span></span><span class="pm2" style="width:44px;flex:none"></span></a><span class="badge">F</span></div>
+          <div class="card" style="display:flex;flex-direction:column;gap:10px">
+            <h4>Esercizi</h4>
+            <input class="inp" placeholder="Cerca un esercizio" readonly aria-label="Cerca un esercizio" style="font-size:16px">
+            <div class="chips"><span class="chip on">Tutti</span><span class="chip">Spinta</span><span class="chip">Tirata</span><span class="chip">Handbalance</span><span class="chip">Gambe</span></div>
+            <div class="exlist">
+              <div class="exrow"><b>Trazioni zavorrate</b><small>Fondamentali tirata · ultimo 9 nov</small><span class="pr-v">18<small>kg record</small></span></div>
+              <div class="exrow"><b>Front lever</b><small>Skill tirata · ultimo 8 nov</small><span class="pr-v elite">12<small>s ELITE</small></span></div>
+              <div class="exrow"><b>Dip</b><small>Fondamentali spinta · ultimo 9 nov</small><span class="pr-v">14<small>rip. record</small></span></div>
+              <div class="exrow"><b>Handstand al muro</b><small>Handbalance · ultimo 4 nov</small><span class="pr-v">45<small>s record</small></span></div>
+              <div class="exrow"><b>Muscle up</b><small>Skill tirata · ultimo 2 nov</small><span class="pr-v">2<small>rip. record</small></span></div>
+            </div>
+          </div>
+        </div><div class="tabbar" data-on="3"></div></div>
+        <p>Liste piatte e leggibili: la luce non serve qui. L'ambra compare solo dove c'è un risultato ELITE.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-colors">
+    <div class="sec-h"><span class="eyebrow">Token · colori</span><h2 id="h-colors">Colori</h2><p>Ogni colore ha un nome e un uso. Contrasto misurato col testo su fondo (<code>--bg</code>) e su scheda (<code>--surface</code>); AA chiede almeno 4,5 per il testo normale, 3 per testo grande e grafica.</p></div>
+    <div id="swatches"></div>
+  </section>
+
+  <section aria-labelledby="h-type">
+    <div class="sec-h"><span class="eyebrow">Token · tipografia</span><h2 id="h-type">Tipografia</h2><p>Si tengono Barlow e Barlow Condensed: sportivi, leggibili, già caricati. Cambia la scala, più netta tra numeri e parole.</p></div>
+    <div class="typescale">
+      <div class="ts"><small>Display XL · Condensed 700 · 50–72</small><div class="num" style="font-size:56px;line-height:.95">LIVELLO 48</div></div>
+      <div class="ts"><small>Titolo · Condensed 700 · 26–28 maiusc.</small><div style="font:700 28px var(--f-display);text-transform:uppercase">Trazioni zavorrate</div></div>
+      <div class="ts"><small>Numero · Condensed 700 · 20–24</small><div class="num" style="font-size:24px">18 kg · 105 / 200</div></div>
+      <div class="ts"><small>Testo · Barlow 400/600 · 16–17</small><div style="font-size:16px">Nessuna registrazione negli ultimi 3 mesi. <b>Vedi tutto</b></div></div>
+      <div class="ts"><small>Secondario · Barlow 400 · 14–15, colore muted</small><div class="mut" style="font-size:14px">Record 12 s · 8 nov</div></div>
+      <div class="ts"><small>Etichetta · Barlow 600 · 12, maiusc., +0,16em</small><div class="lbl">Peso · Recupero · Secondi</div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-tok">
+    <div class="sec-h"><span class="eyebrow">Token · forma e movimento</span><h2 id="h-tok">Spazi, raggi, bagliori, movimento</h2></div>
+    <div class="tokgrid">
+      <div class="tok"><h3>Spazi</h3><div class="space"><span style="height:4px"></span><span style="height:8px"></span><span style="height:12px"></span><span style="height:16px"></span><span style="height:20px"></span><span style="height:24px"></span><span style="height:32px"></span></div><ul><li><b>4 · 8 · 12 · 16 · 20 · 24 · 32</b> px</li><li>16 tra le schede, 14–18 dentro la scheda, margine laterale 16.</li></ul></div>
+      <div class="tok"><h3>Raggi</h3><div class="radii"><span style="border-radius:12px">12</span><span style="border-radius:14px">14</span><span style="border-radius:18px">18</span><span style="border-radius:999px">pill</span></div><ul><li><b>12</b> campi e pulsanti · <b>14</b> riquadri interni · <b>18</b> schede · <b>pill</b> chip e barre</li></ul></div>
+      <div class="tok"><h3>Bagliori</h3><div class="glows"><span style="box-shadow:var(--glow);color:var(--accent)">base</span><span style="box-shadow:var(--glow-elite);color:var(--elite)">elite</span></div><ul><li><b>--glow</b>: 14 px ciano al 35%</li><li><b>--glow-elite</b>: 16 px ambra al 45%</li><li>Mai sotto il testo: solo attorno a linee, punti, barre, bordi.</li></ul></div>
+      <div class="tok"><h3>Movimento</h3><ul><li><b>150 ms</b> stati (premuto, fuoco)</li><li><b>250 ms</b> aperture (fisarmonica, pannelli)</li><li><b>700 ms</b> crescita di pentagono e barre, curva <code>ease-out</code></li><li>Con "riduci movimento" del telefono: nessuna animazione, valori subito al loro posto.</li></ul><button class="btn ghost small" id="replay" type="button" style="align-self:flex-start">Riproduci la crescita del pentagono</button></div>
+      <div class="tok"><h3>Texture topografica</h3><div style="height:70px;border-radius:12px;border:1px solid var(--line);background:var(--bg) url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20720%201080%22%20fill%3D%22none%22%20stroke%3D%22%238ad8e2%22%20stroke-width%3D%221%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M336%200L320%2014L307%2030L295%2050L287%2070L284%20100L289%20130L300%20150L310%20161L330%20173L360%20179L390%20175L410%20169L433%20160L457%20150L479%20140L499%20130L516%20120L530%20109L544%2090L548%2060L540%2039L526%2020L510%206L502%200M269%200L255%2020L245%2040L237%2060L231%2090L231%20120L238%20150L247%20170L260%20189L271%20200L290%20215L310%20225L335%20230L353%20230L380%20225L400%20218L420%20209L441%20200L465%20190L490%20180L510%20173L530%20166L550%20159L572%20150L590%20139L608%20120L617%20100L617%2070L610%2047L600%2028L586%2010L577%200M220%200L209%2020L200%2040L191%2070L187%2090L187%20120L190%20143L198%20170L208%20190L220%20208L230%20220L250%20240L264%20250L282%20260L309%20270L330%20274L360%20272L380%20268L400%20260L420%20250L440%20240L461%20230L484%20220L510%20212L530%20206L560%20200L580%20196L602%20190L626%20180L642%20170L660%20152L670%20135L677%20110L676%2080L670%2057L660%2036L650%2020L634%200M177%200L167%2020L159%2040L150%2070L147%2090L145%20120L149%20150L154%20170L162%20190L173%20210L187%20230L200%20244L216%20260L230%20271L250%20285L270%20296L290%20304L311%20310L340%20314L370%20311L390%20306L410%20298L430%20288L450%20276L470%20266L490%20257L510%20250L540%20243L564%20240L590%20237L620%20232L640%20226L660%20217L680%20205L697%20190L710%20174L720%20159M687%200L700%2016L710%2030L720%2048M137%200L128%2020L119%2040L110%2070L107%2090L104%20120L107%20150L111%20170L120%20194L130%20214L140%20230L156%20250L170%20265L186%20280L200%20291L220%20305L240%20318L260%20328L280%20336L300%20343L330%20349L350%20351L371%20350L400%20345L420%20338L440%20329L460%20318L480%20307L500%20298L525%20290L550%20285L580%20282L600%20279L630%20274L650%20268L672%20260L691%20250L710%20238L720%20230M98%200L88%2020L79%2040L70%2069L65%2090L62%20120L63%20150L69%20180L76%20200L87%20220L99%20240L110%20253L125%20270L140%20285L158%20300L170%20310L190%20324L210%20336L230%20347L250%20357L270%20366L290%20373L318%20380L340%20384L370%20386L400%20384L422%20380L450%20372L470%20364L490%20355L510%20347L531%20340L560%20332L580%20328L610%20322L630%20317L653%20310L678%20300L699%20290L717%20280L720%20278M57%200L46%2020L37%2040L29%2060L20%2090L16%20110L13%20140L16%20170L21%20190L30%20213L40%20231L53%20250L70%20269L81%20280L100%20298L115%20310L130%20321L150%20335L170%20348L190%20360L209%20370L229%20380L250%20389L270%20397L290%20404L313%20410L340%20416L370%20419L400%20420L430%20417L460%20411L480%20406L500%20400L529%20390L550%20383L570%20377L592%20370L620%20361L640%20354L660%20347L680%20338L700%20329L720%20318M593%201080L570%201073L550%201068L520%201063L494%201060L470%201059L446%201060L420%201063L390%201069L370%201074L351%201080M720%20355L700%20365L680%20374L660%20383L640%20391L618%20400L592%20410L570%20418L550%20425L530%20431L500%20440L480%20444L450%20450L430%20452L400%20452L370%20450L350%20448L320%20442L300%20436L279%20430L251%20420L230%20411L210%20402L190%20393L170%20383L150%20372L130%20361L112%20350L96%20340L80%20330L60%20316L40%20301L25%20290L10%20277L0%20267M662%201080L640%201070L620%201063L600%201055L580%201049L550%201042L530%201038L500%201034L470%201032L440%201034L410%201038L390%201042L360%201050L340%201056L320%201064L300%201073L285%201080M720%20389L700%20399L680%20408L660%20417L640%20426L620%20434L600%20442L580%20450L552%20460L530%20467L510%20472L480%20479L460%20482L430%20484L400%20484L370%20481L350%20477L320%20471L300%20466L280%20459L253%20450L230%20441L210%20433L190%20425L170%20416L150%20406L130%20397L110%20387L90%20377L70%20368L50%20358L30%20348L10%20339L0%20335M720%201079L700%201069L680%201060L658%201050L633%201040L610%201031L590%201025L570%201019L540%201012L520%201009L490%201006L460%201005L430%201007L410%201010L380%201017L360%201022L337%201030L311%201040L290%201049L270%201058L250%201068L230%201079L228%201080M720%20422L700%20432L680%20441L660%20450L638%20460L615%20470L590%20480L570%20488L550%20494L530%20501L500%20508L480%20512L450%20515L420%20515L390%20513L366%20510L340%20505L320%20500L290%20491L270%20485L250%20478L228%20470L202%20460L180%20451L160%20443L140%20435L120%20427L100%20419L76%20410L50%20401L30%20395L10%20389L0%20387M720%201049L700%201040L678%201030L654%201020L630%201010L610%201003L590%20997L567%20990L540%20984L518%20980L490%20977L460%20977L430%20979L410%20982L380%20988L360%20994L340%201001L316%201010L292%201020L270%201030L250%201039L230%201049L210%201060L190%201070L171%201080M720%20455L700%20464L680%20474L660%20483L640%20492L620%20501L598%20510L573%20520L550%20528L530%20534L507%20540L480%20545L450%20548L420%20548L390%20545L362%20540L340%20535L320%20530L290%20520L270%20514L250%20507L230%20500L203%20490L180%20482L160%20475L140%20468L117%20460L90%20451L70%20446L44%20440L20%20436L0%20434M720%201019L700%201010L677%201000L653%20990L630%20981L610%20973L590%20967L567%20960L540%20953L520%20950L490%20946L460%20946L430%20948L410%20952L380%20959L360%20965L340%20972L319%20980L295%20990L273%201000L251%201010L230%201020L210%201029L190%201039L170%201049L150%201058L130%201068L110%201077L102%201080M720%20488L700%20497L680%20507L660%20516L640%20526L620%20535L600%20544L580%20552L560%20560L530%20570L510%20575L486%20580L460%20583L430%20583L400%20580L380%20577L353%20570L330%20563L310%20557L290%20550L261%20540L240%20532L220%20525L200%20519L174%20510L150%20502L130%20497L105%20490L80%20485L50%20480L30%20478L0%20479M720%20987L700%20978L680%20970L657%20960L632%20950L610%20941L590%20934L570%20928L541%20920L520%20916L490%20912L460%20911L430%20914L404%20920L380%20927L360%20934L340%20941L319%20950L297%20960L275%20970L253%20980L231%20990L210%201000L190%201009L170%201017L150%201026L130%201034L110%201041L84%201050L60%201056L40%201060L10%201063L0%201063M720%20523L700%20533L680%20542L660%20552L640%20563L620%20572L600%20582L580%20591L560%20600L534%20610L510%20617L490%20622L460%20625L430%20624L405%20620L380%20614L360%20608L339%20600L313%20590L290%20581L270%20573L250%20566L230%20559L205%20550L180%20542L160%20536L135%20530L110%20525L80%20520L60%20519L30%20519L10%20522L0%20524M720%20953L700%20945L680%20936L660%20927L640%20918L620%20909L598%20900L571%20890L550%20883L530%20877L500%20872L470%20870L440%20873L410%20880L390%20886L370%20894L350%20903L330%20913L310%20922L290%20932L270%20942L250%20951L230%20961L209%20970L185%20980L160%20990L140%20997L120%201003L97%201010L70%201016L40%201019L10%201019L0%201017M720%20562L700%20572L680%20583L660%20594L640%20605L620%20617L600%20629L581%20640L563%20650L545%20660L525%20670L500%20680L480%20685L450%20685L427%20680L400%20670L380%20661L360%20650L340%20640L321%20630L301%20620L280%20610L260%20601L240%20593L220%20585L200%20579L170%20570L150%20565L123%20560L100%20557L70%20556L40%20558L20%20563L0%20570M720%20916L700%20907L680%20897L660%20887L640%20876L620%20866L600%20855L580%20845L560%20835L540%20826L520%20818L490%20811L470%20809L450%20812L427%20820L406%20830L388%20840L370%20851L350%20863L330%20875L310%20887L290%20899L270%20910L251%20920L230%20930L210%20939L190%20947L170%20954L150%20961L120%20969L100%20974L70%20977L40%20978L10%20973L0%20970M0%20918L20%20928L40%20934L70%20938L100%20937L130%20932L150%20928L176%20920L200%20911L220%20902L240%20892L260%20880L276%20870L290%20860L310%20844L326%20830L340%20814L351%20800L362%20780L368%20750L360%20723L350%20707L335%20690L320%20676L300%20661L284%20650L267%20640L248%20630L225%20620L200%20610L180%20604L160%20599L130%20594L100%20593L70%20594L42%20600L20%20608L0%20620M720%20607L700%20619L684%20630L670%20640L650%20656L634%20670L620%20685L608%20700L596%20720L592%20750L600%20772L612%20790L630%20809L643%20820L660%20833L680%20847L700%20860L718%20870L720%20871M0%20852L17%20870L32%20880L54%20890L80%20896L110%20898L140%20894L160%20890L189%20880L210%20871L229%20860L244%20850L260%20837L277%20820L290%20802L300%20782L304%20760L300%20732L290%20712L280%20699L261%20680L247%20670L230%20660L210%20650L183%20640L160%20634L130%20630L110%20630L90%20632L60%20639L40%20649L23%20660L10%20672L0%20685M720%20675L707%20690L695%20710L689%20730L690%20756L700%20779L710%20793L720%20804M90%20679L70%20689L57%20700L40%20720L32%20740L28%20760L30%20785L40%20810L50%20824L70%20840L90%20849L110%20852L140%20852L160%20848L183%20840L201%20830L220%20816L234%20800L244%20780L247%20750L240%20729L226%20710L210%20696L190%20685L170%20678L140%20673L110%20674L90%20679%22%2F%3E%3C%2Fsvg%3E') center / 360px auto;opacity:.9"></div><ul><li>Un file SVG da 7 KB, tono ciano al <b>7%</b>, solo sul fondo della pagina (mai dentro le schede).</li><li>Fatto da noi: nessuna licenza da comprare.</li></ul></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-comp">
+    <div class="sec-h"><span class="eyebrow">Componenti</span><h2 id="h-comp">I pezzi dell'app</h2></div>
+    <div class="comp-grid">
+      <div class="comp"><span class="lbl">Pulsanti</span><div class="row"><button class="btn" type="button">Salva</button><button class="btn ghost" type="button">Annulla</button><button class="btn danger" type="button">Elimina</button></div><div class="row"><button class="btn small" type="button">Registra</button><button class="btn ghost small" type="button">+ Serie</button><button class="btn small" type="button" disabled>Salva</button></div><p class="mut" style="font-size:14px">Il pulsante pieno ciano ha testo scuro (contrasto 10,3). Un solo pulsante pieno per schermata.</p></div>
+      <div class="comp"><span class="lbl">Campi numerici</span><div class="row" style="flex-wrap:nowrap"><input class="inp" value="12" readonly aria-label="Esempio campo"><input class="inp focus" value="" placeholder="10" readonly aria-label="Esempio campo con fuoco"><input class="inp done" value="11" readonly aria-label="Esempio campo fatto"></div><p class="mut" style="font-size:14px">Normale · con il fuoco (anello ciano) · serie fatta (bordo verde). Errore: bordo rosso e messaggio sotto.</p></div>
+      <div class="comp"><span class="lbl">Selettore (periodo, progressione)</span><div class="seg"><span>4 sett.</span><span class="on">3 mesi</span><span>6 mesi</span><span>1 anno</span><span>Tutto</span></div><div class="seg"><span>Tuck</span><span class="on">Adv. tuck</span><span>Straddle</span><span>Full</span></div></div>
+      <div class="comp"><span class="lbl">Chip ed etichette</span><div class="chips"><span class="chip on">Tutti</span><span class="chip">Spinta</span><span class="chip pr">Record 18 kg</span><span class="tag-elite">ELITE</span><span class="chip"><span class="dot" style="background:var(--forza)"></span>Forza</span><span class="chip"><span class="dot" style="background:var(--volume)"></span>Volume</span><span class="chip"><span class="dot" style="background:var(--tecnico)"></span>Tecnico</span></div></div>
+      <div class="comp"><span class="lbl">Barre di categoria</span>
+        <div class="cat"><div class="cat-h"><span class="cat-ico" data-ico="ss"></span><span class="cat-n">Skill spinta</span><span class="cat-v"><b>74</b> / 100</span><span class="chev">›</span><span class="zbar"><i style="width:74%"></i></span><span class="scale"><span>0</span><span>100</span></span></div></div>
+        <div class="cat elite"><div class="cat-h"><span class="cat-ico" data-ico="st"></span><span class="cat-n">Skill tirata</span><span class="cat-v"><b>131</b> / 200</span><span class="chev">›</span><span class="zbar elite"><i class="full" style="width:50%"></i><i class="hot" style="left:50%;width:15.5%"></i><em></em></span><span class="scale"><span>0</span><span>100</span><span class="e">ELITE 200</span></span></div></div>
+        <p class="mut" style="font-size:14px">Base: blu → ciano su 100. ELITE: la barra passa a 200, prima metà piena, seconda in ambra → arancio, con scritta ELITE (mai solo colore).</p></div>
+      <div class="comp"><span class="lbl">Riepilogo in alto e barra in basso</span><a class="strip" style="flex:none"><span class="avatar sm" style="--a:.9">F</span><span class="strip-t"><span>Fabio</span><span>Livello <b>91</b></span></span><span class="pm3" style="width:44px;flex:none"></span></a><div class="phone" style="border-radius:16px;box-shadow:none"><div class="tabbar" data-on="0" style="border-top:0"></div></div><p class="mut" style="font-size:14px">La voce attiva ha la linea luminosa sopra e il colore ciano; con il trainer le voci sono 5.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-charts">
+    <div class="sec-h"><span class="eyebrow">Grafici · anteprima del ticket 14</span><h2 id="h-charts">Grafici con la stessa luce del pentagono</h2><p>Restano SVG fatti a mano. Trascina il dito (o il mouse) sul grafico: la lettura segue il punto più vicino. Il bagliore c'è solo sul grafico grande; le mini-schede restano leggere per scorrere fluide.</p></div>
+    <div class="comp-grid">
+      <div class="comp"><span class="lbl">Andamento · Dip, ripetizioni</span><div id="chart2"></div><p class="readout" id="read2"></p></div>
+      <div class="comp"><span class="lbl">Ripetizioni per tipo</span><div id="bars"></div><div class="bars-legend"><span><i class="dot" style="background:var(--forza)"></i>Forza</span><span><i class="dot" style="background:var(--volume)"></i>Volume</span><span><i class="dot" style="background:var(--tecnico)"></i>Tecnico</span></div><p class="mut" style="font-size:14px">Volume passa da arancio a viola: l'arancio/ambra resta solo all'ELITE.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-icons">
+    <div class="sec-h"><span class="eyebrow">Icone</span><h2 id="h-icons">Categorie e icona dell'app</h2><p>Le 5 icone di categoria sono quelle disegnate per la Home (tratto 1,8, 24 px), messe in un riquadro che si accende. Disegnate da noi: licenza chiara.</p></div>
+    <div class="icons" id="icons"></div>
+    <div class="appicons">
+      <figure><span id="appicon512"></span><figcaption>Icona app · 160 px</figcaption></figure>
+      <figure><span id="appicon64"></span><figcaption>60 px (schermata Home)</figcaption></figure>
+      <figure><span id="appicon32"></span><figcaption>32 px (scheda browser)</figcaption></figure>
+    </div>
+    <p class="mut" style="max-width:62ch">Il pentagono ciano con un vertice ambra: dice "livello" e "élite" in un segno solo. Il nome resta Scheda Calisthenics; il colore della barra del telefono diventa <code>#0a1013</code>.</p>
+  </section>
+
+  <section aria-labelledby="h-a11y">
+    <div class="sec-h"><span class="eyebrow">Accessibilità</span><h2 id="h-a11y">Bello ma leggibile</h2></div>
+    <div class="a11y">
+      <div><b>Contrasto AA</b><p>Testi principali 15–17:1, secondari 6,5–7:1, ciano e ambra 9,5–10:1 sulle schede. Il grigio più tenue (<code>--faint</code>, 3,5:1) solo per linee e grafica, mai per testo.</p></div>
+      <div><b>Mai solo colore</b><p>ELITE ha sempre la scritta "ELITE"; il record nel grafico ha l'etichetta "Record"; il confronto ha "+" o "−" oltre a verde e rosso.</p></div>
+      <div><b>Riduci movimento</b><p>Con l'impostazione del telefono attiva: niente crescita del pentagono, niente celebrazione animata, aura dell'avatar ferma.</p></div>
+      <div><b>Bagliori sotto controllo</b><p>Il bagliore non passa mai sotto testi e numeri degli assi. Su telefoni lenti si può spegnere con un solo token.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-code">
+    <div class="sec-h"><span class="eyebrow">Dopo l'approvazione</span><h2 id="h-code">Cosa cambia nel codice</h2><p>Lavoro di sviluppo stimato in 2–3 giorni. Nessun comportamento cambia.</p></div>
+    <div class="tbl-w"><table>
+      <thead><tr><th>Dove</th><th>Oggi</th><th>Con la proposta</th></tr></thead>
+      <tbody>
+        <tr><td><code>styles.css</code> <code>:root</code></td><td class="m">Grigi neutri, accento blu, tema chiaro automatico</td><td>Token qui sopra, solo scuro, <code>--glow</code>, <code>--accent-deep</code>, <code>--elite-hot</code>, <code>--ok</code> separato da Tecnico</td></tr>
+        <tr><td>Fondo pagina</td><td class="m">Tinta unita</td><td>Texture topografica <code>public/topo.svg</code> al 7%</td></tr>
+        <tr><td>Pentagono, barre, avatar</td><td class="m">Colori piatti</td><td>Area sfumata, bordo luminoso, alone sui punti, barre in gradiente</td></tr>
+        <tr><td>Grafici (ticket 14)</td><td class="m">Linea piatta, tocco</td><td>Area sfumata, bagliore, record in ambra, lettura trascinando</td></tr>
+        <tr><td>Volume nei grafici</td><td class="m">Arancio</td><td>Viola (l'arancio è dell'ELITE)</td></tr>
+        <tr><td>Icona e manifest PWA</td><td class="m">Manubrio con freccia arancio, <code>#0b0b0c</code></td><td>Pentagono ciano con vertice ambra, <code>#0a1013</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <footer>Proposta per il ticket 06 del backlog dell'8 novembre 2026. Pagina di riferimento, non collegata ai dati veri.</footer>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3"/></filter>
+    <radialGradient id="gArea" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="#2fd6e8" stop-opacity=".08"/><stop offset="1" stop-color="#2fd6e8" stop-opacity=".38"/></radialGradient>
+    <linearGradient id="gFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2fd6e8" stop-opacity=".32"/><stop offset="1" stop-color="#2fd6e8" stop-opacity="0"/></linearGradient>
+  </defs>
+</svg>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  try { if (localStorage.getItem('ds-sober') === '1') { $('#sober').checked = true; document.documentElement.classList.add('sober'); } } catch (e) {}
+  $('#sober').addEventListener('change', (e) => {
+    document.documentElement.classList.toggle('sober', e.target.checked);
+    try { localStorage.setItem('ds-sober', e.target.checked ? '1' : '0'); } catch (err) {}
+  });
+
+  /* icone (le stesse di src/components/icons.tsx) */
+  const ICO = {
+    fs: '<path d="M3 20.5h18"/><path d="M12 16V4M8 8l4-4 4 4"/><path d="M7 20.5v-3.5M17 20.5v-3.5"/>',
+    ft: '<path d="M3 4.5h18"/><path d="M8 4.5v4.5a4 4 0 0 0 8 0V4.5"/><path d="M12 21v-7M9 17l3-3 3 3"/>',
+    st: '<path d="M3 4.5h18"/><path d="M9 4.5v6"/><path d="M4 12.5h15"/><circle cx="20.5" cy="12.5" r="1.5"/>',
+    ss: '<path d="M3 20.5h18"/><path d="M9 20.5v-6"/><path d="M4 12.5h15"/><circle cx="20.5" cy="12.5" r="1.5"/>',
+    hb: '<path d="M12 3.5v13"/><circle cx="12" cy="19" r="1.8"/><path d="M7.5 20.5h9"/><path d="M9.5 3.5h5"/>',
+    liv: '<path d="M12 3.2 20.5 9.4 17.3 19.5H6.7L3.5 9.4Z"/><path d="M12 8.2 16 11 14.6 15.6H9.6L8.2 11.3Z"/>',
+    sch: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M14 14h2M8 17.5h2"/>',
+    gra: '<path d="M4 4v16h16"/><path d="m7.5 15 4-4.5 3 2.5 5-6"/>',
+    ese: '<path d="M7 12h10"/><rect x="3.5" y="8" width="3.5" height="8" rx="1"/><rect x="17" y="8" width="3.5" height="8" rx="1"/><path d="M2 10.5v3M22 10.5v3"/>',
+  };
+  const svgIco = (k, s = 22) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
+  $$('[data-ico]').forEach((el) => (el.innerHTML = svgIco(el.dataset.ico)));
+  const TABS = [['liv', 'Livello'], ['sch', 'Scheda'], ['gra', 'Grafici'], ['ese', 'Esercizi']];
+  $$('.tabbar').forEach((el) => (el.innerHTML = TABS.map(([k, l], i) => `<span class="${i == el.dataset.on ? 'on' : ''}">${svgIco(k)}${l}</span>`).join('')));
+  $('#icons').innerHTML = [['fs', 'Fondamentali spinta'], ['ft', 'Fondamentali tirata'], ['ss', 'Skill spinta'], ['st', 'Skill tirata', 1], ['hb', 'Handbalance']]
+    .map(([k, l, e]) => `<div class="ic"><span class="box${e ? ' elite' : ''}">${svgIco(k, 26)}</span>${l}${e ? ' <span class="tag-elite">ELITE</span>' : ''}</div>`).join('');
+
+  /* pentagono: stessa geometria di Pentagon.tsx (scala a due tratti, anello del 100 al 72%) */
+  const CX = 190, CY = 158, R = 104, BASE = 0.72;
+  const radial = (v) => { v = Math.max(0, Math.min(200, v)); return v <= 100 ? (v / 100) * BASE : BASE + ((v - 100) / 100) * (1 - BASE); };
+  const at = (i, n, d) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [CX + Math.cos(a) * R * d, CY + Math.sin(a) * R * d]; };
+  const poly = (p) => p.map(([x, y]) => x.toFixed(1) + ',' + y.toFixed(1)).join(' ');
+  const AX = [['Fondamentali spinta', 88], ['Fondamentali tirata', 92], ['Skill tirata', 105], ['Skill spinta', 74], ['Handbalance', 65]];
+  function penta(axes, mini) {
+    const n = axes.length, ring = (d) => poly(axes.map((_, i) => at(i, n, d)));
+    const pts = axes.map((a, i) => at(i, n, radial(a[1])));
+    const el = axes.map((a) => a[1] > 100);
+    let s = mini ? `<svg class="penta" viewBox="${CX - R - 8} ${CY - R - 8} ${2 * R + 16} ${2 * R + 16}" aria-hidden="true">` : `<svg class="penta" viewBox="0 0 380 300" role="img" aria-label="Livello per categoria: ${axes.map((a) => a[0] + ' ' + a[1]).join(', ')}">`;
+    s += '<defs>';
+    pts.forEach((p, i) => { const j = (i + 1) % n; if (!el[i] && !el[j]) return; const q = pts[j];
+      s += `<linearGradient id="pe${mini ? 'm' : ''}${i}" gradientUnits="userSpaceOnUse" x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}"><stop offset="0" stop-color="${el[i] ? '#ffad33' : '#2fd6e8'}"/><stop offset="1" stop-color="${el[j] ? '#ffad33' : '#2fd6e8'}"/></linearGradient>`; });
+    s += '</defs>';
+    if (!mini) [0.25, 0.5, 0.75].forEach((f) => (s += `<polygon class="p-grid" points="${ring(BASE * f)}"/>`));
+    s += `<path class="p-band" d="M${ring(1)}Z M${ring(BASE)}Z" fill-rule="evenodd"/>`;
+    s += `<polygon class="p-grid" points="${ring(1)}" ${mini ? 'style="stroke-width:6"' : ''}/><polygon class="p-100" points="${ring(BASE)}" ${mini ? 'style="stroke-width:6"' : ''}/>`;
+    if (!mini) axes.forEach((_, i) => { const [x, y] = at(i, n, 1); s += `<line class="p-grid" x1="${CX}" y1="${CY}" x2="${x}" y2="${y}"/>`; });
+    s += `<polygon class="p-area" points="${poly(pts)}"/>`;
+    const edges = (cls) => pts.map((p, i) => { const j = (i + 1) % n, q = pts[j], g = el[i] || el[j];
+      return `<line class="p-edge ${cls}" x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" ${g ? `style="stroke:url(#pe${mini ? "m" : ""}${i})${mini ? ";stroke-width:10" : ""}"` : (mini ? `style="stroke-width:10"` : "")}/>`; }).join('');
+    if (!mini) s += edges('p-glow');
+    s += edges('');
+    pts.forEach(([x, y], i) => {
+      if (!mini) s += `<circle class="halo${el[i] ? ' elite' : ''}" cx="${x}" cy="${y}" r="${el[i] ? 13 : 9}"/>`;
+      s += `<circle class="p-dot${el[i] ? ' elite' : ''}" cx="${x}" cy="${y}" r="${mini ? 9 : el[i] ? 5.5 : 4.5}" ${mini ? 'style="stroke-width:0"' : ''}/>`;
+    });
+    if (!mini) axes.forEach((a, i) => {
+      const [lx, ly] = at(i, n, 1 + 14 / R), dx = lx - CX;
+      const anchor = Math.abs(dx) < 10 ? 'middle' : dx > 0 ? 'start' : 'end';
+      const lines = a[0].split(' '), cnt = lines.length + 1;
+      const top = ly < CY - R * 0.6 ? ly - (cnt - 1) * 14 - 2 : ly > CY + R * 0.5 ? ly + 11 : ly - ((cnt - 1) * 14) / 2 + 4;
+      s += `<text class="p-lbl" x="${lx}" y="${top}" text-anchor="${anchor}" aria-hidden="true">${lines.map((l, k) => `<tspan x="${lx}" dy="${k ? 14 : 0}">${l}</tspan>`).join('')}<tspan x="${lx}" dy="14" class="p-val${a[1] > 100 ? ' elite' : ''}">${a[1]}${a[1] > 100 ? ' ELITE' : ''}</tspan></text>`;
+    });
+    return s + '</svg>';
+  }
+  $('#penta1').innerHTML = penta(AX);
+  ['#pmini', '.pm2', '.pm3'].forEach((q) => $$(q).forEach((el) => (el.innerHTML = penta(q === '.pm3' ? [['a', 95], ['b', 98], ['c', 90], ['d', 82], ['e', 88]] : AX, true))));
+  $('#replay').addEventListener('click', () => { const el = $('#penta1'); el.classList.remove('grow'); void el.offsetWidth; el.classList.add('grow'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+
+  /* grafico a linea con bagliore, record in ambra e lettura trascinando (anteprima del ticket 14) */
+  const MESI = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+  const day0 = new Date(2026, 7, 12);
+  const mk = (vals, stepDays) => vals.map((v, i) => { const d = new Date(day0); d.setDate(d.getDate() + Math.round(i * stepDays)); return { d, v }; });
+  const lbl = (d) => d.getDate() + ' ' + MESI[d.getMonth()];
+  function nice(max) { const raw = max / 4, p = Math.pow(10, Math.floor(Math.log10(raw))); const st = [1, 2, 2.5, 5, 10].map((m) => m * p).find((m) => m >= raw); return { step: st, top: Math.ceil(max / st) * st }; }
+  function line(host, pts, { unit, mini, readout, name }) {
+    const W = mini ? 160 : 340, H = mini ? 50 : 210, P = mini ? { l: 6, r: 8, t: 8, b: 6 } : { l: 40, r: 16, t: 18, b: 28 };
+    const sc = nice(Math.max(...pts.map((p) => p.v)));
+    const t0 = pts[0].d.getTime(), t1 = pts[pts.length - 1].d.getTime();
+    const x = (p) => P.l + ((p.d.getTime() - t0) / (t1 - t0)) * (W - P.l - P.r);
+    const y = (v) => P.t + (H - P.t - P.b) * (1 - v / sc.top);
+    const best = pts.reduce((a, b) => (b.v >= a.v ? b : a));
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p).toFixed(1)} ${y(p.v).toFixed(1)}`).join(' ');
+    const last = pts[pts.length - 1];
+    let s = `<svg class="${mini ? '' : 'chart-big'}" viewBox="0 0 ${W} ${H}" ${mini ? 'aria-hidden="true"' : `role="img" aria-label="${name}: record ${best.v} ${unit} il ${lbl(best.d)}, ultimo ${last.v} ${unit}"`} style="display:block;width:100%;height:auto;overflow:visible">`;
+    if (!mini) for (let v = 0; v <= sc.top + 1e-9; v += sc.step) s += `<line class="${v ? 'g-grid' : 'g-base'}" x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}"/><text class="g-txt" x="${P.l - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+    s += `<path d="${d} L${x(last)} ${y(0)} L${x(pts[0])} ${y(0)} Z" fill="url(#gFill)"/>`;
+    if (!mini) s += `<path class="g-glow" d="${d}"/>`;
+    s += `<path class="g-line" d="${d}" ${mini ? 'style="stroke-width:2"' : ''}/>`;
+    if (!mini) {
+      [0, Math.floor(pts.length / 3), Math.floor((2 * pts.length) / 3), pts.length - 1].forEach((i, k) => s += `<text class="g-txt" x="${x(pts[i])}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 3 ? 'end' : 'middle'}">${lbl(pts[i].d)}</text>`);
+      pts.forEach((p) => { if (p !== best && p !== last) s += `<circle class="g-dot" cx="${x(p)}" cy="${y(p.v)}" r="2.6"/>`; });
+      s += `<circle class="halo" cx="${x(last)}" cy="${y(last.v)}" r="11"/><circle class="g-dot" cx="${x(last)}" cy="${y(last.v)}" r="5"/>`;
+      s += `<circle class="halo elite" cx="${x(best)}" cy="${y(best.v)}" r="12"/><circle class="g-rec" cx="${x(best)}" cy="${y(best.v)}" r="5.5"/><text class="g-rec-t" x="${Math.min(x(best), W - P.r - 30)}" y="${y(best.v) - 12}" text-anchor="middle">RECORD</text>`;
+      s += `<g class="sel" style="display:none"><line class="g-sel" y1="${P.t}" y2="${y(0)}"/><circle class="g-dot" r="6"/><g class="g-tip"><rect rx="8" height="38" width="86"/><text class="v" x="10" y="16"></text><text class="s" x="10" y="31"></text></g></g>`;
+      s += `<rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>`;
+    } else {
+      s += `<circle class="g-dot" cx="${x(last)}" cy="${y(last.v)}" r="3.5" style="stroke-width:0"/>`;
+      if (best !== last) s += `<circle class="g-rec" cx="${x(best)}" cy="${y(best.v)}" r="3" style="stroke-width:0"/>`;
+    }
+    host.innerHTML = s + '</svg>';
+    if (mini) return;
+    const svg = host.querySelector('svg'), sel = svg.querySelector('.sel'), ro = $(readout);
+    const show = (p) => {
+      const px = x(p), py = y(p.v);
+      sel.style.display = '';
+      sel.querySelector('line').setAttribute('x1', px); sel.querySelector('line').setAttribute('x2', px);
+      sel.querySelector('circle').setAttribute('cx', px); sel.querySelector('circle').setAttribute('cy', py);
+      const tip = sel.querySelector('.g-tip'), tx = Math.max(P.l, Math.min(W - P.r - 86, px - 43)), ty = Math.max(0, py - 52);
+      tip.setAttribute('transform', `translate(${tx} ${ty})`);
+      tip.querySelector('.v').textContent = `${p.v} ${unit}${p === best ? ' · record' : ''}`;
+      tip.querySelector('.s').textContent = lbl(p.d) + ' 2026';
+      ro.innerHTML = `${lbl(p.d)}: ${p.v} ${unit} <span>${p === best ? '· record del periodo' : '· sessione'}</span>`;
+    };
+    const pick = (e) => { const b = svg.getBoundingClientRect(); const sx = ((e.clientX - b.left) / b.width) * W; show(pts.reduce((a, c) => (Math.abs(x(c) - sx) < Math.abs(x(a) - sx) ? c : a))); };
+    svg.addEventListener('pointerdown', (e) => { pick(e); svg.setPointerCapture?.(e.pointerId); });
+    svg.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' || e.buttons) pick(e); });
+    ro.innerHTML = `<span>Tocca o trascina sul grafico per leggere i valori</span>`;
+  }
+  const trazioni = mk([8, 8, 10, 10, 10, 12, 12, 11, 12, 14, 14, 13, 15, 15, 14, 16, 18, 16, 16, 17, 17], 4.2);
+  line($('#chart1'), trazioni, { unit: 'kg', readout: '#read1', name: 'Trazioni zavorrate' });
+  line($('#chart2'), mk([9, 10, 10, 11, 12, 11, 13, 12, 14, 13, 12, 13, 14], 6.5), { unit: 'rip.', readout: '#read2', name: 'Dip' });
+  line($('#sp1'), trazioni, { mini: 1, unit: 'kg' });
+  line($('#sp2'), mk([9, 10, 10, 11, 12, 11, 13, 12, 14, 13], 8), { mini: 1 });
+  line($('#sp3'), mk([4, 5, 5, 6, 8, 7, 9, 10, 10, 12], 8), { mini: 1 });
+  line($('#sp4'), mk([20, 22, 24, 23, 26, 28, 27, 30, 32, 31], 8), { mini: 1 });
+
+  /* barre impilate per tipo */
+  (() => {
+    const data = [[30, 40, 10], [35, 20, 25], [20, 45, 15], [40, 30, 0], [30, 25, 20], [35, 40, 10], [45, 20, 20]];
+    const W = 340, H = 190, P = { l: 40, r: 10, t: 12, b: 26 }, sc = nice(Math.max(...data.map((d) => d[0] + d[1] + d[2])));
+    const y = (v) => P.t + (H - P.t - P.b) * (1 - v / sc.top), slot = (W - P.l - P.r) / data.length, bw = slot * 0.5;
+    const cols = ['var(--forza)', 'var(--volume)', 'var(--tecnico)'];
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ripetizioni per tipo, ultime 7 sessioni" style="display:block;width:100%;height:auto">`;
+    for (let v = 0; v <= sc.top; v += sc.step) s += `<line class="${v ? 'g-grid' : 'g-base'}" x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}"/><text class="g-txt" x="${P.l - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+    data.forEach((d, i) => {
+      const cx = P.l + slot * i + slot / 2; let acc = 0;
+      d.forEach((v, t) => { if (!v) return; s += `<rect x="${cx - bw / 2}" y="${y(acc + v) + 1}" width="${bw}" height="${y(acc) - y(acc + v) - 1}" rx="3" style="fill:${cols[t]};opacity:.9"/>`; acc += v; });
+      if (i % 2 === 0) s += `<text class="g-txt" x="${cx}" y="${H - 6}" text-anchor="middle">${lbl(new Date(2026, 9, 6 + i * 5))}</text>`;
+    });
+    $('#bars').innerHTML = s + '</svg>';
+  })();
+
+  /* icona dell'app */
+  const appIcon = (px) => {
+    const pts = [[256, 112], [393, 211], [341, 372], [171, 372], [119, 211]];
+    const v = [0.8, 0.75, 1, 0.62, 0.7].map((d, i) => [256 + (pts[i][0] - 256) * d, 262 + (pts[i][1] - 262) * d]);
+    return `<svg width="${px}" height="${px}" viewBox="0 0 512 512" role="img" aria-label="Icona dell'app">
+      <rect width="512" height="512" rx="112" fill="#0a1013"/>
+      ${px > 40 ? `<image href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20720%201080%22%20fill%3D%22none%22%20stroke%3D%22%238ad8e2%22%20stroke-width%3D%221%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M336%200L320%2014L307%2030L295%2050L287%2070L284%20100L289%20130L300%20150L310%20161L330%20173L360%20179L390%20175L410%20169L433%20160L457%20150L479%20140L499%20130L516%20120L530%20109L544%2090L548%2060L540%2039L526%2020L510%206L502%200M269%200L255%2020L245%2040L237%2060L231%2090L231%20120L238%20150L247%20170L260%20189L271%20200L290%20215L310%20225L335%20230L353%20230L380%20225L400%20218L420%20209L441%20200L465%20190L490%20180L510%20173L530%20166L550%20159L572%20150L590%20139L608%20120L617%20100L617%2070L610%2047L600%2028L586%2010L577%200M220%200L209%2020L200%2040L191%2070L187%2090L187%20120L190%20143L198%20170L208%20190L220%20208L230%20220L250%20240L264%20250L282%20260L309%20270L330%20274L360%20272L380%20268L400%20260L420%20250L440%20240L461%20230L484%20220L510%20212L530%20206L560%20200L580%20196L602%20190L626%20180L642%20170L660%20152L670%20135L677%20110L676%2080L670%2057L660%2036L650%2020L634%200M177%200L167%2020L159%2040L150%2070L147%2090L145%20120L149%20150L154%20170L162%20190L173%20210L187%20230L200%20244L216%20260L230%20271L250%20285L270%20296L290%20304L311%20310L340%20314L370%20311L390%20306L410%20298L430%20288L450%20276L470%20266L490%20257L510%20250L540%20243L564%20240L590%20237L620%20232L640%20226L660%20217L680%20205L697%20190L710%20174L720%20159M687%200L700%2016L710%2030L720%2048M137%200L128%2020L119%2040L110%2070L107%2090L104%20120L107%20150L111%20170L120%20194L130%20214L140%20230L156%20250L170%20265L186%20280L200%20291L220%20305L240%20318L260%20328L280%20336L300%20343L330%20349L350%20351L371%20350L400%20345L420%20338L440%20329L460%20318L480%20307L500%20298L525%20290L550%20285L580%20282L600%20279L630%20274L650%20268L672%20260L691%20250L710%20238L720%20230M98%200L88%2020L79%2040L70%2069L65%2090L62%20120L63%20150L69%20180L76%20200L87%20220L99%20240L110%20253L125%20270L140%20285L158%20300L170%20310L190%20324L210%20336L230%20347L250%20357L270%20366L290%20373L318%20380L340%20384L370%20386L400%20384L422%20380L450%20372L470%20364L490%20355L510%20347L531%20340L560%20332L580%20328L610%20322L630%20317L653%20310L678%20300L699%20290L717%20280L720%20278M57%200L46%2020L37%2040L29%2060L20%2090L16%20110L13%20140L16%20170L21%20190L30%20213L40%20231L53%20250L70%20269L81%20280L100%20298L115%20310L130%20321L150%20335L170%20348L190%20360L209%20370L229%20380L250%20389L270%20397L290%20404L313%20410L340%20416L370%20419L400%20420L430%20417L460%20411L480%20406L500%20400L529%20390L550%20383L570%20377L592%20370L620%20361L640%20354L660%20347L680%20338L700%20329L720%20318M593%201080L570%201073L550%201068L520%201063L494%201060L470%201059L446%201060L420%201063L390%201069L370%201074L351%201080M720%20355L700%20365L680%20374L660%20383L640%20391L618%20400L592%20410L570%20418L550%20425L530%20431L500%20440L480%20444L450%20450L430%20452L400%20452L370%20450L350%20448L320%20442L300%20436L279%20430L251%20420L230%20411L210%20402L190%20393L170%20383L150%20372L130%20361L112%20350L96%20340L80%20330L60%20316L40%20301L25%20290L10%20277L0%20267M662%201080L640%201070L620%201063L600%201055L580%201049L550%201042L530%201038L500%201034L470%201032L440%201034L410%201038L390%201042L360%201050L340%201056L320%201064L300%201073L285%201080M720%20389L700%20399L680%20408L660%20417L640%20426L620%20434L600%20442L580%20450L552%20460L530%20467L510%20472L480%20479L460%20482L430%20484L400%20484L370%20481L350%20477L320%20471L300%20466L280%20459L253%20450L230%20441L210%20433L190%20425L170%20416L150%20406L130%20397L110%20387L90%20377L70%20368L50%20358L30%20348L10%20339L0%20335M720%201079L700%201069L680%201060L658%201050L633%201040L610%201031L590%201025L570%201019L540%201012L520%201009L490%201006L460%201005L430%201007L410%201010L380%201017L360%201022L337%201030L311%201040L290%201049L270%201058L250%201068L230%201079L228%201080M720%20422L700%20432L680%20441L660%20450L638%20460L615%20470L590%20480L570%20488L550%20494L530%20501L500%20508L480%20512L450%20515L420%20515L390%20513L366%20510L340%20505L320%20500L290%20491L270%20485L250%20478L228%20470L202%20460L180%20451L160%20443L140%20435L120%20427L100%20419L76%20410L50%20401L30%20395L10%20389L0%20387M720%201049L700%201040L678%201030L654%201020L630%201010L610%201003L590%20997L567%20990L540%20984L518%20980L490%20977L460%20977L430%20979L410%20982L380%20988L360%20994L340%201001L316%201010L292%201020L270%201030L250%201039L230%201049L210%201060L190%201070L171%201080M720%20455L700%20464L680%20474L660%20483L640%20492L620%20501L598%20510L573%20520L550%20528L530%20534L507%20540L480%20545L450%20548L420%20548L390%20545L362%20540L340%20535L320%20530L290%20520L270%20514L250%20507L230%20500L203%20490L180%20482L160%20475L140%20468L117%20460L90%20451L70%20446L44%20440L20%20436L0%20434M720%201019L700%201010L677%201000L653%20990L630%20981L610%20973L590%20967L567%20960L540%20953L520%20950L490%20946L460%20946L430%20948L410%20952L380%20959L360%20965L340%20972L319%20980L295%20990L273%201000L251%201010L230%201020L210%201029L190%201039L170%201049L150%201058L130%201068L110%201077L102%201080M720%20488L700%20497L680%20507L660%20516L640%20526L620%20535L600%20544L580%20552L560%20560L530%20570L510%20575L486%20580L460%20583L430%20583L400%20580L380%20577L353%20570L330%20563L310%20557L290%20550L261%20540L240%20532L220%20525L200%20519L174%20510L150%20502L130%20497L105%20490L80%20485L50%20480L30%20478L0%20479M720%20987L700%20978L680%20970L657%20960L632%20950L610%20941L590%20934L570%20928L541%20920L520%20916L490%20912L460%20911L430%20914L404%20920L380%20927L360%20934L340%20941L319%20950L297%20960L275%20970L253%20980L231%20990L210%201000L190%201009L170%201017L150%201026L130%201034L110%201041L84%201050L60%201056L40%201060L10%201063L0%201063M720%20523L700%20533L680%20542L660%20552L640%20563L620%20572L600%20582L580%20591L560%20600L534%20610L510%20617L490%20622L460%20625L430%20624L405%20620L380%20614L360%20608L339%20600L313%20590L290%20581L270%20573L250%20566L230%20559L205%20550L180%20542L160%20536L135%20530L110%20525L80%20520L60%20519L30%20519L10%20522L0%20524M720%20953L700%20945L680%20936L660%20927L640%20918L620%20909L598%20900L571%20890L550%20883L530%20877L500%20872L470%20870L440%20873L410%20880L390%20886L370%20894L350%20903L330%20913L310%20922L290%20932L270%20942L250%20951L230%20961L209%20970L185%20980L160%20990L140%20997L120%201003L97%201010L70%201016L40%201019L10%201019L0%201017M720%20562L700%20572L680%20583L660%20594L640%20605L620%20617L600%20629L581%20640L563%20650L545%20660L525%20670L500%20680L480%20685L450%20685L427%20680L400%20670L380%20661L360%20650L340%20640L321%20630L301%20620L280%20610L260%20601L240%20593L220%20585L200%20579L170%20570L150%20565L123%20560L100%20557L70%20556L40%20558L20%20563L0%20570M720%20916L700%20907L680%20897L660%20887L640%20876L620%20866L600%20855L580%20845L560%20835L540%20826L520%20818L490%20811L470%20809L450%20812L427%20820L406%20830L388%20840L370%20851L350%20863L330%20875L310%20887L290%20899L270%20910L251%20920L230%20930L210%20939L190%20947L170%20954L150%20961L120%20969L100%20974L70%20977L40%20978L10%20973L0%20970M0%20918L20%20928L40%20934L70%20938L100%20937L130%20932L150%20928L176%20920L200%20911L220%20902L240%20892L260%20880L276%20870L290%20860L310%20844L326%20830L340%20814L351%20800L362%20780L368%20750L360%20723L350%20707L335%20690L320%20676L300%20661L284%20650L267%20640L248%20630L225%20620L200%20610L180%20604L160%20599L130%20594L100%20593L70%20594L42%20600L20%20608L0%20620M720%20607L700%20619L684%20630L670%20640L650%20656L634%20670L620%20685L608%20700L596%20720L592%20750L600%20772L612%20790L630%20809L643%20820L660%20833L680%20847L700%20860L718%20870L720%20871M0%20852L17%20870L32%20880L54%20890L80%20896L110%20898L140%20894L160%20890L189%20880L210%20871L229%20860L244%20850L260%20837L277%20820L290%20802L300%20782L304%20760L300%20732L290%20712L280%20699L261%20680L247%20670L230%20660L210%20650L183%20640L160%20634L130%20630L110%20630L90%20632L60%20639L40%20649L23%20660L10%20672L0%20685M720%20675L707%20690L695%20710L689%20730L690%20756L700%20779L710%20793L720%20804M90%20679L70%20689L57%20700L40%20720L32%20740L28%20760L30%20785L40%20810L50%20824L70%20840L90%20849L110%20852L140%20852L160%20848L183%20840L201%20830L220%20816L234%20800L244%20780L247%20750L240%20729L226%20710L210%20696L190%20685L170%20678L140%20673L110%20674L90%20679%22%2F%3E%3C%2Fsvg%3E" x="-104" y="-180" width="720" height="1080" opacity=".09"/>` : ''}
+      <polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="none" stroke="#26353c" stroke-width="${px > 40 ? 10 : 18}" stroke-linejoin="round"/>
+      <polygon points="${v.map((p) => p.join(',')).join(' ')}" fill="#2fd6e8" fill-opacity=".22" stroke="#2fd6e8" stroke-width="${px > 40 ? 16 : 26}" stroke-linejoin="round" ${px > 40 ? 'filter="url(#blurIcon)"' : ''}/>
+      <polygon points="${v.map((p) => p.join(',')).join(' ')}" fill="none" stroke="#2fd6e8" stroke-width="${px > 40 ? 14 : 24}" stroke-linejoin="round"/>
+      <circle cx="${v[2][0]}" cy="${v[2][1]}" r="${px > 40 ? 26 : 40}" fill="#ffad33"/>
+      <defs><filter id="blurIcon" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="10"/></filter></defs>
+    </svg>`;
+  };
+  $('#appicon512').innerHTML = appIcon(160); $('#appicon64').innerHTML = appIcon(60); $('#appicon32').innerHTML = appIcon(32);
+
+  /* campioni di colore con contrasto calcolato */
+  const lum = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const cr = (a, b) => { const x = lum(a), y = lum(b); return ((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(1).replace('.', ','); };
+  const css = getComputedStyle(document.documentElement), tok = (n) => css.getPropertyValue(n).trim();
+  const G = [
+    ['Fondo e superfici', [['--bg', 'Fondo', 'Pagina, campi'], ['--surface', 'Scheda', 'Schede, pannelli'], ['--surface2', 'Scheda in rilievo', 'Chip, voce attiva, binari'], ['--line', 'Linea', 'Bordi, griglia'], ['--line-strong', 'Linea forte', 'Bordi di pulsanti ghost']]],
+    ['Testo', [['--fg', 'Testo', 'Titoli e testo', 1], ['--muted', 'Testo secondario', 'Date, unità, etichette', 1], ['--faint', 'Tenue', 'Solo grafica, mai testo', 1]]],
+    ['Accenti', [['--accent', 'Ciano', 'Livelli 0–100, azioni, voce attiva', 1], ['--accent-deep', 'Blu', 'Inizio dei gradienti delle barre'], ['--elite', 'Ambra ELITE', 'Zona 101–200, record', 1], ['--elite-hot', 'Arancio fiamma', 'Fine del gradiente ELITE']]],
+    ['Stati e serie', [['--ok', 'Verde', 'Serie fatta, confronto in salita', 1], ['--danger', 'Rosso', 'Errori, eliminare, in calo', 1], ['--forza', 'Forza', 'Grafico per tipo', 1], ['--volume', 'Volume', 'Grafico per tipo', 1], ['--tecnico', 'Tecnico', 'Grafico per tipo', 1]]],
+  ];
+  $('#swatches').innerHTML = G.map(([t, list]) => `<p class="grp-t">${t}</p><div class="swatches">${list.map(([n, name, use, txt]) => { const h = tok(n); return `<div class="sw"><i style="background:${h}"></i><div><b>${name}</b><code>${n} ${h}</code><small>${use}</small>${txt ? `<span class="aa">Contrasto ${cr(h, tok('--bg'))} su fondo · ${cr(h, tok('--surface'))} su scheda</span>` : ''}</div></div>`; }).join('')}</div>`).join('');
+})();
+</script>
