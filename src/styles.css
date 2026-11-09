@@ -180,6 +180,12 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .g-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2.5; }
 .g-txt { fill: var(--muted); font-family: var(--f-body); font-size: 11px; }
 .pt { fill: transparent; cursor: pointer; }
+.card .period .seg button { padding: 10px 2px; }
+.g-sel { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.cmp { margin-top: 4px; color: var(--muted); font-size: 15px; }
+.cmp .up { color: var(--tecnico); font-weight: 600; }
+.cmp .down { color: var(--danger); font-weight: 600; }
+.mini .cap { color: var(--muted); font-size: 12px; margin-top: -4px; }
 .readout { margin-top: 10px; font-weight: 600; min-height: 1.4em; }
 .readout span { color: var(--muted); font-weight: 400; }
 .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }

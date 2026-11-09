@@ -20,8 +20,13 @@ export const METRICS_BY_MEASURE: Record<Measure, Metric[]> = {
 };
 
 export interface Point {
+  /** Giorno della sessione o, se i punti sono raggruppati, primo giorno del gruppo. */
   date: string;
   v: number;
+  /** Solo nei gruppi: ultimo giorno del gruppo. */
+  end?: string;
+  /** Quante sessioni contiene il punto. */
+  n?: number;
 }
 
 export const totalReps = (sets: WorkSet[]) => sets.reduce((s, x) => s + x.reps, 0);
@@ -96,11 +101,11 @@ export function series(entries: Entry[], exerciseId: string, metric: Metric): Po
 export type TypeTotals = { date: string } & Record<ExerciseType, number>;
 
 /**
- * Ripetizioni per tipo, per data, sulle ultime `limit` sessioni. Il tipo è quello della registrazione:
+ * Ripetizioni per tipo, per data (tutte le sessioni, o le ultime `limit`). Il tipo è quello della registrazione:
  * le stesse Trazioni contano in forza un giorno e in volume un altro. Gli esercizi a tempo non hanno ripetizioni:
  * non contano, e una giornata solo di tenute non compare.
  */
-export function repsByType(entries: Entry[], limit = 10): TypeTotals[] {
+export function repsByType(entries: Entry[], limit?: number): TypeTotals[] {
   const byDate = new Map<string, TypeTotals>();
   for (const e of entries) {
     if (!totalReps(e.sets)) continue;
@@ -108,7 +113,8 @@ export function repsByType(entries: Entry[], limit = 10): TypeTotals[] {
     d[e.type] += totalReps(e.sets);
     byDate.set(e.date, d);
   }
-  return [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1)).slice(-limit);
+  const rows = [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
+  return limit ? rows.slice(-limit) : rows;
 }
 
 /** Ultima registrazione d'allenamento per l'esercizio (le entries arrivano dalla più recente). */
