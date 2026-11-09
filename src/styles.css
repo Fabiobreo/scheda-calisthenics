@@ -521,6 +521,16 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 @media (hover: hover) { .cat-h:hover .cat-name, .subrow:hover .sub-name { color: var(--accent); } }
 
 .rec-sheet h2:focus { outline: none; }
+
+/* "Oggi" in cima alla Home (audit A03) */
+.today-count { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.today-count.all { color: var(--ok); }
+.today-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.today-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.today-txt { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.today-txt b { font-weight: 600; font-size: 18px; }
+.today-txt small { color: var(--muted); font-size: 14px; }
+.today-list li.done b { color: var(--muted); }
 .rec-def { margin-top: 6px; }
 .rec-now { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 12px 0 0; color: var(--muted); font-size: 15px; }
 .rec-now b { font-family: var(--f-display); font-size: 30px; color: var(--accent); }

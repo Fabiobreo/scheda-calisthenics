@@ -29,8 +29,9 @@ export function SchedaView() {
   return (
     <>
       <PageTitle title="Scheda" />
-      <Records />
+      {/* prima il programma (quello che si apre in palestra), poi i record (audit A03) */}
       <Programma />
+      <Records />
     </>
   );
 }

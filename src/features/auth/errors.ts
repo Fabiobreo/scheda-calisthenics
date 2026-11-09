@@ -26,6 +26,11 @@ export function authMessage(error: AuthError): string {
       return 'Indirizzo email non valido.';
     case 'signup_disabled':
       return 'Le registrazioni sono chiuse.';
+    case 'reauthentication_needed':
+    case 'reauthentication_not_valid':
+      return 'Per sicurezza esci e rientra, poi cambia la password.';
+    case 'email_address_not_authorized':
+      return 'Non posso mandare email a questo indirizzo.';
   }
   if (error.status === 429) return 'Troppi tentativi. Aspetta qualche secondo e riprova.';
   return 'Qualcosa è andato storto. Riprova.';

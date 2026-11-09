@@ -73,7 +73,7 @@ Ogni file ha la stessa struttura:
 # Backlog — Audit di prodotto (9 novembre 2026)
 
 Fonte: [`audit/AUDIT.md`](../audit/AUDIT.md), con le metriche, le soglie e il modo di rifarlo. Punteggio al 9/11:
-**36,7 / 100** (prodotto; **53,7** dopo il ticket 17, **63,9** dopo il 18) e **5,4 / 10** (valutazione da coach). Ogni riga qui sotto è un intervento della lista
+**36,7 / 100** (prodotto; **53,7** dopo il ticket 17, **63,9** dopo il 18, **71,9** dopo il 19) e **5,4 / 10** (valutazione da coach). Ogni riga qui sotto è un intervento della lista
 "Cosa migliorerei" dell'audit: la colonna **Voci** dice quali misure dell'audit sposta, **Punti** quanto vale.
 Quando un intervento è fatto si aggiorna la colonna Stato e, a fine blocco, si rifà l'audit e si scrive il nuovo
 punteggio nello storico in fondo ad AUDIT.md.
@@ -82,9 +82,9 @@ punteggio nello storico in fondo ad AUDIT.md.
 |---|---|---|---:|---|---|---|
 | A01 | Bersagli di tocco ≥ 44 px | B3 | +5 | S | [17](17-audit-rapidi.md) | fatto 9/11 |
 | A02 | Un `h1` e un titolo della pagina per schermata | B2, B5 | +5 | XS | [17](17-audit-rapidi.md) | fatto 9/11 |
-| A03 | "Oggi" in cima alla Home, in Scheda il programma prima dei record | C1 | +5 | M | — | da fare |
+| A03 | "Oggi" in cima alla Home, in Scheda il programma prima dei record | C1 | +5 | M | [19](19-oggi-e-account.md) | fatto 9/11 |
 | A04 | Annulla nel toast dopo le × (Archivia e Scollega hanno già la conferma) | C4 | +2 | S | [17](17-audit-rapidi.md) | fatto 9/11 |
-| A05 | Account completo: cambio password ed email, privacy e termini, supporto e versione | E1, E2, E3, E8 | +6 | M | — | da fare |
+| A05 | Account completo: cambio password ed email, privacy e termini, supporto e versione | E1, E2, E3, E8 | +6 | M | [19](19-oggi-e-account.md) | in parte 9/11 (+3): password, email e versione fatti; privacy e termini rimandati (servono titolare e contatto); il supporto compare con `VITE_SUPPORT_EMAIL` |
 | A06 | Vista desktop per il trainer | F1, D6 | +5 | L | — | da fare |
 | A07 | Modalità sessione (prossimo esercizio, recupero automatico, riepilogo) | C3 | +3 | L | — | da fare |
 | A08 | Editor di schede veloce (griglia, aggiunta multipla, duplica giorno) | F2, F3 | +4 | L | — | da fare |
@@ -103,6 +103,7 @@ punteggio nello storico in fondo ad AUDIT.md.
 | A21 | Risposta del trainer alla nota della sessione | F5 | +1 | M | — | da fare |
 | A22 | Libreria di schede pronte | F7 | +1 | M | — | da fare |
 | A23 | Pulizia stile (`style={{}}` in classi, regola CSS duplicata) | D2, D3 | +2 | S | [17](17-audit-rapidi.md), [18](18-audit-rapidi-2.md) | fatto 9/11 (restano 8 `style` con valori calcolati) |
+| A24 | Email di accesso (conferma, reset, cambio email) in italiano: oggi sono i testi inglesi di Supabase | — (nuova, da misurare nel prossimo audit) | — | S | — | da fare (si fa insieme all'SMTP di A20) |
 
 ### Dalla valutazione da coach (G)
 

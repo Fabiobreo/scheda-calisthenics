@@ -11,6 +11,7 @@ import { shortDate } from '../../lib/dates';
 import { subRule, validateBodyweight, LIMITS, type AvatarStage, type CategoryId, type CategoryScore, type SubId, type SubScore } from '../../lib/levels';
 import { AXES, categoryName, recordText, subPercentText } from './levelView';
 import { RecordSheet } from './RecordSheet';
+import { TodayCard } from './TodayCard';
 import { WeightSheet } from './WeightSheet';
 import type { LevelRecordRow } from '../../data/types';
 
@@ -53,6 +54,7 @@ export function HomeView() {
     <>
       <PageTitle title="Livello" />
       {level.error && <div className="banner">Non riesco a leggere livello e record. Controlla la connessione e riprova.</div>}
+      {!readOnly && <TodayCard />}
       <Profile level={summary.level} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} readOnly={readOnly} />
 
       <div className="party-slot" role="status" aria-live="polite">
