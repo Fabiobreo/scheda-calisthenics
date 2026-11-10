@@ -1,3 +1,4 @@
+import { ExIcon } from '../../components/ExIcon';
 import { Link } from 'react-router-dom';
 import { useData } from '../../data/hooks';
 import { longDate, shortDate, todayStr } from '../../lib/dates';
@@ -60,7 +61,7 @@ export function TodayCard() {
           return (
             <li key={p.id} className={`stripe t-${p.scheme.type}${saved ? ' done' : ''}`}>
               <span className="today-txt">
-                <b>{ex.name}</b>
+                <b><ExIcon catalogId={ex.catalogId} />{ex.name}</b>
                 <small>{saved ? `Registrato: ${fmtSets(saved.sets)}` : fmtScheme(p.scheme)}</small>
                 <SetBlocks total={p.scheme.sets} done={saved?.sets.length ?? 0} type={p.scheme.type} />
               </span>

@@ -125,5 +125,5 @@ L'audit misura accessibilità, velocità e completezza, non quanto l'app trasmet
 | # | Intervento | Ticket | Stato |
 |---|---|---|---|
 | V01 | Primo blocco: un protagonista per pagina, titoli piccoli, spiegazioni dietro "?", anello in Oggi, serie a blocchetti, striscia del tipo, settimana con i pallini, record con il progresso, tendenza e settimane di fila, stati vuoti con disegno e azione | [21](21-carattere-visivo.md) | fatto 9/11 |
-| V02 | Secondo blocco: animazioni brevi (spunta, numeri che salgono, record che lampeggia, transizioni), pittogrammi negli esercizi, stati vuoti anche in Esercizi e Scheda | — | da fare |
+| V02 | Secondo blocco: animazioni (ingresso delle pagine, spunta, blocchetti, anello, pentagono, numeri che salgono, nuovo record con scintille, record che lampeggia), pittogrammi per categoria negli esercizi, stati vuoti anche in Esercizi e Scheda | [22](22-animazioni-pittogrammi.md) | fatto 10/11 |
 | V03 | Sezione "carattere visivo" nell'audit con criteri verificabili | — | da decidere |

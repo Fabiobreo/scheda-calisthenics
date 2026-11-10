@@ -1,4 +1,4 @@
-import { PageTitle, Skeleton, useNested } from '../../components/ui';
+import { CountUp, PageTitle, Skeleton, Sparks, useNested } from '../../components/ui';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useScope } from '../../app/session';
@@ -66,7 +66,8 @@ export function HomeView() {
 
       <div className="party-slot" role="status" aria-live="polite">
         {party.length > 0 && (
-          <div className="party">
+          <div className="party" key={party.join('|')}>
+            <Sparks />
             <b>{party[0]}</b>
             {party.slice(1).map((m) => (
               <span key={m}>{m}</span>
@@ -162,7 +163,9 @@ function Profile({
         )}
         <p className="hero-level">
           <span className="eyebrow">Livello</span>
-          <b className={elite ? 'elite' : undefined}>{level}</b>
+          <b className={elite ? 'elite' : undefined}>
+            <CountUp value={level} />
+          </b>
           {elite && <span className="tag-elite">ELITE</span>}
           {gain > 0 && <span className="delta">▲ {gain} questa settimana</span>}
         </p>
@@ -175,11 +178,11 @@ function Profile({
       {(streak > 0 || adh.pct !== null) && (
         <div className="stats">
           <div className="stat">
-            <b className={streak >= 2 ? 'fire' : undefined}>{streak} {streak === 1 ? 'settimana' : 'settimane'}</b>
+            <b className={streak >= 2 ? 'fire' : undefined}><CountUp value={streak} /> {streak === 1 ? 'settimana' : 'settimane'}</b>
             <small>di fila con un allenamento</small>
           </div>
           <div className="stat">
-            <b>{adh.pct === null ? '—' : `${adh.pct}%`}</b>
+            <b>{adh.pct === null ? '—' : <><CountUp value={adh.pct} />%</>}</b>
             <small>del programma, ultime 4 sett.</small>
           </div>
         </div>

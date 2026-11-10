@@ -1,6 +1,7 @@
+import { CategoryRow, ExIcon } from '../../components/ExIcon';
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
-import { ConfirmButton, Field, PageTitle, SearchSelect, Seg } from '../../components/ui';
+import { ConfirmButton, EmptyState, Field, PageTitle, SearchSelect, Seg } from '../../components/ui';
 import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useTrainerLock, useUpdateExercise } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
 import { CATEGORY_LABEL, MEASURE_LABEL, MEASURES, type CatalogExercise, type Exercise, type Measure } from '../../data/types';
@@ -191,12 +192,24 @@ export function EserciziView() {
           </div>
         )}
 
-        {!active.length && !form && <p className="empty">Non hai ancora esercizi. Aggiungili dal catalogo.</p>}
+        {!active.length && !form && (
+          <EmptyState
+            art={<CategoryRow />}
+            title="Nessun esercizio"
+            actions={
+              <button className="btn" onClick={() => setForm(blank(free[0]))}>
+                Aggiungi dal catalogo
+              </button>
+            }
+          >
+            Tirate, spinte, gambe, core e skill: scegli i movimenti che fai, poi li metti nel programma della settimana.
+          </EmptyState>
+        )}
         <div className="ex-list">
         {active.map((e) => (
           <div className="entry" key={e.id}>
             <div>
-              <b>{e.name}</b>
+              <b className="ex-name"><ExIcon catalogId={e.catalogId} />{e.name}</b>
               <div className="chips">
                 {!e.catalogId && <span className="chip mut">Personalizzato</span>}
                 {e.measure === 'time' && <span className="chip mut">A tempo</span>}

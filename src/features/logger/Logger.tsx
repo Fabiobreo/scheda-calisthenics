@@ -23,8 +23,8 @@ import {
 } from '../../data/types';
 import { defaultType } from '../../lib/catalog';
 import { shortDate, todayStr } from '../../lib/dates';
-import { fmtSets, numInput, parseNum } from '../../lib/format';
-import { lastTraining, personalBest, suggestedRest, suggestType } from '../../lib/stats';
+import { fmt, fmtSets, numInput, parseNum } from '../../lib/format';
+import { bestSet, compareSets, lastTraining, personalBest, suggestedRest, suggestType } from '../../lib/stats';
 import { HoldTimer } from './HoldTimer';
 
 const DRAFT_KEY = 'scheda:logger-draft';
@@ -90,6 +90,12 @@ function writeDraft(d: Draft | null) {
     /* ignora */
   }
 }
+
+/** Una serie in breve per il messaggio del record: "20 kg × 5", "12 rip.", "45 s". */
+const recordText = (s: WorkSet) => {
+  const n = s.seconds > 0 ? `${s.seconds} s` : `${s.reps} rip.`;
+  return s.weight > 0 ? `${fmt(s.weight)} kg × ${s.seconds > 0 ? `${s.seconds} s` : s.reps}` : n;
+};
 
 /**
  * Serie di partenza. Tentativo: una serie al peso del record attuale (a tempo i secondi si misurano col cronometro).
@@ -194,6 +200,8 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
   const choices = ex && !pool.includes(ex) ? [ex, ...pool] : pool;
   // serie che si sta cronometrando
   const [holding, setHolding] = useState<number | null>(null);
+  // ultima serie segnata come fatta: solo lei fa il salto della spunta (V02), non quelle già fatte all'apertura
+  const [pop, setPop] = useState<number | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
@@ -240,6 +248,7 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
   const toggleDone = (i: number) => {
     const done = !draft.rows[i].done;
     patchRow(i, { done });
+    setPop(done ? i : null);
     if (done) startRest(i);
   };
 
@@ -256,6 +265,7 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
     if (i === null) return;
     if (seconds < 1) return toast('Tenuta sotto il secondo: non la segno');
     patchRow(i, { value: String(seconds), done: true });
+    setPop(i);
     startRest(i);
   };
 
@@ -281,7 +291,18 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
     if (note.length > 500) return toast('Nota troppo lunga (massimo 500 caratteri)');
     const body = { exerciseId: draft.exerciseId, kind: draft.kind, type: draft.type ?? undefined, date: draft.date || todayStr(), sets, difficulty: draft.difficulty, note: note || null };
     if (draft.entryId) update.mutate({ id: draft.entryId, patch: body });
-    else create.mutate(body);
+    else {
+      // batte il record di prima (non il primo in assoluto, non una data futura): festa al salvataggio (V02)
+      const pb = personalBest(done, draft.exerciseId);
+      const best = bestSet(sets);
+      const isRecord = !!pb && !!best && body.date <= todayStr() && compareSets(best, pb.set) > 0;
+      const name = ex.name;
+      // mutateAsync: la promessa arriva anche se il foglio nel frattempo si è chiuso; gli errori li mostra già l'hook
+      create.mutateAsync(body).then(
+        () => isRecord && toast(`★ Nuovo record · ${name} ${recordText(best!)}`, undefined, 'record'),
+        () => {},
+      );
+    }
     setDraft(null);
   };
 
@@ -326,7 +347,7 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
               <span />
             </div>
             {draft.rows.map((r, i) => (
-              <div className={`set${r.done ? ' done' : ''}`} key={i}>
+              <div className={`set${r.done ? ' done' : ''}${r.done && pop === i ? ' pop' : ''}`} key={i}>
                 <span className="set-n">{i + 1}</span>
                 <input aria-label={`Peso serie ${i + 1}`} inputMode="decimal" value={r.weight} placeholder="0" onChange={(e) => patchRow(i, { weight: e.target.value })} />
                 <input
@@ -343,7 +364,7 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
                     </button>
                   )}
                   {!attempt && (
-                    <button className={`check${r.done ? ' on' : ''}`} onClick={() => toggleDone(i)} aria-pressed={r.done} aria-label={`Serie ${i + 1} fatta`}>
+                    <button className={`check${r.done ? ' on' : ''}${r.done && pop === i ? ' pop' : ''}`} onClick={() => toggleDone(i)} aria-pressed={r.done} aria-label={`Serie ${i + 1} fatta`}>
                       ✓
                     </button>
                   )}

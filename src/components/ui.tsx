@@ -441,9 +441,9 @@ export function Ring({ done, total, label }: { done: number; total: number; labe
 }
 
 /** Stato vuoto (ticket 21): un disegno, cosa comparirà qui e cosa fare per arrivarci. */
-export function EmptyState({ art, title, children, actions }: { art?: ReactNode; title: string; children: ReactNode; actions?: ReactNode }) {
+export function EmptyState({ art, title, children, actions, small }: { art?: ReactNode; title: string; children: ReactNode; actions?: ReactNode; /** dentro una card, sotto un titolo: più raccolto */ small?: boolean }) {
   return (
-    <div className="empty-state">
+    <div className={`empty-state${small ? ' sm' : ''}`}>
       {art ?? <EmptyChart />}
       <h3>{title}</h3>
       <p>{children}</p>
@@ -475,5 +475,49 @@ export function EmptyPeople() {
         </g>
       ))}
     </svg>
+  );
+}
+
+/* ---------- Movimento (V02) ---------- */
+
+const lessMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * Numero intero che sale fino al valore (V02): da zero alla prima comparsa, dal valore di prima quando cambia.
+ * Fermo se il telefono chiede meno movimento.
+ */
+export function CountUp({ value, duration = 900 }: { value: number; duration?: number }) {
+  const [shown, setShown] = useState(() => (lessMotion() ? value : 0));
+  const from = useRef(shown);
+  useEffect(() => {
+    if (lessMotion() || from.current === value) {
+      from.current = value;
+      setShown(value);
+      return;
+    }
+    const start = from.current;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (t: number) => {
+      const k = Math.min(1, (t - t0) / duration);
+      const v = Math.round(start + (value - start) * (1 - (1 - k) ** 3));
+      from.current = v;
+      setShown(v);
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+  return <>{shown}</>;
+}
+
+/** Scintille che esplodono dal centro del contenitore, una volta: record e livelli nuovi (V02). */
+export function Sparks() {
+  return (
+    <span className="sparks" aria-hidden="true">
+      {Array.from({ length: 12 }, (_, i) => (
+        <i key={i} />
+      ))}
+    </span>
   );
 }

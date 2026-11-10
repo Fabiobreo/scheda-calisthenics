@@ -164,7 +164,8 @@ function Main() {
           <Skeleton />
         ) : (
           <Suspense fallback={<Skeleton />}>
-            <Routes>
+            {/* chiave sul percorso: cambiando pagina il contenuto si rimonta ed entra con l'animazione (V02) */}
+            <Routes key={location.pathname}>
               {/* Home "Livello" (ticket 10); la Scheda, che prima era qui, è a /scheda */}
               <Route path="/" element={<HomeView />} />
               <Route path="/scheda" element={<SchedaView />} />

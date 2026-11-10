@@ -1,10 +1,11 @@
+import { CategoryRow, ExIcon } from '../../components/ExIcon';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../app/toast';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { DotsLegend, WeekDays } from '../../components/WeekDays';
-import { CardHead, Cols, PageTitle, SearchSelect, Seg, Select, SetBlocks, TypeChip } from '../../components/ui';
+import { CardHead, Cols, EmptyState, PageTitle, SearchSelect, Seg, Select, SetBlocks, TypeChip } from '../../components/ui';
 import {
   useAddCatalogToPlan,
   useAddPlanItem,
@@ -61,7 +62,11 @@ function Records() {
       </CardHead>
 
       <div className="rlist">
-        {tracked.length === 0 && <p className="empty">Nessun esercizio nei record. Aggiungine uno qui sotto.</p>}
+        {tracked.length === 0 && (
+          <EmptyState small art={<span className="empty-ico">★</span>} title="Nessun record">
+            Aggiungi qui sotto un esercizio da seguire: vedrai la tua serie migliore e quanto migliora.
+          </EmptyState>
+        )}
         {tracked.map((ex) => {
           const pb = personalBest(entries, ex.id);
           const n = entries.filter((e) => e.exerciseId === ex.id).length;
@@ -70,7 +75,7 @@ function Records() {
           const fresh = !!step && step.date >= mondayOf(todayStr());
           return (
             <div className={`rrow${fresh ? ' new' : ''}`} key={ex.id}>
-              <div className="rname">{ex.name}</div>
+              <div className="rname"><ExIcon catalogId={ex.catalogId} />{ex.name}</div>
               {pb ? (
                 <div className="rval">
                   {pb.set.seconds > 0 && pb.set.weight === 0 ? (
@@ -253,7 +258,11 @@ function Programma() {
       <h3 className="day-title">{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
 
       <div className="plan">
-        {items.length === 0 && !extra.length && <p className="empty">Nessun esercizio per {dayName}. Aggiungine uno qui sotto.</p>}
+        {items.length === 0 && !extra.length && (
+          <EmptyState small art={<CategoryRow />} title="Riposo">
+            Niente in programma per {dayName}. Aggiungi un esercizio qui sotto, o goditi il recupero.
+          </EmptyState>
+        )}
         {items.map((p) => {
           const ex = byId.get(p.exerciseId)!;
           const sc = p.scheme;
@@ -265,7 +274,7 @@ function Programma() {
           return (
             <div className={`pitem stripe t-${sc.type}`} key={p.id}>
               <div>
-                <div className="pname">{ex.name}</div>
+                <div className="pname"><ExIcon catalogId={ex.catalogId} />{ex.name}</div>
                 <SetBlocks total={sc.sets} done={saved && !future ? saved.sets.length : 0} type={sc.type} />
                 <div className="pmeta">
                   {fmtScheme(sc)}{' '}

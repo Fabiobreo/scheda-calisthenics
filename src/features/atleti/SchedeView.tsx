@@ -1,3 +1,4 @@
+import { ExIcon } from '../../components/ExIcon';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSession } from '../../app/session';
@@ -223,7 +224,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
         {dayItems.map((i) => (
           <div className="pitem" key={i.id}>
             <div>
-              <div className="pname">{refName(catalog, i)}</div>
+              <div className="pname"><ExIcon catalogId={i.catalogId} />{refName(catalog, i)}</div>
               <div className="pmeta">
                 {fmtScheme(i.scheme)}{' '}
                 {editing !== i.id && (

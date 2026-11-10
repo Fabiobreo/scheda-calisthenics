@@ -1,3 +1,4 @@
+import { ExIcon } from '../../components/ExIcon';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AthleteScope, useSession } from '../../app/session';
@@ -427,7 +428,7 @@ function AthletePlan() {
           return (
             <div className={`pitem stripe t-${sc.type}`} key={p.id}>
               <div>
-                <div className="pname">{ex.name}</div>
+                <div className="pname"><ExIcon catalogId={ex.catalogId} />{ex.name}</div>
                 <SetBlocks total={sc.sets} done={saved && date <= todayStr() ? saved.sets.length : 0} type={sc.type} />
                 <div className="pmeta">
                   Previsto: {fmtScheme(sc)}{' '}
