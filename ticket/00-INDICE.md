@@ -73,7 +73,7 @@ Ogni file ha la stessa struttura:
 # Backlog — Audit di prodotto (9 novembre 2026)
 
 Fonte: [`audit/AUDIT.md`](../audit/AUDIT.md), con le metriche, le soglie e il modo di rifarlo. Punteggio al 9/11:
-**36,7 / 100** (prodotto; **53,7** dopo il ticket 17, **63,9** dopo il 18, **71,9** dopo il 19, **76,9** dopo il 20, **80,9** dopo il 26) e **5,4 / 10** (valutazione da coach). Ogni riga qui sotto è un intervento della lista
+**36,7 / 100** (prodotto; **53,7** dopo il ticket 17, **63,9** dopo il 18, **71,9** dopo il 19, **76,9** dopo il 20, **80,9** dopo il 26, **84,9** con 25, 26 e 28 uniti, **87,9** dopo il 27) e **5,4 / 10** (valutazione da coach). Ogni riga qui sotto è un intervento della lista
 "Cosa migliorerei" dell'audit: la colonna **Voci** dice quali misure dell'audit sposta, **Punti** quanto vale.
 Quando un intervento è fatto si aggiorna la colonna Stato e, a fine blocco, si rifà l'audit e si scrive il nuovo
 punteggio nello storico in fondo ad AUDIT.md.
@@ -88,7 +88,7 @@ punteggio nello storico in fondo ad AUDIT.md.
 | A06 | Vista desktop (tutta l'app su due colonne, trainer con elenco + dettaglio) | F1, D6 | +5 | L | [20](20-vista-desktop.md) | fatto 9/11 |
 | A07 | Modalità sessione (prossimo esercizio, recupero automatico, riepilogo) | C3 | +3 | L | [25](25-modalita-sessione.md) | fatto 10/11 |
 | A08 | Editor di schede veloce (griglia, aggiunta multipla, duplica giorno) | F2, F3 | +4 | L | [26](26-editor-schede.md) | fatto 10/11: aggiunta multipla con schema dal tipo e duplica giorno in schede modello e programma dell'atleta, griglia della settimana su desktop; F2 da ~123 a 39 tocchi |
-| A09 | Offline vero (cache persistita e coda dei salvataggi) | A6 | +3 | L | — | da fare |
+| A09 | Offline vero (cache persistita e coda dei salvataggi) | A6 | +3 | L | [27](27-offline.md) | fatto 10/11: cache persistita, coda per allenamenti, peso e record con invio al ritorno della rete, pastiglia "Offline · in attesa" in testata; JS iniziale +1,4 KB |
 | A10 | Invito con il nome del trainer prima del login | C7 | +3 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 |
 | A11 | Testata con un solo avatar | D4 | +2 | XS | [17](17-audit-rapidi.md) | fatto 9/11 |
 | A12 | Code splitting e `robots.txt` | A4, A3 | +2,1 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 (JS iniziale 153 KB; per ≤ 120 KB serve altro lavoro) |
