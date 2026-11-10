@@ -867,3 +867,21 @@ main > :nth-child(n + 5), .cols > .col > :nth-child(n + 5) { animation-delay: .2
 @media (max-width: 699px) {
   body:has(.timer) .sheet { padding-bottom: calc(var(--tabbar) + 160px + env(safe-area-inset-bottom, 0px)); }
 }
+/* ---------- Ticket 28 (A14): primo accesso guidato, la checklist "Per iniziare" in Home ---------- */
+.first-steps { display: flex; flex-direction: column; gap: 4px; }
+.fs-prog { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.fs-prog b { font-family: var(--f-display); font-size: 18px; font-variant-numeric: tabular-nums; }
+.fs-blocks { display: flex; gap: 4px; }
+.fs-blocks i { width: 14px; height: 8px; border-radius: 3px; background: color-mix(in srgb, var(--fg) 10%, transparent); }
+.fs-blocks i.on { background: var(--ok); animation: block-in .45s cubic-bezier(.2, 1.8, .4, 1) both; }
+.fs-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
+.fs-list li { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 4px 0; border-top: 1px solid var(--line); }
+.fs-list li:first-child { border-top: 0; }
+.fs-check { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line-strong); color: var(--accent-fg); font-weight: 700; font-size: 15px; }
+.fs-check.on { background: var(--ok); border-color: var(--ok); }
+.fs-list li.next .fs-check { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+.fs-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fs-txt b { font-weight: 600; }
+.fs-txt small { color: var(--muted); font-size: 14px; }
+.fs-list li.done .fs-txt b { color: var(--muted); font-weight: 500; }
+.fs-later { align-self: flex-end; margin: 0 0 -8px; }

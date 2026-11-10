@@ -93,7 +93,7 @@ punteggio nello storico in fondo ad AUDIT.md.
 | A11 | Testata con un solo avatar | D4 | +2 | XS | [17](17-audit-rapidi.md) | fatto 9/11 |
 | A12 | Code splitting e `robots.txt` | A4, A3 | +2,1 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 (JS iniziale 153 KB; per ≤ 120 KB serve altro lavoro) |
 | A13 | Scheletri di caricamento | C5 | +2 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 |
-| A14 | Primo accesso guidato | C6 | +2 | M | — | da fare |
+| A14 | Primo accesso guidato | C6 | +2 | M | [28](28-primo-accesso.md) | fatto 10/11: checklist "Per iniziare" in Home, 4 passi dedotti dai dati, "Più tardi" |
 | A15 | Progressione automatica nelle schede modello | F6 | +2 | M | — | da fare |
 | A16 | Etichette dei grafici a 12 px | B4 | +2 | XS | [17](17-audit-rapidi.md) | fatto 9/11 |
 | A17 | Ricerca nel catalogo (i gruppi c'erano già) | E7 | +1,5 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 |

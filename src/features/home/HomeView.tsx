@@ -1,16 +1,18 @@
 import { CountUp, PageTitle, Skeleton, Sparks, useNested } from '../../components/ui';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useScope } from '../../app/session';
 import { Avatar } from '../../components/Avatar';
 import { Pentagon } from '../../components/Pentagon';
 import { IconFondSpinta, IconFondTirata, IconHandbalance, IconSkillSpinta, IconSkillTirata } from '../../components/icons';
-import { useData, useLevel, useProfile, useSetBodyWeight } from '../../data/hooks';
+import { useData, useLevel, useLinks, useProfile, useSetBodyWeight } from '../../data/hooks';
 import { adherence, weekStreak } from '../../lib/adherence';
 import { fmt, numInput, parseNum } from '../../lib/format';
 import { mondayOf, shortDate, todayStr } from '../../lib/dates';
 import { levelSummary, subRule, validateBodyweight, LIMITS, type AvatarStage, type CategoryId, type CategoryScore, type SubId, type SubScore } from '../../lib/levels';
 import { AXES, categoryName, recordText, subPercentText } from './levelView';
+import { dismissKey, firstSteps } from './firstSteps';
+import { FirstSteps } from './FirstStepsCard';
 import { RecordSheet } from './RecordSheet';
 import { TodayCard } from './TodayCard';
 import { WeightSheet } from './WeightSheet';
@@ -33,10 +35,23 @@ type Row = LevelRecordRow & { bodyweightKg: number | null };
 export function HomeView() {
   const level = useLevel();
   const nested = useNested();
-  const { readOnly } = useScope();
+  const { readOnly, userId } = useScope();
   const [open, setOpen] = useState<CategoryId | null>(null);
   const [sheet, setSheet] = useState<SubId | null>(null);
   const [party, setParty] = useState<string[]>([]);
+  const guide = useGuide(level.isLoading ? null : level, readOnly, userId);
+  // "Inserisci" del primo passo: apre il campo del peso nel profilo
+  const [askWeight, setAskWeight] = useState(0);
+
+  // tutti i passi fatti adesso, a card aperta: si festeggia
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (guide.visible) wasOpen.current = true;
+    else if (wasOpen.current && guide.steps.complete) {
+      wasOpen.current = false;
+      setParty(['Primi passi fatti!', 'Da qui conta ogni allenamento']);
+    }
+  }, [guide.visible, guide.steps.complete]);
 
   // la celebrazione resta qualche secondo, poi se ne va da sola
   useEffect(() => {
@@ -62,7 +77,19 @@ export function HomeView() {
       <div className={nested ? 'flat' : 'cols'}>
       <div className={nested ? 'flat' : 'col'}>
       {!readOnly && <TodayCard />}
-      <Profile level={summary.level} gain={summary.level - before} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} readOnly={readOnly} />
+      <Profile level={summary.level} gain={summary.level - before} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} readOnly={readOnly} guided={guide.visible} askWeight={askWeight} />
+
+      {guide.visible && (
+        <FirstSteps
+          steps={guide.steps}
+          onWeight={() => setAskWeight((n) => n + 1)}
+          onRecord={() => {
+            setOpen(AXES[0]);
+            requestAnimationFrame(() => document.getElementById(`cat-${AXES[0]}`)?.scrollIntoView({ behavior: smooth(), block: 'center' }));
+          }}
+          onDismiss={guide.dismiss}
+        />
+      )}
 
       <div className="party-slot" role="status" aria-live="polite">
         {party.length > 0 && (
@@ -83,7 +110,7 @@ export function HomeView() {
             : 'Non ha ancora inserito il peso corporeo: i suoi record in kg non contano finché non lo fa.'}
         </p>
       )}
-      {!readOnly && (fresh || !bodyweight) && (
+      {!readOnly && !guide.visible && (fresh || !bodyweight) && (
         <p className="coach-note">
           {fresh && !bodyweight
             ? 'Per iniziare inserisci il tuo peso qui sopra, poi tocca una categoria e aggiungi i tuoi primi record.'
@@ -127,6 +154,52 @@ export function HomeView() {
   );
 }
 
+const smooth = (): ScrollBehavior => (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+
+const readDismissed = (key: string) => {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Primo accesso guidato (ticket 28): i passi dai dati che ci sono già, "Più tardi" in `localStorage` per utente.
+ * Mai nella vista del trainer né sulla Home di un account in modalità trainer.
+ */
+function useGuide(level: { records: unknown[]; bodyweight: unknown } | null, readOnly: boolean, userId: string) {
+  const profile = useProfile();
+  const data = useData();
+  const links = useLinks();
+  const key = dismissKey(userId);
+  const [dismissed, setDismissed] = useState(() => readDismissed(key));
+  const today = todayStr();
+  const steps = firstSteps({
+    hasBodyweight: !!level?.bodyweight,
+    hasAvatarBody: !!profile.data?.avatarBody,
+    records: level?.records.length ?? 0,
+    trainings: data.done.filter((e) => e.kind === 'training').length,
+    linked: !!links.data?.some((l) => l.athleteId === userId),
+    plannedToday: data.plan.some((p) => p.date === today),
+  });
+  // si aspetta di avere tutto: niente checklist che compare e scompare mentre i dati arrivano
+  const ready = !!level && profile.isSuccess && links.isSuccess && !data.isLoading;
+  return {
+    steps,
+    // il trainer ha il suo lavoro: la checklist è per chi si allena
+    visible: !readOnly && ready && !profile.data?.isTrainer && !dismissed && !steps.complete,
+    dismiss: () => {
+      setDismissed(true);
+      try {
+        localStorage.setItem(key, '1');
+      } catch {
+        /* storage bloccato: resta nascosta finché la pagina è aperta */
+      }
+    },
+  };
+}
+
 /** Intestazione: avatar (segnaposto finché non c'è il ticket 11), nome, livello, peso con modifica rapida. */
 function Profile({
   level,
@@ -135,6 +208,8 @@ function Profile({
   avatar,
   bodyweight,
   readOnly,
+  guided,
+  askWeight,
 }: {
   level: number;
   /** punti guadagnati da lunedì */
@@ -143,6 +218,10 @@ function Profile({
   avatar: AvatarStage;
   bodyweight: { date: string; kg: number } | null;
   readOnly: boolean;
+  /** c'è la checklist del primo accesso: il suo passo sostituisce il link alla figura */
+  guided: boolean;
+  /** cresce a ogni "Inserisci" della checklist: riapre il campo del peso */
+  askWeight: number;
 }) {
   const profile = useProfile().data;
   const name = profile?.displayName;
@@ -170,7 +249,7 @@ function Profile({
           {gain > 0 && <span className="delta">▲ {gain} questa settimana</span>}
         </p>
       </div>
-      {!readOnly && !profile?.avatarBody && (
+      {!readOnly && !guided && !profile?.avatarBody && (
         <Link className="link small pick-fig" to="/account">
           Scegli la figura del tuo avatar
         </Link>
@@ -187,7 +266,7 @@ function Profile({
           </div>
         </div>
       )}
-      {readOnly ? <WeightReadOnly current={bodyweight} /> : <Weight current={bodyweight} />}
+      {readOnly ? <WeightReadOnly current={bodyweight} /> : <Weight key={askWeight} current={bodyweight} editing={askWeight > 0} />}
     </section>
   );
 }
@@ -210,8 +289,8 @@ function WeightReadOnly({ current }: { current: { date: string; kg: number } | n
   );
 }
 
-function Weight({ current }: { current: { date: string; kg: number } | null }) {
-  const [draft, setDraft] = useState<string | null>(null);
+function Weight({ current, editing }: { current: { date: string; kg: number } | null; editing?: boolean }) {
+  const [draft, setDraft] = useState<string | null>(editing ? (current ? numInput(current.kg) : '') : null);
   const [err, setErr] = useState<string | null>(null);
   const [history, setHistory] = useState(false);
   const save = useSetBodyWeight();
