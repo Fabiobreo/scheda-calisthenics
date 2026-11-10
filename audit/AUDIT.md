@@ -1,7 +1,8 @@
 # Audit di prodotto — Scheda Calisthenics
 
 - **Data**: 9 novembre 2026, commit `9003b95`, migration fino a `0013`.
-- **Chi**: UI/UX designer, mobile expert, product owner (sezioni A–F) e coach di calisthenics (sezione G, punteggio a parte).
+- **Chi**: UI/UX designer, mobile expert, product owner (sezioni A–F), coach di calisthenics (sezione G, punteggio a parte)
+  e UI designer per il carattere visivo (sezione H, punteggio a parte, aggiunta il 10/11).
 - **Ambiente**: Supabase locale con il seed (`atleta@scheda.test`, `trainer@scheda.test`), build di produzione per Lighthouse.
 
 L'obiettivo di questo file è avere **un punteggio che si può rifare** a ogni release: ogni voce ha una misura e una
@@ -14,10 +15,12 @@ soglia, niente "mi sembra bello". Chi rifà l'audit deve ottenere lo stesso nume
 1. `npx supabase db reset` (dati del seed puliti), `npm run dev`.
 2. Collegare l'atleta al trainer (Account trainer → *Attiva modalità trainer* → *Crea link d'invito*; atleta → apre il
    link → *Collegati*) e creare una scheda modello vuota: servono per le schermate del trainer.
-3. **Sonda automatica** (sezioni B e D): viewport **375×812**, si incolla [`probe.js`](probe.js) nella console su
+3. **Sonda automatica** (sezioni B, D e H): viewport **375×812**, si incolla [`probe.js`](probe.js) nella console su
    ognuna delle **8 schermate di riferimento** (caselle e radio dentro un'etichetta si misurano sull'etichetta, che è toccabile):
    - atleta: `/`, `/scheda`, `/grafici`, `/esercizi`, `/account`
    - trainer: `/atleti`, `/atleti/<id atleta>`, `/schede/<id scheda>`
+
+   Per la sezione H la sonda si lancia con la pagina in cima, almeno 1,5 s dopo averla aperta (animazioni d'ingresso finite).
 4. **Lighthouse** (sezione A): `npx tsc -b && npx vite build && npx vite preview --port 4179`, poi
    `npx lighthouse@12.2.1 http://localhost:4179/ --form-factor=mobile --throttling-method=simulate`.
    (Misura la schermata di accesso: le altre richiedono il login.)
@@ -45,6 +48,7 @@ Per i punteggi più recenti vedi lo **Storico** in fondo.
 | F. Pronto per il trainer professionista | 15 | **4,0** | Costruire una settimana di scheda costa ~120 tocchi, su desktop è una colonna da telefono |
 | **Totale** | **100** | **36,7** | **Prototipo avanzato**: buone fondamenta, non ancora un prodotto da vendere |
 | G. Valutazione da coach (a parte) | 10 | **5,4** | Ottimo tracker personale, non ancora uno strumento per allenare clienti |
+| H. Carattere visivo (a parte, dal 10/11) | 10 | **6,0** | Movimento e ricompense ci sono; restano stati vuoti di sola frase e schermate tutte testo |
 
 ---
 
@@ -188,16 +192,55 @@ coach cambierei per prime:
    modo in cui il coach legge i dati.
 3. **Video di controllo tecnica** allegato alla registrazione (anche solo 15 s), visibile al trainer.
 
+## H. Carattere visivo — 6,0 / 10
+
+Punteggio a parte, aggiunto il 10/11 dopo i ticket 21 e 22: misura se l'app **trasmette energia** (ritmo, ricompense,
+dati disegnati), cosa che A–F non vedono. Solo criteri misurabili: chi rifà l'audit ottiene lo stesso numero. Le misure
+"della sonda" sono i campi `foldWords`, `drawnData`, `exRows` ed `exRowsWithIcon` di [`probe.js`](probe.js) sulle 8
+schermate di riferimento.
+
+| # | Misura | Soglia → punti | Valore oggi | Punti |
+|---|---|---|---|---:|
+| H1 | Stati vuoti fatti di una sola frase (`grep -rn 'className="empty"' src --include=*.tsx \| wc -l`) | 0 = 2 · ≤ 5 = 1 | 9 (Atleti, schede modello, Grafici con filtri) | 0 |
+| H2 | Parole nella prima schermata, media delle 8 schermate (`foldWords`) | ≤ 50 = 2 · ≤ 70 = 1 | 59,9 (da 36 in Livello a 89 in Atleti) | 1 |
+| H3 | Schermate con almeno un dato disegnato: anello, blocchetti, pallini, grafico con nome (`drawnData` ≥ 1) | ≥ 6 su 8 = 2 · ≥ 4 = 1 | 4 (Livello, Scheda, Grafici, pagina dell'atleta) | 1 |
+| H4 | Movimento: ingresso animato cambiando pagina **e** conferma animata della serie (1); `prefers-reduced-motion` ferma tutto con una regola globale (1) | 1 + 1 | sì; sì | 2 |
+| H5 | Righe di esercizio con un pittogramma (`exRowsWithIcon` / `exRows`, somma sulle schermate) | 100 % = 1 | 8 / 8 | 1 |
+| H6 | Ricompensa dedicata a nuovo record e livello nuovo, diversa dal messaggio standard (prova: salvare un allenamento che batte il record) | sì = 1 | sì: messaggio in ambra con scintille, riquadro della festa | 1 |
+
+**Totale: 0 + 1 + 1 + 2 + 1 + 1 = 6,0.**
+
+Valori della sonda il 10/11 (atleta, poi trainer):
+
+| Schermata | Parole in prima schermata | Dati disegnati | Righe con pittogramma |
+|---|---:|---:|---:|
+| `/` | 36 | 1 | — |
+| `/scheda` | 58 | 7 | 3 / 3 |
+| `/grafici` | 70 | 2 | — |
+| `/esercizi` | 60 | 0 | 5 / 5 |
+| `/account` | 57 | 0 | — |
+| `/atleti` | 89 | 0 | — |
+| `/atleti/<id>` | 65 | 7 | — |
+| `/schede/<id>` | 44 | 0 | — |
+
+Cosa farebbe salire il punteggio, in ordine di resa:
+
+1. **Stati vuoti con disegno e azione** anche in Atleti, schede modello e Grafici filtrati: H1 da 0 a 2 (+2).
+2. **Un dato disegnato** in Atleti (rispetto del programma di ogni atleta come anello o barra), Esercizi (registrazioni per
+   esercizio) e scheda modello (settimane come blocchetti): H3 da 1 a 2 (+1).
+3. **Meno testo in prima schermata** in Atleti (89 parole) e Grafici (70): spiegazioni dietro "?" come nel ticket 21, H2 da 1 a 2 (+1).
+
 ---
 
 ## Storico dei punteggi
 
-| Data | Commit | A | B | C | D | E | F | Totale | Coach | Note |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| 9/11/2026 | `9003b95` | 9,7 | 8,0 | 8,0 | 4,0 | 3,0 | 4,0 | **36,7** | 5,4 | primo audit (C4 corretto: nella prima stesura risultava 0, ma Archivia aveva già la conferma) |
-| 9/11/2026 | ticket 17 | 9,7 | 20,0 | 10,0 | 7,0 | 3,0 | 4,0 | **53,7** | 5,4 | interventi rapidi A01, A02, A04, A11, A16 (+ regola CSS duplicata di A23); Lighthouse invariato 94/100/100/91, JS 191 KB |
-| 9/11/2026 | ticket 18 | 10,9 | 20,0 | 15,0 | 8,0 | 6,0 | 4,0 | **63,9** | 5,4 | A10, A12, A13, A17, A18, A23; Lighthouse 95/100/100/100, JS iniziale 153 KB (A4 = 2), `style={{` 8 (A20 rimandato: serve un SMTP) |
-| 9/11/2026 | ticket 19 | 10,9 | 20,0 | 20,0 | 8,0 | 9,0 | 4,0 | **71,9** | 5,4 | A03 ("Oggi" in Home, C1) e A05 parziale (cambio password ed email, versione: E1, E2); privacy/termini rimandati, supporto solo con `VITE_SUPPORT_EMAIL` (E3, E8 ancora 0). Soglia "prodotto professionale" (70) superata |
-| 9/11/2026 | ticket 20 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | A06: barra laterale e due colonne sopra i 1024 px (D6), atleti elenco + dettaglio e settimana a 7 colonne per il trainer (F1); a 1280 px il contenuto occupa il 76 % della larghezza; sonda a 375 e 1280 px pulita |
+| Data | Commit | A | B | C | D | E | F | Totale | Coach | Carattere | Note |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 9/11/2026 | `9003b95` | 9,7 | 8,0 | 8,0 | 4,0 | 3,0 | 4,0 | **36,7** | 5,4 | — | primo audit (C4 corretto: nella prima stesura risultava 0, ma Archivia aveva già la conferma) |
+| 9/11/2026 | ticket 17 | 9,7 | 20,0 | 10,0 | 7,0 | 3,0 | 4,0 | **53,7** | 5,4 | — | interventi rapidi A01, A02, A04, A11, A16 (+ regola CSS duplicata di A23); Lighthouse invariato 94/100/100/91, JS 191 KB |
+| 9/11/2026 | ticket 18 | 10,9 | 20,0 | 15,0 | 8,0 | 6,0 | 4,0 | **63,9** | 5,4 | — | A10, A12, A13, A17, A18, A23; Lighthouse 95/100/100/100, JS iniziale 153 KB (A4 = 2), `style={{` 8 (A20 rimandato: serve un SMTP) |
+| 9/11/2026 | ticket 19 | 10,9 | 20,0 | 20,0 | 8,0 | 9,0 | 4,0 | **71,9** | 5,4 | — | A03 ("Oggi" in Home, C1) e A05 parziale (cambio password ed email, versione: E1, E2); privacy/termini rimandati, supporto solo con `VITE_SUPPORT_EMAIL` (E3, E8 ancora 0). Soglia "prodotto professionale" (70) superata |
+| 9/11/2026 | ticket 20 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | — | A06: barra laterale e due colonne sopra i 1024 px (D6), atleti elenco + dettaglio e settimana a 7 colonne per il trainer (F1); a 1280 px il contenuto occupa il 76 % della larghezza; sonda a 375 e 1280 px pulita |
+| 10/11/2026 | ticket 23 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | 6,0 | nuova sezione H (carattere visivo, a parte), misurata dopo i ticket 21 e 22; A–F invariati. Sonda estesa con `foldWords`, `drawnData`, `exRows`, `exRowsWithIcon` |
 
 Gli interventi sono tracciati in [`ticket/00-INDICE.md`](../ticket/00-INDICE.md), sezione "Backlog — Audit di prodotto".

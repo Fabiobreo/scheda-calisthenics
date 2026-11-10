@@ -47,8 +47,41 @@
     return b.width > 0 && parseFloat(getComputedStyle(el).fontSize) < 12;
   }).length;
 
+  // carattere visivo (sezione H): vanno misurati a pagina ferma, in cima, dopo ~1,5 s dall'apertura (animazioni finite)
+  const shown = (el) => {
+    const b = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return b.width > 0 && b.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && parseFloat(cs.opacity) > 0;
+  };
+  // H2: parole nella prima schermata, fuori dalla navigazione (la pagina "a colpo d'occhio")
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let foldWords = 0;
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const el = n.parentElement;
+    if (!el || el.closest('nav, .sr-only, script, style, [aria-hidden="true"]') || !shown(el)) continue;
+    const r = document.createRange();
+    r.selectNodeContents(n);
+    const b = r.getBoundingClientRect();
+    if (b.height === 0 || b.top >= innerHeight || b.bottom <= 0) continue;
+    foldWords += n.textContent.trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+  }
+  // H3: dati disegnati invece che scritti: grafici con un nome (role="img", svg con aria-label) da almeno 40 px, più i
+  // segni dell'app che disegnano un numero (anello, serie a blocchetti, pallini della settimana)
+  const drawnData = [...document.querySelectorAll('[role="img"], svg[aria-label], .ring, .blocks, .dots')].filter((el) => {
+    const b = el.getBoundingClientRect();
+    const graphic = el.matches('.blocks, .dots') || (b.width >= 40 && b.height >= 40);
+    return shown(el) && graphic && !el.closest('nav');
+  }).length;
+  // H5: righe di esercizio (programma, Oggi, record, elenco) con un pittogramma
+  const exRows = [...document.querySelectorAll('.pitem, .today-list li, .rrow, .ex-list .entry')].filter(shown);
+  const exRowsWithIcon = exRows.filter((el) => el.querySelector('svg')).length;
+
   return {
     url: location.pathname,
+    foldWords,
+    drawnData,
+    exRows: exRows.length,
+    exRowsWithIcon,
     viewport: `${innerWidth}x${innerHeight}`,
     axe: byImpact,
     axeRules: rules,
