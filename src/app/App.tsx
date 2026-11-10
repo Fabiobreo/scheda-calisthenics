@@ -8,12 +8,15 @@ import { useData, useLevel, useProfile } from '../data/hooks';
 import { Skeleton } from '../components/ui';
 import { HomeView } from '../features/home/HomeView';
 import { LoggerProvider } from '../features/logger/Logger';
-import { SchedaView } from '../features/scheda/SchedaView';
+import { whenIdle } from '../lib/idle';
 import { netDown, pendingFor, queue } from '../data/offline';
 import { usePasswordRecovery, useSession } from './session';
 
-// Home, Scheda e registratore servono subito; il resto si scarica quando lo apri (audit A12): chi non è trainer non
-// scarica mai la parte trainer, chi è già dentro non scarica l'accesso. Il service worker li tiene comunque in cache.
+// Home e registratore servono subito; il resto si scarica quando lo apri (audit A12): chi non è trainer non scarica
+// mai la parte trainer, chi è già dentro non scarica l'accesso. Il service worker li tiene comunque in cache.
+// La Scheda, seconda voce della barra, si scarica subito dopo il primo disegno, appena il browser è libero (audit A4).
+const loadScheda = () => import('../features/scheda/SchedaView');
+const SchedaView = lazy(() => loadScheda().then((m) => ({ default: m.SchedaView })));
 const AccountView = lazy(() => import('../features/account/AccountView').then((m) => ({ default: m.AccountView })));
 const AtletiView = lazy(() => import('../features/atleti/AtletiView').then((m) => ({ default: m.AtletiView })));
 const AtletaPage = lazy(() => import('../features/atleti/AtletiView').then((m) => ({ default: m.AtletaPage })));
@@ -147,6 +150,7 @@ function Main() {
     if (!code) return;
     if (!INVITE_PATH.test(location.pathname)) navigate(`/invito/${code}`, { replace: true });
   }, [location.pathname, navigate]);
+  useEffect(() => whenIdle(() => void loadScheda()), []);
   const trainer = useProfile().data?.isTrainer;
   // senza rete lo dice la pastiglia in testata, e i dati in cache restano (ticket 27)
   const down = useSyncExternalStore(netDown.subscribe, netDown.get);
