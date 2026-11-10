@@ -1,5 +1,5 @@
 import { CountUp, PageTitle, Skeleton, Sparks, useNested } from '../../components/ui';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useScope } from '../../app/session';
 import { Avatar } from '../../components/Avatar';
@@ -13,10 +13,15 @@ import { levelSummary, subRule, validateBodyweight, LIMITS, type AvatarStage, ty
 import { AXES, categoryName, recordText, subPercentText } from './levelView';
 import { dismissKey, firstSteps } from './firstSteps';
 import { FirstSteps } from './FirstStepsCard';
-import { RecordSheet } from './RecordSheet';
 import { TodayCard } from './TodayCard';
-import { WeightSheet } from './WeightSheet';
 import type { LevelRecordRow } from '../../data/types';
+import { whenIdle } from '../../lib/idle';
+
+// I fogli del record e del peso si aprono a un tocco: si scaricano dopo il primo disegno della Home (audit A4)
+const loadRecordSheet = () => import('./RecordSheet');
+const loadWeightSheet = () => import('./WeightSheet');
+const RecordSheet = lazy(() => loadRecordSheet().then((m) => ({ default: m.RecordSheet })));
+const WeightSheet = lazy(() => loadWeightSheet().then((m) => ({ default: m.WeightSheet })));
 
 const ICON: Record<CategoryId, ReactNode> = {
   'fondamentali-tirata': <IconFondTirata />,
@@ -42,6 +47,7 @@ export function HomeView() {
   const guide = useGuide(level.isLoading ? null : level, readOnly, userId);
   // "Inserisci" del primo passo: apre il campo del peso nel profilo
   const [askWeight, setAskWeight] = useState(0);
+  useEffect(() => whenIdle(() => void Promise.all([loadRecordSheet(), loadWeightSheet()])), []);
 
   // tutti i passi fatti adesso, a card aperta: si festeggia
   const wasOpen = useRef(false);
@@ -140,15 +146,17 @@ export function HomeView() {
       </div>
 
       {sheet && (
-        <RecordSheet
-          subId={sheet}
-          records={records as Row[]}
-          weights={weights}
-          summary={summary}
-          onClose={() => setSheet(null)}
-          onCelebrate={setParty}
-          readOnly={readOnly}
-        />
+        <Suspense fallback={null}>
+          <RecordSheet
+            subId={sheet}
+            records={records as Row[]}
+            weights={weights}
+            summary={summary}
+            onClose={() => setSheet(null)}
+            onCelebrate={setParty}
+            readOnly={readOnly}
+          />
+        </Suspense>
       )}
     </>
   );
@@ -284,7 +292,11 @@ function WeightReadOnly({ current }: { current: { date: string; kg: number } | n
         </button>
       )}
       {current && <span className="hint">dal {shortDate(current.date)}</span>}
-      {history && <WeightSheet readOnly onClose={() => setHistory(false)} />}
+      {history && (
+        <Suspense fallback={null}>
+          <WeightSheet readOnly onClose={() => setHistory(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }
@@ -309,7 +321,11 @@ function Weight({ current, editing }: { current: { date: string; kg: number } | 
           </button>
         )}
         {current && <span className="hint">dal {shortDate(current.date)}</span>}
-        {history && <WeightSheet onClose={() => setHistory(false)} />}
+        {history && (
+          <Suspense fallback={null}>
+            <WeightSheet onClose={() => setHistory(false)} />
+          </Suspense>
+        )}
       </div>
     );
 
