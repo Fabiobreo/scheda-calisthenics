@@ -240,5 +240,6 @@ riporta a 1.
 | 9/11/2026 | ticket 20 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | — | A06: barra laterale e due colonne sopra i 1024 px (D6), atleti elenco + dettaglio e settimana a 7 colonne per il trainer (F1); a 1280 px il contenuto occupa il 76 % della larghezza; sonda a 375 e 1280 px pulita |
 | 10/11/2026 | ticket 23 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | 6,0 | nuova sezione H (carattere visivo, a parte), misurata dopo i ticket 21 e 22; A–F invariati. Sonda estesa con `foldWords`, `drawnData`, `exRows`, `exRowsWithIcon` |
 | 10/11/2026 | ticket 24 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | 10,0 | V04–V06: stati vuoti con disegno ovunque (H1), anello in Atleti, barre in Esercizi, settimane a blocchetti nelle schede (H3), spiegazioni dietro "?" (H2); JS iniziale 158,3 KB (A4 resta 2, vicino al limite di 160) |
+| 10/11/2026 | ticket 28 | 10,9 | 20,0 | 22,0 | 10,0 | 9,0 | 7,0 | **78,9** | 5,4 | 10,0 | A14: checklist "Per iniziare" in Home con 4 passi (peso, figura, primo record, primo allenamento) dedotti dai dati, C6 da 1 a 3; nessuna migration; sonda pulita, H invariata; JS iniziale 159,6 KB (A4 resta 2, a 0,4 KB dal limite) |
 
 Gli interventi sono tracciati in [`ticket/00-INDICE.md`](../ticket/00-INDICE.md), sezione "Backlog — Audit di prodotto".
