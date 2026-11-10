@@ -5,7 +5,8 @@ import { longDate, shortDate, todayStr } from '../../lib/dates';
 import { fmtScheme, fmtSets } from '../../lib/format';
 import { byDay } from '../../lib/plan';
 import { Ring, SetBlocks } from '../../components/ui';
-import { useLogger } from '../logger/Logger';
+import { useLogger, useWorkout } from '../logger/Logger';
+import { current, position, totalItems } from '../../lib/workout';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -17,6 +18,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export function TodayCard() {
   const { exercises, entries, plan } = useData();
   const openLogger = useLogger();
+  const workout = useWorkout();
   const today = todayStr();
   const byId = new Map(exercises.map((e) => [e.id, e]));
   const visible = plan.filter((p) => byId.has(p.exerciseId));
@@ -76,6 +78,23 @@ export function TodayCard() {
           );
         })}
       </ul>
+      {/* modalità sessione (ticket 25): l'allenamento guidato esercizio dopo esercizio */}
+      {workout.session && !workout.session.ended && current(workout.session) ? (
+        <div className="row wo-go">
+          <button className="btn" onClick={workout.resume}>
+            Continua {position(workout.session)}/{totalItems(workout.session)}
+          </button>
+          <button className="btn ghost" onClick={workout.end}>
+            Termina
+          </button>
+        </div>
+      ) : (
+        doneCount < items.length && (
+          <button className="btn block wo-start" onClick={workout.start}>
+            <span aria-hidden="true">▶&nbsp;</span>Inizia allenamento
+          </button>
+        )
+      )}
     </section>
   );
 }

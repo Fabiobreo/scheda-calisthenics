@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRestTimer } from '../../app/restTimer';
 import { unlockAudio } from '../../app/sound';
 import { useToast } from '../../app/toast';
@@ -25,9 +25,26 @@ import { defaultType } from '../../lib/catalog';
 import { shortDate, todayStr } from '../../lib/dates';
 import { fmt, fmtSets, numInput, parseNum } from '../../lib/format';
 import { bestSet, compareSets, lastTraining, personalBest, suggestedRest, suggestType } from '../../lib/stats';
+import { byDay } from '../../lib/plan';
+import {
+  REST_BETWEEN_EXERCISES,
+  completeCurrent,
+  current,
+  isFinished,
+  position,
+  reconcile,
+  skipCurrent,
+  startSession,
+  totalItems,
+  upNext,
+  type SessionRecord,
+  type WorkoutSession,
+} from '../../lib/workout';
 import { HoldTimer } from './HoldTimer';
+import { WorkoutSummary } from './WorkoutSummary';
 
 const DRAFT_KEY = 'scheda:logger-draft';
+const WORKOUT_KEY = 'scheda:workout';
 
 interface Row {
   weight: string;
@@ -58,16 +75,54 @@ interface Draft {
   note: string;
   /** indicazioni del trainer per questo esercizio in questo giorno */
   coachNote: string | null;
+  /** riga del programma aperta dalla modalità sessione (ticket 25); null fuori dalla sessione */
+  planId: string | null;
 }
 
 /**
  * `scheme`: schema del giorno del programma da cui si apre; senza, si parte dall'ultimo allenamento.
  * `coachNote`: nota del trainer su quel giorno, da tenere sotto gli occhi mentre ci si allena.
  */
-type OpenOpts = { entry: Entry } | { exerciseId?: string; kind?: EntryKind; date?: string; scheme?: Scheme; coachNote?: string | null };
+type OpenOpts = { entry: Entry } | { exerciseId?: string; kind?: EntryKind; date?: string; scheme?: Scheme; coachNote?: string | null; planId?: string };
 
 const Ctx = createContext<(o?: OpenOpts) => void>(() => {});
 export const useLogger = () => useContext(Ctx);
+
+/** Sessione salvata: `ended` = chiusa a mano con "Termina", si vede il riepilogo. */
+type StoredSession = WorkoutSession & { ended?: boolean };
+
+interface WorkoutApi {
+  session: StoredSession | null;
+  /** avvia l'allenamento di oggi e apre il primo esercizio da fare */
+  start(): void;
+  /** riapre l'esercizio a cui si era arrivati */
+  resume(): void;
+  /** chiude la sessione prima della fine: compare il riepilogo */
+  end(): void;
+}
+
+const WorkoutCtx = createContext<WorkoutApi>({ session: null, start() {}, resume() {}, end() {} });
+/** Modalità sessione (ticket 25): l'allenamento del giorno guidato esercizio dopo esercizio. */
+export const useWorkout = () => useContext(WorkoutCtx);
+
+function readSession(): StoredSession | null {
+  try {
+    const s = JSON.parse(localStorage.getItem(WORKOUT_KEY) ?? 'null') as StoredSession | null;
+    // una sessione di un altro giorno non si riprende
+    return s && s.date === todayStr() ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSession(s: StoredSession | null) {
+  try {
+    if (s) localStorage.setItem(WORKOUT_KEY, JSON.stringify(s));
+    else localStorage.removeItem(WORKOUT_KEY);
+  } catch {
+    /* ignora */
+  }
+}
 
 function readDraft(): Draft | null {
   try {
@@ -76,7 +131,7 @@ function readDraft(): Draft | null {
     if (!d) return null;
     // prima del ticket 03 il valore della serie si chiamava `reps`
     const rows = d.rows.map((r) => ({ weight: r.weight, value: r.value ?? (r as Row & { reps?: string }).reps ?? '', done: r.done }));
-    return { ...d, rows, rest: d.rest ?? DEFAULT_REST, note: d.note ?? '', coachNote: d.coachNote ?? null, type: d.type ?? null };
+    return { ...d, rows, rest: d.rest ?? DEFAULT_REST, note: d.note ?? '', coachNote: d.coachNote ?? null, type: d.type ?? null, planId: d.planId ?? null };
   } catch {
     return null;
   }
@@ -119,10 +174,18 @@ function startingType(plan: PlanItem[], entries: Entry[], catalog: CatalogExerci
 }
 
 export function LoggerProvider({ children }: { children: ReactNode }) {
-  const { exercises, active, done, plan } = useData();
+  const { exercises, active, done, plan, entries, isLoading } = useData();
   const catalog = useCatalog().data ?? [];
+  const timer = useRestTimer();
   // la bozza sopravvive al ricaricamento della pagina: un allenamento a metà non va perso
   const [draft, setDraftState] = useState<Draft | null>(readDraft);
+  // come la bozza: chiudere la pagina a metà allenamento non perde la sessione
+  const [session, setSessionState] = useState<StoredSession | null>(readSession);
+
+  const setSession = useCallback((s: StoredSession | null) => {
+    setSessionState(s);
+    writeSession(s);
+  }, []);
 
   const setDraft = useCallback((d: Draft | null) => {
     setDraftState(d);
@@ -144,6 +207,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
           rest: suggestedRest(plan, e.exerciseId),
           note: e.note ?? '',
           coachNote: plan.find((p) => p.exerciseId === e.exerciseId && p.date === e.date)?.note ?? null,
+          planId: null,
         });
         return;
       }
@@ -157,7 +221,7 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
       const saved = readDraft();
       // riapre la bozza in corso se è per lo stesso esercizio e lo stesso giorno
       if (saved && !saved.entryId && saved.exerciseId === ex.id && saved.kind === kind && saved.date === date) {
-        setDraft(saved);
+        setDraft({ ...saved, planId: o.planId ?? null });
         return;
       }
       setDraft({
@@ -171,20 +235,137 @@ export function LoggerProvider({ children }: { children: ReactNode }) {
         rest: o.scheme?.rest ?? suggestedRest(plan, ex.id),
         note: '',
         coachNote: o.coachNote ?? null,
+        planId: o.planId ?? null,
       });
     },
     [exercises, active, done, plan, catalog, setDraft],
   );
 
+  /* ---------- modalità sessione (ticket 25) ---------- */
+
+  const visible = useMemo(() => new Set(exercises.map((e) => e.id)), [exercises]);
+  const planById = useMemo(() => new Map(plan.map((p) => [p.id, p])), [plan]);
+  // riga del programma già registrata quel giorno, dentro o fuori dalla sessione
+  const isDone = useCallback(
+    (planId: string) => {
+      const p = planById.get(planId);
+      return !!p && entries.some((e) => e.exerciseId === p.exerciseId && e.kind === 'training' && e.date === p.date);
+    },
+    [planById, entries],
+  );
+  const exists = useCallback(
+    (planId: string) => {
+      const p = planById.get(planId);
+      return !!p && visible.has(p.exerciseId);
+    },
+    [planById, visible],
+  );
+
+  const openItem = useCallback(
+    (planId: string | null) => {
+      const p = planId ? planById.get(planId) : undefined;
+      if (!p) return setDraft(null);
+      open({ exerciseId: p.exerciseId, date: p.date, scheme: p.scheme, coachNote: p.note, planId: p.id });
+    },
+    [planById, open, setDraft],
+  );
+
+  // il programma o le registrazioni cambiano (anche da un altro dispositivo): la coda si riallinea
+  useEffect(() => {
+    if (!session || isLoading || session.ended) return;
+    const next = reconcile(session, exists, isDone);
+    if (next !== session) setSession(next);
+  }, [session, isLoading, exists, isDone, setSession]);
+
+  const workout = useMemo<WorkoutApi>(
+    () => ({
+      session,
+      start() {
+        const date = todayStr();
+        const ids = plan.filter((p) => p.date === date && visible.has(p.exerciseId)).sort(byDay).map((p) => p.id);
+        const s = startSession(date, ids, isDone);
+        if (isFinished(s)) return;
+        unlockAudio();
+        setSession(s);
+        openItem(current(s));
+      },
+      resume() {
+        if (session && !session.ended) openItem(current(session));
+      },
+      end() {
+        if (!session) return;
+        setDraft(null);
+        timer.stop();
+        setSession({ ...session, ended: true });
+      },
+    }),
+    [session, plan, visible, isDone, setSession, openItem, setDraft, timer],
+  );
+
+  /** La riga aperta è stata salvata: recupero di 2 minuti e via col prossimo, o il riepilogo. */
+  const sessionSaved = (sets: number, record?: SessionRecord) => {
+    if (!session) return setDraft(null);
+    const next = completeCurrent(session, sets, record);
+    setSession(next);
+    const id = current(next);
+    if (!id) {
+      timer.stop();
+      return setDraft(null);
+    }
+    const name = exercises.find((e) => e.id === planById.get(id)?.exerciseId)?.name;
+    timer.start(REST_BETWEEN_EXERCISES, name ? `Recupero · poi ${name}` : 'Recupero');
+    openItem(id);
+  };
+
+  /** Salta la riga aperta: va in fondo alla coda, la seconda volta esce. */
+  const sessionSkip = () => {
+    if (!session) return;
+    const next = skipCurrent(session);
+    setSession(next);
+    // saltato l'ultimo: il recupero verso un esercizio che non c'è più non serve
+    if (isFinished(next)) timer.stop();
+    openItem(current(next));
+  };
+
+  const inSession = !!draft && !!session && !session.ended && draft.planId !== null && draft.planId === current(session);
+  const nextId = inSession ? upNext(session!) : null;
+  const nextName = nextId ? exercises.find((e) => e.id === planById.get(nextId)?.exerciseId)?.name : undefined;
+
   return (
     <Ctx.Provider value={open}>
-      {children}
-      {draft && <LoggerSheet draft={draft} setDraft={setDraft} />}
+      <WorkoutCtx.Provider value={workout}>
+        {children}
+        {draft && (
+          <LoggerSheet
+            key={`${draft.planId ?? ''}:${draft.exerciseId}:${draft.entryId ?? ''}`}
+            draft={draft}
+            setDraft={setDraft}
+            session={
+              inSession
+                ? { pos: position(session!), total: totalItems(session!), next: nextName ?? null, onSaved: sessionSaved, onSkip: sessionSkip }
+                : null
+            }
+          />
+        )}
+        {!draft && session && (session.ended || isFinished(session)) && (
+          <WorkoutSummary session={session} planById={planById} exercises={exercises} onClose={() => setSession(null)} />
+        )}
+      </WorkoutCtx.Provider>
     </Ctx.Provider>
   );
 }
 
-function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | null) => void }) {
+/** Cosa sa il registratore della sessione in corso. */
+interface SheetSession {
+  pos: number;
+  total: number;
+  /** nome del prossimo esercizio; null se questo è l'ultimo */
+  next: string | null;
+  onSaved(sets: number, record?: SessionRecord): void;
+  onSkip(): void;
+}
+
+function LoggerSheet({ draft, setDraft, session }: { draft: Draft; setDraft: (d: Draft | null) => void; session: SheetSession | null }) {
   const { active, exercises, done, plan, isLoading } = useData();
   const catalog = useCatalog().data ?? [];
   const timer = useRestTimer();
@@ -290,6 +471,7 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
     const note = draft.note.trim();
     if (note.length > 500) return toast('Nota troppo lunga (massimo 500 caratteri)');
     const body = { exerciseId: draft.exerciseId, kind: draft.kind, type: draft.type ?? undefined, date: draft.date || todayStr(), sets, difficulty: draft.difficulty, note: note || null };
+    let record: SessionRecord | undefined;
     if (draft.entryId) update.mutate({ id: draft.entryId, patch: body });
     else {
       // batte il record di prima (non il primo in assoluto, non una data futura): festa al salvataggio (V02)
@@ -297,27 +479,48 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
       const best = bestSet(sets);
       const isRecord = !!pb && !!best && body.date <= todayStr() && compareSets(best, pb.set) > 0;
       const name = ex.name;
+      if (isRecord) record = { name, text: recordText(best!) };
       // mutateAsync: la promessa arriva anche se il foglio nel frattempo si è chiuso; gli errori li mostra già l'hook
       create.mutateAsync(body).then(
         () => isRecord && toast(`★ Nuovo record · ${name} ${recordText(best!)}`, undefined, 'record'),
         () => {},
       );
     }
-    setDraft(null);
+    // in sessione si passa al prossimo esercizio (o al riepilogo), altrimenti il foglio si chiude
+    if (session) session.onSaved(sets.length, record);
+    else setDraft(null);
+  };
+
+  const skip = () => {
+    if (draft.rows.some((r) => r.done) && !window.confirm('Saltare questo esercizio? Le serie segnate andranno perse.')) return;
+    session?.onSkip();
   };
 
   return (
     <div className="sheet-back" onClick={(e) => e.target === e.currentTarget && close()}>
       <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="logger-title">
         <div className="card-h">
-          <h2 id="logger-title">{editing ? 'Modifica' : attempt ? 'Tentativo di record' : 'Registra'}</h2>
+          <h2 id="logger-title">{session ? 'Allenamento' : editing ? 'Modifica' : attempt ? 'Tentativo di record' : 'Registra'}</h2>
           <button className="x" onClick={close} aria-label="Chiudi">
             ×
           </button>
         </div>
 
+        {session && (
+          <div className="wo-steps">
+            <span className="wo-dots" role="img" aria-label={`Esercizio ${session.pos} di ${session.total}`}>
+              {Array.from({ length: Math.min(session.total, 12) }, (_, i) => (
+                <i key={i} className={i < session.pos - 1 ? 'on' : i === session.pos - 1 ? 'cur' : undefined} />
+              ))}
+            </span>
+            <span className="wo-pos" aria-hidden="true">
+              {session.pos}/{session.total}
+            </span>
+          </div>
+        )}
+
         <div className="form">
-          {editing ? (
+          {editing || session ? (
             <p className="pname">{ex.name}</p>
           ) : (
             <Select label="Esercizio" value={draft.exerciseId} options={choices.map((e) => ({ v: e.id, l: e.name }))} onChange={switchExercise} />
@@ -419,13 +622,20 @@ function LoggerSheet({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft | 
             onChange={(e) => patch({ note: e.target.value })}
           />
 
+          {session && <p className="hint">{session.next ? `Poi: ${session.next}` : 'Ultimo esercizio'}</p>}
           <div className="row">
             <button className="btn" onClick={save}>
-              {editing ? 'Salva modifiche' : attempt ? 'Salva tentativo' : 'Salva allenamento'}
+              {session ? (session.next ? 'Salva e avanti' : 'Salva e finisci') : editing ? 'Salva modifiche' : attempt ? 'Salva tentativo' : 'Salva allenamento'}
             </button>
-            <button className="btn ghost" onClick={close}>
-              Annulla
-            </button>
+            {session ? (
+              <button className="btn ghost" onClick={skip}>
+                Salta
+              </button>
+            ) : (
+              <button className="btn ghost" onClick={close}>
+                Annulla
+              </button>
+            )}
             {draft.entryId && (
               <span className="push">
                 <ConfirmButton

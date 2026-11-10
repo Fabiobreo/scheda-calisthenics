@@ -86,7 +86,7 @@ punteggio nello storico in fondo ad AUDIT.md.
 | A04 | Annulla nel toast dopo le × (Archivia e Scollega hanno già la conferma) | C4 | +2 | S | [17](17-audit-rapidi.md) | fatto 9/11 |
 | A05 | Account completo: cambio password ed email, privacy e termini, supporto e versione | E1, E2, E3, E8 | +6 | M | [19](19-oggi-e-account.md) | in parte 9/11 (+3): password, email e versione fatti; privacy e termini rimandati (servono titolare e contatto); il supporto compare con `VITE_SUPPORT_EMAIL` |
 | A06 | Vista desktop (tutta l'app su due colonne, trainer con elenco + dettaglio) | F1, D6 | +5 | L | [20](20-vista-desktop.md) | fatto 9/11 |
-| A07 | Modalità sessione (prossimo esercizio, recupero automatico, riepilogo) | C3 | +3 | L | — | da fare |
+| A07 | Modalità sessione (prossimo esercizio, recupero automatico, riepilogo) | C3 | +3 | L | [25](25-modalita-sessione.md) | fatto 10/11 |
 | A08 | Editor di schede veloce (griglia, aggiunta multipla, duplica giorno) | F2, F3 | +4 | L | [26](26-editor-schede.md) | fatto 10/11: aggiunta multipla con schema dal tipo e duplica giorno in schede modello e programma dell'atleta, griglia della settimana su desktop; F2 da ~123 a 39 tocchi |
 | A09 | Offline vero (cache persistita e coda dei salvataggi) | A6 | +3 | L | — | da fare |
 | A10 | Invito con il nome del trainer prima del login | C7 | +3 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 |
