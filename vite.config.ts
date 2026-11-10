@@ -37,5 +37,7 @@ export default defineConfig({
   ],
   test: {
     environment: 'node',
+    // le sessioni parallele lavorano in .claude/worktrees: i loro test non sono quelli di questa copia
+    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
   },
 });
