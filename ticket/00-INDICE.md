@@ -91,7 +91,7 @@ punteggio nello storico in fondo ad AUDIT.md.
 | A09 | Offline vero (cache persistita e coda dei salvataggi) | A6 | +3 | L | [27](27-offline.md) | fatto 10/11: cache persistita, coda per allenamenti, peso e record con invio al ritorno della rete, pastiglia "Offline · in attesa" in testata; JS iniziale +1,4 KB |
 | A10 | Invito con il nome del trainer prima del login | C7 | +3 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 |
 | A11 | Testata con un solo avatar | D4 | +2 | XS | [17](17-audit-rapidi.md) | fatto 9/11 |
-| A12 | Code splitting e `robots.txt` | A4, A3 | +2,1 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 (JS iniziale 153 KB; per ≤ 120 KB serve altro lavoro) |
+| A12 | Code splitting e `robots.txt` | A4, A3 | +2,1 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 (JS iniziale 153 KB; per ≤ 120 KB serve altro lavoro). Risalito a 161,7 KB coi ticket 25–28, riportato a 156,5 KB nel [29](29-js-iniziale.md) il 10/11 |
 | A13 | Scheletri di caricamento | C5 | +2 | S | [18](18-audit-rapidi-2.md) | fatto 9/11 |
 | A14 | Primo accesso guidato | C6 | +2 | M | [28](28-primo-accesso.md) | fatto 10/11: checklist "Per iniziare" in Home, 4 passi dedotti dai dati, "Più tardi" |
 | A15 | Progressione automatica nelle schede modello | F6 | +2 | M | — | da fare |
