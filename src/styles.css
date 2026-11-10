@@ -824,6 +824,7 @@ main > :nth-child(n + 5), .cols > .col > :nth-child(n + 5) { animation-delay: .2
 .blocks.weeks i.cur { outline: 1.5px solid var(--accent); outline-offset: 2px; }
 .card-t h2.big { white-space: normal; overflow-wrap: anywhere; }
 
+<<<<<<< HEAD
 /* ---------- Ticket 26 (A08): editor veloce, aggiunta multipla, duplica giorno, griglia della scheda su desktop ---------- */
 .ma-list { max-height: 340px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--bg); padding-bottom: 4px; }
 .ma-row { min-height: 48px; padding: 4px 12px; gap: 8px; cursor: pointer; border-top: 1px solid var(--line); }
@@ -885,3 +886,20 @@ main > :nth-child(n + 5), .cols > .col > :nth-child(n + 5) { animation-delay: .2
 .fs-txt small { color: var(--muted); font-size: 14px; }
 .fs-list li.done .fs-txt b { color: var(--muted); font-weight: 500; }
 .fs-later { align-self: flex-end; margin: 0 0 -8px; }
+=======
+/* ===== Ticket 27: offline — pastiglia in testata ed elenco dei salvataggi in attesa ===== */
+.top-end { display: flex; align-items: center; gap: 8px; flex: none; }
+.net-pill {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 999px;
+  background: var(--surface2); border: 1px solid var(--line-strong); font-size: 15px; font-weight: 600; white-space: nowrap;
+}
+.net-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow); animation: net-pulse 1.4s ease-in-out infinite; }
+.net-pill.down .net-dot { background: var(--danger); box-shadow: none; animation: none; }
+@keyframes net-pulse { 50% { opacity: .35; } }
+.net-sheet .hint { margin: 10px 0 14px; }
+.net-list { list-style: none; margin: 0 0 16px; padding: 0; }
+.net-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.net-list li:last-child { border-bottom: 0; }
+.net-list small { color: var(--muted); font-size: 14px; flex: none; }
+.net-sheet .btn { width: 100%; }
+>>>>>>> 414dc46 (Offline: cache persistita, coda dei salvataggi (allenamenti, peso, record), pastiglia in testata (ticket 27))

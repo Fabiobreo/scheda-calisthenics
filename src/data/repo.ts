@@ -33,7 +33,8 @@ export interface Repo {
 
   /** record di livello, dal più vecchio (a parità di data, in ordine d'inserimento) */
   listLevelRecords(): Promise<LevelRecordRow[]>;
-  createLevelRecord(input: LevelRecordInput): Promise<LevelRecordRow>;
+  /** `id`: scelto dal telefono, per le righe salvate offline (ticket 27) */
+  createLevelRecord(input: LevelRecordInput, id?: string): Promise<LevelRecordRow>;
   updateLevelRecord(id: string, patch: Partial<LevelRecordInput>): Promise<void>;
   deleteLevelRecord(id: string): Promise<void>;
 
@@ -60,7 +61,8 @@ export interface Repo {
   deleteExercise(id: string): Promise<void>;
 
   listEntries(): Promise<Entry[]>;
-  createEntry(input: EntryInput): Promise<Entry>;
+  /** `id`: scelto dal telefono, per le righe salvate offline (ticket 27) */
+  createEntry(input: EntryInput, id?: string): Promise<Entry>;
   updateEntry(id: string, patch: Partial<EntryInput>): Promise<void>;
   deleteEntry(id: string): Promise<void>;
 

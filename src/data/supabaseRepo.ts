@@ -278,9 +278,12 @@ function levelPatch(p: Partial<LevelRecordInput>) {
   return row;
 }
 
-/** Lancia l'errore di PostgREST invece di restituirlo. */
-function must(res: { data: unknown; error: { message: string } | null }): unknown {
-  if (res.error) throw new Error(res.error.message);
+/**
+ * Lancia l'errore di PostgREST invece di restituirlo. Codice e stato HTTP restano sull'errore: la coda offline
+ * distingue così la rete assente (stato 0) da un rifiuto del server, e riconosce un doppione (23505).
+ */
+function must(res: { data: unknown; error: { message: string; code?: string } | null; status?: number }): unknown {
+  if (res.error) throw Object.assign(new Error(res.error.message), { code: res.error.code, status: res.status });
   return res.data;
 }
 
@@ -348,8 +351,8 @@ export function createSupabaseRepo(sb: Db, userId: string): Repo {
         if (rows.length < PAGE) return out;
       }
     },
-    async createLevelRecord(input) {
-      const row = must(await insert('level_records', [levelPatch(input)]).select('id, sub_id, stage, value, date, note, created_at').single());
+    async createLevelRecord(input, id) {
+      const row = must(await insert('level_records', [{ ...levelPatch(input), ...(id && { id }) }]).select('id, sub_id, stage, value, date, note, created_at').single());
       return toLevelRecord(row as LevelRow);
     },
     async updateLevelRecord(id, patch) {
@@ -436,8 +439,8 @@ export function createSupabaseRepo(sb: Db, userId: string): Repo {
         if (rows.length < PAGE) return out;
       }
     },
-    async createEntry(input) {
-      const row = must(await insert('entries', [entryPatch(input)]).select().single());
+    async createEntry(input, id) {
+      const row = must(await insert('entries', [{ ...entryPatch(input), ...(id && { id }) }]).select().single());
       return toEntry(row as EntryRow);
     },
     async updateEntry(id, patch) {

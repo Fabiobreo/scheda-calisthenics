@@ -16,9 +16,14 @@ import { ToastProvider } from './app/toast';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 30_000, retry: 2 },
+    // gcTime lungo: i dati di una pagina non aperta da un po' restano in cache, e quindi nella copia sul telefono (ticket 27)
+    queries: { staleTime: 30_000, retry: 2, gcTime: 24 * 60 * 60 * 1000 },
   },
 });
+
+// Cache salvata sul telefono (ticket 27): si scarica a parte per non pesare sul primo disegno; arriva comunque prima
+// della sessione, che si legge in modo asincrono, quindi le viste partono già con gli ultimi dati.
+void import('./data/sync').then((m) => m.persistCache(queryClient, `${__APP_VERSION__}-${__APP_COMMIT__}`));
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

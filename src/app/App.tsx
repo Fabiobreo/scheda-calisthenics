@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { LevelStrip } from '../components/LevelStrip';
@@ -9,6 +9,7 @@ import { Skeleton } from '../components/ui';
 import { HomeView } from '../features/home/HomeView';
 import { LoggerProvider } from '../features/logger/Logger';
 import { SchedaView } from '../features/scheda/SchedaView';
+import { netDown, pendingFor, queue } from '../data/offline';
 import { usePasswordRecovery, useSession } from './session';
 
 // Home, Scheda e registratore servono subito; il resto si scarica quando lo apri (audit A12): chi non è trainer non
@@ -20,6 +21,9 @@ const SchedaModelloView = lazy(() => import('../features/atleti/SchedeView').the
 const AuthScreen = lazy(() => import('../features/auth/AuthScreen').then((m) => ({ default: m.AuthScreen })));
 const NewPasswordScreen = lazy(() => import('../features/auth/AuthScreen').then((m) => ({ default: m.NewPasswordScreen })));
 const EserciziView = lazy(() => import('../features/esercizi/EserciziView').then((m) => ({ default: m.EserciziView })));
+// offline (ticket 27): pastiglia e invio della coda servono solo senza rete o con qualcosa in attesa
+const OfflinePill = lazy(() => import('./offline').then((m) => ({ default: m.OfflinePill })));
+const SyncAgent = lazy(() => import('./offline').then((m) => ({ default: m.SyncAgent })));
 const GraficiView = lazy(() => import('../features/grafici/GraficiView').then((m) => ({ default: m.GraficiView })));
 
 const TABS: { to: string; label: string; icon: ReactNode }[] = [
@@ -107,7 +111,12 @@ export function App() {
             Scheda Calisthenics
           </Link>
         )}
-        {session.status === 'ready' && !recovery && <AccountBadge email={session.email} />}
+        {session.status === 'ready' && !recovery && (
+          <span className="top-end">
+            <Offline userId={session.userId} part="pill" />
+            <AccountBadge email={session.email} />
+          </span>
+        )}
       </header>
       <UpdateBanner />
       {session.status === 'loading' && <Skeleton />}
@@ -118,6 +127,7 @@ export function App() {
           </Suspense>
         ) : (
           <LoggerProvider>
+            <Offline userId={session.userId} part="agent" />
             <Main />
           </LoggerProvider>
         ))}
@@ -138,6 +148,8 @@ function Main() {
     if (!INVITE_PATH.test(location.pathname)) navigate(`/invito/${code}`, { replace: true });
   }, [location.pathname, navigate]);
   const trainer = useProfile().data?.isTrainer;
+  // senza rete lo dice la pastiglia in testata, e i dati in cache restano (ticket 27)
+  const down = useSyncExternalStore(netDown.subscribe, netDown.get);
   const tabs = trainer ? [...TABS, ATLETI_TAB] : TABS;
   return (
     <>
@@ -158,7 +170,7 @@ function Main() {
           ))}
         </div>
       </nav>
-      {error && <div className="banner">Non riesco a leggere i dati. Controlla la connessione e riprova.</div>}
+      {error && !down && <div className="banner">Non riesco a leggere i dati. Controlla la connessione e riprova.</div>}
       <main>
         {isLoading ? (
           <Skeleton />
@@ -185,6 +197,19 @@ function Main() {
       </main>
     </>
   );
+}
+
+/**
+ * Pastiglia "Offline · 2 in attesa" e invio della coda (ticket 27): si scaricano la prima volta che la rete manca o che
+ * c'è qualcosa in coda, poi restano montati (al ritorno della rete devono inviare e rileggere i dati).
+ */
+function Offline({ userId, part }: { userId: string; part: 'pill' | 'agent' }) {
+  const down = useSyncExternalStore(netDown.subscribe, netDown.get);
+  const pending = pendingFor(userId, useSyncExternalStore(queue.subscribe, queue.get)).length > 0;
+  const [needed, setNeeded] = useState(false);
+  if ((down || pending) && !needed) setNeeded(true);
+  if (!needed) return null;
+  return <Suspense fallback={null}>{part === 'pill' ? <OfflinePill /> : <SyncAgent />}</Suspense>;
 }
 
 /** Link d'invito di un trainer: si apre Account con il codice già compilato. */

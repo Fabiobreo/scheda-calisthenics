@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Repo } from '../data/repo';
 import { createSupabaseRepo } from '../data/supabaseRepo';
-import { recovery, supabase } from '../lib/supabase';
+import { CACHE_KEY } from '../data/offline';
+import { AUTH_STORAGE_KEY, recovery, supabase } from '../lib/supabase';
 
 type SessionState =
   | { status: 'loading' }
@@ -19,7 +20,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const lastUser = useRef<string | null>(null);
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data } = supabase.auth.onAuthStateChange((event, s) => setSession(s ?? (event === 'INITIAL_SESSION' ? storedSession() : null)));
     return () => data.subscription.unsubscribe();
   }, []);
 
@@ -34,6 +35,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (loading) return;
     if (lastUser.current && lastUser.current !== userId) void qc.resetQueries();
+    // fuori dall'account: i dati salvati sul telefono per l'offline non devono restare a chi lo usa dopo
+    if (!userId) forget(CACHE_KEY);
     lastUser.current = userId;
   }, [loading, userId, qc]);
 
@@ -47,6 +50,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 }
 
 export const useSession = () => useContext(Ctx);
+
+/**
+ * Apertura senza rete con il token scaduto (dura un'ora): auth-js non riesce a rinnovarlo e dice "nessuna sessione",
+ * ma la lascia nel localStorage, perché toglie la sessione solo se il server rifiuta il rinnovo. Se c'è ancora, l'utente
+ * è dentro: si mostrano i dati in cache e, al ritorno della rete, il rinnovo automatico manda TOKEN_REFRESHED (ticket 27).
+ */
+function storedSession(): Session | null {
+  try {
+    const s = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) ?? 'null') as Session | null;
+    return s?.user?.id && s.refresh_token ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+function forget(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* ignora */
+  }
+}
 
 /** Di chi sono i dati che le viste stanno mostrando. */
 export interface Scope {

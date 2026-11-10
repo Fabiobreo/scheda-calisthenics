@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useRepo, useScope } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
+import { enqueue, newId, pendingFor, type QueueOp } from './offline';
 import { todayStr } from '../lib/dates';
 import { currentBodyweight, levelSummary, withBodyweight } from '../lib/levels';
 import type {
@@ -19,7 +20,8 @@ import type {
   Scheme,
 } from './types';
 
-const K = {
+/** Chiavi delle query (esportate per la coda offline, ticket 27). */
+export const K = {
   exercises: ['exercises'] as QueryKey,
   entries: ['entries'] as QueryKey,
   plan: ['plan'] as QueryKey,
@@ -97,6 +99,46 @@ function useRepoMutation<A, R>(fn: (repo: Repo, args: A) => Promise<R>, keys: Qu
   });
 }
 
+/** Il salvataggio è rimasto sul telefono (ticket 27): l'utente deve sapere che non è ancora arrivato. */
+export const QUEUED_MSG = 'Salvato sul telefono: lo invio appena torna la rete';
+
+/**
+ * Come `useRepoMutation`, ma senza rete il salvataggio va in coda invece di fallire (ticket 27): si vede subito nelle
+ * viste e parte da solo quando la rete torna. Se in coda c'è già qualcosa si accoda anche con la rete, così l'ordine
+ * dei salvataggi resta quello in cui l'utente li ha fatti. `networkMode: 'always'`: senza rete TanStack Query
+ * metterebbe la mutazione in pausa invece di farla fallire, e il salvataggio non arriverebbe mai alla coda.
+ */
+function useQueuedMutation<A>(op: QueueOp, toArgs: (a: A) => unknown[], keys: QueryKey[], okMsg?: string) {
+  const { repo, userId } = useScope();
+  const qc = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    networkMode: 'always',
+    mutationFn: async (a: A): Promise<{ queued: boolean }> => {
+      const args = toArgs(a);
+      if (!pendingFor(userId).length)
+        try {
+          await (repo[op] as (...x: unknown[]) => Promise<unknown>).apply(repo, args);
+          return { queued: false };
+        } catch (e) {
+          // `sync` si scarica solo qui, al primo errore: il service worker lo ha in cache anche senza rete
+          if (!(await import('./sync').then((m) => m.isRetryable(e), () => true))) throw e;
+        }
+      const item = { id: newId(), userId, at: Date.now(), op, args };
+      enqueue(item);
+      try {
+        (await import('./sync')).applyOptimistic(qc, item);
+      } catch {
+        /* pezzo non in cache (sviluppo senza service worker): il salvataggio è comunque in coda */
+      }
+      return { queued: true };
+    },
+    onSuccess: (r) => (r.queued ? toast(QUEUED_MSG) : okMsg && toast(okMsg)),
+    onError: () => toast('Non riesco a salvare. Riprova.'),
+    onSettled: (r) => r?.queued || Promise.all(keys.map((queryKey) => qc.invalidateQueries({ queryKey }))),
+  });
+}
+
 export const useUpdateProfile = (okMsg = 'Profilo salvato') =>
   useRepoMutation((r, a: Partial<Profile>) => r.updateProfile(a), [K.profile], okMsg);
 
@@ -169,13 +211,12 @@ export const useAddCatalogToPlan = () =>
     [K.exercises, K.plan],
   );
 
-export const useCreateEntry = (okMsg = 'Salvato') =>
-  useRepoMutation((r, a: EntryInput) => r.createEntry(a), [K.entries], okMsg);
+export const useCreateEntry = (okMsg = 'Salvato') => useQueuedMutation('createEntry', (a: EntryInput) => [a, newId()], [K.entries], okMsg);
 
 export const useUpdateEntry = (okMsg?: string) =>
-  useRepoMutation((r, a: { id: string; patch: Partial<EntryInput> }) => r.updateEntry(a.id, a.patch), [K.entries], okMsg);
+  useQueuedMutation('updateEntry', (a: { id: string; patch: Partial<EntryInput> }) => [a.id, a.patch], [K.entries], okMsg);
 
-export const useDeleteEntry = () => useRepoMutation((r, id: string) => r.deleteEntry(id), [K.entries], 'Registrazione eliminata');
+export const useDeleteEntry = () => useQueuedMutation('deleteEntry', (id: string) => [id], [K.entries], 'Registrazione eliminata');
 
 export const useAddPlanItem = () =>
   useRepoMutation(
@@ -300,14 +341,14 @@ export function useLevel() {
 
 /** Inserisce o corregge il peso di un giorno (di default oggi). */
 export const useSetBodyWeight = (okMsg = 'Peso salvato') =>
-  useRepoMutation((r, a: { kg: number; date?: string }) => r.setBodyWeight(a.date ?? todayStr(), a.kg), [K.bodyWeights], okMsg);
+  useQueuedMutation('setBodyWeight', (a: { kg: number; date?: string }) => [a.date ?? todayStr(), a.kg], [K.bodyWeights], okMsg);
 
-export const useDeleteBodyWeight = () => useRepoMutation((r, date: string) => r.deleteBodyWeight(date), [K.bodyWeights], 'Peso eliminato');
+export const useDeleteBodyWeight = () => useQueuedMutation('deleteBodyWeight', (date: string) => [date], [K.bodyWeights], 'Peso eliminato');
 
 export const useCreateLevelRecord = (okMsg = 'Record salvato') =>
-  useRepoMutation((r, a: LevelRecordInput) => r.createLevelRecord(a), [K.levelRecords], okMsg);
+  useQueuedMutation('createLevelRecord', (a: LevelRecordInput) => [a, newId()], [K.levelRecords], okMsg);
 
 export const useUpdateLevelRecord = (okMsg = 'Record aggiornato') =>
-  useRepoMutation((r, a: { id: string; patch: Partial<LevelRecordInput> }) => r.updateLevelRecord(a.id, a.patch), [K.levelRecords], okMsg);
+  useQueuedMutation('updateLevelRecord', (a: { id: string; patch: Partial<LevelRecordInput> }) => [a.id, a.patch], [K.levelRecords], okMsg);
 
-export const useDeleteLevelRecord = () => useRepoMutation((r, id: string) => r.deleteLevelRecord(id), [K.levelRecords], 'Record eliminato');
+export const useDeleteLevelRecord = () => useQueuedMutation('deleteLevelRecord', (id: string) => [id], [K.levelRecords], 'Record eliminato');

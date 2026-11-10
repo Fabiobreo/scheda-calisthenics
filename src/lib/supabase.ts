@@ -1,5 +1,6 @@
 import { AuthClient } from '@supabase/auth-js';
 import { PostgrestClient } from '@supabase/postgrest-js';
+import { netDown } from '../data/offline';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -17,10 +18,29 @@ if (!url || !key)
  */
 const base = new URL(url.trim().endsWith('/') ? url.trim() : `${url.trim()}/`);
 
+/** Dove auth-js tiene la sessione: offline la si rilegge da qui (vedi `session.tsx`). */
+export const AUTH_STORAGE_KEY = `sb-${base.hostname.split('.')[0]}-auth-token`;
+
+/**
+ * Ogni richiesta dice se la rete c'è (ticket 27): una richiesta che non arriva accende "Offline", la prima che
+ * arriva lo spegne. Un 5xx del gateway (Supabase giù) conta come rete assente.
+ */
+const netFetch: typeof fetch = async (input, init) => {
+  try {
+    const res = await fetch(input, init);
+    netDown.set(res.status >= 502 && res.status <= 504);
+    return res;
+  } catch (e) {
+    if (!(e instanceof DOMException && e.name === 'AbortError')) netDown.set(true);
+    throw e;
+  }
+};
+
 const auth = new AuthClient({
   url: new URL('auth/v1', base).href,
   headers: { Authorization: `Bearer ${key}`, apikey: key },
-  storageKey: `sb-${base.hostname.split('.')[0]}-auth-token`,
+  storageKey: AUTH_STORAGE_KEY,
+  fetch: netFetch,
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
@@ -33,7 +53,7 @@ const authedFetch: typeof fetch = async (input, init) => {
   const headers = new Headers(init?.headers);
   if (!headers.has('apikey')) headers.set('apikey', key);
   if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${data.session?.access_token ?? key}`);
-  return fetch(input, { ...init, headers });
+  return netFetch(input, { ...init, headers });
 };
 
 const rest = new PostgrestClient(new URL('rest/v1', base).href, { schema: 'public', fetch: authedFetch });
