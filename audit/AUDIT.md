@@ -48,7 +48,7 @@ Per i punteggi più recenti vedi lo **Storico** in fondo.
 | F. Pronto per il trainer professionista | 15 | **4,0** | Costruire una settimana di scheda costa ~120 tocchi, su desktop è una colonna da telefono |
 | **Totale** | **100** | **36,7** | **Prototipo avanzato**: buone fondamenta, non ancora un prodotto da vendere |
 | G. Valutazione da coach (a parte) | 10 | **5,4** | Ottimo tracker personale, non ancora uno strumento per allenare clienti |
-| H. Carattere visivo (a parte, dal 10/11) | 10 | **6,0** | Movimento e ricompense ci sono; restano stati vuoti di sola frase e schermate tutte testo |
+| H. Carattere visivo (a parte, dal 10/11) | 10 | **10,0** | Dopo il ticket 24: stati vuoti disegnati ovunque, un dato disegnato in 7 schermate su 8, meno di 50 parole a colpo d'occhio |
 
 ---
 
@@ -192,7 +192,7 @@ coach cambierei per prime:
    modo in cui il coach legge i dati.
 3. **Video di controllo tecnica** allegato alla registrazione (anche solo 15 s), visibile al trainer.
 
-## H. Carattere visivo — 6,0 / 10
+## H. Carattere visivo — 10,0 / 10 (6,0 alla prima misura)
 
 Punteggio a parte, aggiunto il 10/11 dopo i ticket 21 e 22: misura se l'app **trasmette energia** (ritmo, ricompense,
 dati disegnati), cosa che A–F non vedono. Solo criteri misurabili: chi rifà l'audit ottiene lo stesso numero. Le misure
@@ -201,34 +201,31 @@ schermate di riferimento.
 
 | # | Misura | Soglia → punti | Valore oggi | Punti |
 |---|---|---|---|---:|
-| H1 | Stati vuoti fatti di una sola frase (`grep -rn 'className="empty"' src --include=*.tsx \| wc -l`) | 0 = 2 · ≤ 5 = 1 | 9 (Atleti, schede modello, Grafici con filtri) | 0 |
-| H2 | Parole nella prima schermata, media delle 8 schermate (`foldWords`) | ≤ 50 = 2 · ≤ 70 = 1 | 59,9 (da 36 in Livello a 89 in Atleti) | 1 |
-| H3 | Schermate con almeno un dato disegnato: anello, blocchetti, pallini, grafico con nome (`drawnData` ≥ 1) | ≥ 6 su 8 = 2 · ≥ 4 = 1 | 4 (Livello, Scheda, Grafici, pagina dell'atleta) | 1 |
+| H1 | Stati vuoti fatti di una sola frase (`grep -rn 'className="empty"' src --include=*.tsx \| wc -l`) | 0 = 2 · ≤ 5 = 1 | 0 (erano 9 alla prima misura) | 2 |
+| H2 | Parole nella prima schermata, media delle 8 schermate (`foldWords`) | ≤ 50 = 2 · ≤ 70 = 1 | 48,75 (da 36 in Livello a 71 in Grafici; prima misura 59,9) | 2 |
+| H3 | Schermate con almeno un dato disegnato: anello, blocchetti, pallini, grafico con nome (`drawnData` ≥ 1) | ≥ 6 su 8 = 2 · ≥ 4 = 1 | 7: tutte tranne Account (prima misura 4) | 2 |
 | H4 | Movimento: ingresso animato cambiando pagina **e** conferma animata della serie (1); `prefers-reduced-motion` ferma tutto con una regola globale (1) | 1 + 1 | sì; sì | 2 |
 | H5 | Righe di esercizio con un pittogramma (`exRowsWithIcon` / `exRows`, somma sulle schermate) | 100 % = 1 | 8 / 8 | 1 |
 | H6 | Ricompensa dedicata a nuovo record e livello nuovo, diversa dal messaggio standard (prova: salvare un allenamento che batte il record) | sì = 1 | sì: messaggio in ambra con scintille, riquadro della festa | 1 |
 
-**Totale: 0 + 1 + 1 + 2 + 1 + 1 = 6,0.**
+**Totale: 2 + 2 + 2 + 2 + 1 + 1 = 10,0.** Alla prima misura (10/11, ticket 23): 0 + 1 + 1 + 2 + 1 + 1 = 6,0.
 
-Valori della sonda il 10/11 (atleta, poi trainer):
+Valori della sonda il 10/11, prima misura → dopo il ticket 24 (atleta, poi trainer):
 
 | Schermata | Parole in prima schermata | Dati disegnati | Righe con pittogramma |
 |---|---:|---:|---:|
-| `/` | 36 | 1 | — |
-| `/scheda` | 58 | 7 | 3 / 3 |
-| `/grafici` | 70 | 2 | — |
-| `/esercizi` | 60 | 0 | 5 / 5 |
-| `/account` | 57 | 0 | — |
-| `/atleti` | 89 | 0 | — |
-| `/atleti/<id>` | 65 | 7 | — |
-| `/schede/<id>` | 44 | 0 | — |
+| `/` | 36 → 36 | 1 → 1 | — |
+| `/scheda` | 58 → 53 | 7 → 7 | 3 / 3 |
+| `/grafici` | 70 → 71 | 2 → 2 | — |
+| `/esercizi` | 60 → 49 | 0 → 5 | 5 / 5 |
+| `/account` | 57 → 53 | 0 → 0 | — |
+| `/atleti` | 89 → 41 | 0 → 1 | — |
+| `/atleti/<id>` | 65 → 49 | 7 → 7 | — |
+| `/schede/<id>` | 44 → 38 | 0 → 1 | — |
 
-Cosa farebbe salire il punteggio, in ordine di resa:
-
-1. **Stati vuoti con disegno e azione** anche in Atleti, schede modello e Grafici filtrati: H1 da 0 a 2 (+2).
-2. **Un dato disegnato** in Atleti (rispetto del programma di ogni atleta come anello o barra), Esercizi (registrazioni per
-   esercizio) e scheda modello (settimane come blocchetti): H3 da 1 a 2 (+1).
-3. **Meno testo in prima schermata** in Atleti (89 parole) e Grafici (70): spiegazioni dietro "?" come nel ticket 21, H2 da 1 a 2 (+1).
+I tre interventi suggeriti alla prima misura (stati vuoti, dati disegnati, meno testo) sono fatti nel
+[ticket 24](../ticket/24-carattere-v04-v06.md). H2 è al limite (48,75 su 50): una spiegazione in più in prima schermata la
+riporta a 1.
 
 ---
 
@@ -242,5 +239,6 @@ Cosa farebbe salire il punteggio, in ordine di resa:
 | 9/11/2026 | ticket 19 | 10,9 | 20,0 | 20,0 | 8,0 | 9,0 | 4,0 | **71,9** | 5,4 | — | A03 ("Oggi" in Home, C1) e A05 parziale (cambio password ed email, versione: E1, E2); privacy/termini rimandati, supporto solo con `VITE_SUPPORT_EMAIL` (E3, E8 ancora 0). Soglia "prodotto professionale" (70) superata |
 | 9/11/2026 | ticket 20 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | — | A06: barra laterale e due colonne sopra i 1024 px (D6), atleti elenco + dettaglio e settimana a 7 colonne per il trainer (F1); a 1280 px il contenuto occupa il 76 % della larghezza; sonda a 375 e 1280 px pulita |
 | 10/11/2026 | ticket 23 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | 6,0 | nuova sezione H (carattere visivo, a parte), misurata dopo i ticket 21 e 22; A–F invariati. Sonda estesa con `foldWords`, `drawnData`, `exRows`, `exRowsWithIcon` |
+| 10/11/2026 | ticket 24 | 10,9 | 20,0 | 20,0 | 10,0 | 9,0 | 7,0 | **76,9** | 5,4 | 10,0 | V04–V06: stati vuoti con disegno ovunque (H1), anello in Atleti, barre in Esercizi, settimane a blocchetti nelle schede (H3), spiegazioni dietro "?" (H2); JS iniziale 158,3 KB (A4 resta 2, vicino al limite di 160) |
 
 Gli interventi sono tracciati in [`ticket/00-INDICE.md`](../ticket/00-INDICE.md), sezione "Backlog — Audit di prodotto".

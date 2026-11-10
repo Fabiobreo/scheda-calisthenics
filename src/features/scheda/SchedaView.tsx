@@ -260,7 +260,7 @@ function Programma() {
       <div className="plan">
         {items.length === 0 && !extra.length && (
           <EmptyState small art={<CategoryRow />} title="Riposo">
-            Niente in programma per {dayName}. Aggiungi un esercizio qui sotto, o goditi il recupero.
+            Aggiungi un esercizio qui sotto, o goditi il recupero.
           </EmptyState>
         )}
         {items.map((p) => {

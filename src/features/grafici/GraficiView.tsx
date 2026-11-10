@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useScope } from '../../app/session';
 import { EntryItem } from '../../components/EntryItem';
 import { LineChart, TypeChart } from '../../components/charts';
-import { EmptyState, PageTitle, Seg, Select, useNested } from '../../components/ui';
+import { CardHead, EmptyState, PageTitle, Seg, Select, useNested } from '../../components/ui';
 import { Link } from 'react-router-dom';
 import { useData } from '../../data/hooks';
 import { EXERCISE_TYPES, TYPE_LABEL, type Measure } from '../../data/types';
@@ -152,7 +152,7 @@ export function GraficiView() {
       <div className={nested ? 'flat' : 'cols'}>
       <div className={nested ? 'flat' : 'col'}>
       <section className="card">
-        <h2>Andamento</h2>
+        <CardHead title="Andamento" help="Tocca o trascina sul grafico per vedere il valore di un punto e le sue sessioni; «tutto il periodo» torna alla vista intera." />
         <p className="sub">
           {ex.name} · {m.label.toLowerCase()} {GRAIN_LABEL[grain]}
           {grain !== 'day' && `, ${howLabel(metric)}`}
@@ -173,14 +173,31 @@ export function GraficiView() {
         </div>
         {!pts.length ? (
           everData && period !== 'all' ? (
-            <p className="empty">
-              Nessuna registrazione {IN_PERIOD[period]}.{' '}
-              <button className="link small" onClick={() => setPeriod('all')}>
-                Vedi tutto
-              </button>
-            </p>
+            <EmptyState
+              small
+              title="Niente in questo periodo"
+              actions={
+                <button className="btn ghost" onClick={() => setPeriod('all')}>
+                  Vedi tutto
+                </button>
+              }
+            >
+              Nessuna registrazione {IN_PERIOD[period]}.
+            </EmptyState>
           ) : (
-            <p className="empty">Nessuna registrazione per questo esercizio.</p>
+            <EmptyState
+              small
+              title="Ancora nessun dato"
+              actions={
+                !readOnly && (
+                  <Link className="btn ghost" to="/scheda">
+                    Vai alla Scheda
+                  </Link>
+                )
+              }
+            >
+              Nessuna registrazione per questo esercizio{readOnly ? '.' : ': registralo dalla Scheda e qui comparirà la linea.'}
+            </EmptyState>
           )
         ) : (
           <>
@@ -219,7 +236,6 @@ export function GraficiView() {
               <p className="cmp">
                 {plural(inside.length, 'sessione', 'sessioni')}
                 {cmp && period !== 'all' && <Change cmp={cmp} text={PREVIOUS[period]} />}
-                {pts.length > 1 && ' · tocca o trascina sul grafico per i dettagli'}
               </p>
             )}
             <div className="sessions">
@@ -242,11 +258,10 @@ export function GraficiView() {
 
       <div className={nested ? 'flat' : 'col'}>
       <section className="card">
-        <h2>Ripetizioni per tipo</h2>
-        <p className="sub">
-          Quanto lavoro fai in forza, volume e tecnica, {typeGrain === 'day' ? 'per sessione' : `${GRAIN_LABEL[typeGrain]} (media a sessione)`},{' '}
-          {PERIOD_NAME[period]}.{anyTimed && ' Le tenute a tempo non hanno ripetizioni e qui non contano.'}
-        </p>
+        <CardHead
+          title="Ripetizioni per tipo"
+          help={`Quanto lavoro fai in forza, volume e tecnica, ${typeGrain === 'day' ? 'per sessione' : `${GRAIN_LABEL[typeGrain]} (media a sessione)`}, ${PERIOD_NAME[period]}.${anyTimed ? ' Le tenute a tempo non hanno ripetizioni e qui non contano.' : ''}`}
+        />
         <div className="legend">
           {EXERCISE_TYPES.map((t) => (
             <span key={t}>
@@ -259,9 +274,9 @@ export function GraficiView() {
           {types.length ? (
             <TypeChart data={types} label={(d) => axisLabel(d, typeGrain)} />
           ) : (
-            <p className="empty">
+            <EmptyState small title={period === 'all' ? 'Ancora nessuna ripetizione' : 'Niente in questo periodo'}>
               {period === 'all' ? 'Registra un allenamento per vedere il lavoro per tipo.' : 'Nessuna ripetizione registrata in questo periodo.'}
-            </p>
+            </EmptyState>
           )}
         </div>
       </section>

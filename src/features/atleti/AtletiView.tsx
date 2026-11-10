@@ -1,4 +1,4 @@
-import { ExIcon } from '../../components/ExIcon';
+import { CategoryRow, ExIcon } from '../../components/ExIcon';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AthleteScope, useSession } from '../../app/session';
@@ -8,7 +8,7 @@ import { useExercisePicker } from '../../components/ExercisePicker';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { DotsLegend, WeekDays } from '../../components/WeekDays';
-import { CardHead, ConfirmButton, EmptyPeople, EmptyState, NestedView, PageTitle, Seg, SetBlocks, Skeleton, TypeChip, useWide } from '../../components/ui';
+import { CardHead, ConfirmButton, EmptyPeople, EmptyState, MiniRing, NestedView, PageTitle, Seg, SetBlocks, Skeleton, TypeChip, useWide } from '../../components/ui';
 import {
   useCatalog,
   useCoachAddPlanItem,
@@ -103,8 +103,7 @@ function AlertsCard() {
     <>
       {athletes.length > 0 && (
         <section className="card">
-          <h2>Da guardare</h2>
-          <p className="sub">Chi è fermo, chi è indietro col programma, a chi manca la settimana prossima e chi ha fatto un record.</p>
+          <CardHead title="Da guardare" help="Chi è fermo, chi è indietro col programma, a chi manca la settimana prossima e chi ha fatto un record." />
           <ul className="alerts">
             {athletes.map((l) => (
               <AthleteScope key={l.id} athleteId={l.athleteId}>
@@ -197,12 +196,17 @@ function AthleteHead({ name, since }: { name: string | null; since: string }) {
             </>
           )}
         </div>
+        {/* rispetto del programma nelle ultime 4 settimane come anello (V05), accanto all'ultimo allenamento */}
         {!data.isLoading && !data.error && (
-          <div className="pmeta">
-            Piano, 4 sett.: {adherenceText(adh)} · {last ? `ultimo allenamento ${shortDate(last)}` : 'nessun allenamento'}
+          <div className="ath-stats">
+            <MiniRing pct={adh.pct} label={`Programma, ultime 4 settimane: ${adherenceText(adh)}`} />
+            <span className="pmeta">
+              {last ? `Allenato ${shortDate(last)}` : 'Mai allenato'}
+              <br />
+              Collegato {shortDate(since)}
+            </span>
           </div>
         )}
-        <div className="pmeta">Collegato dal {shortDate(since)}</div>
       </div>
     </div>
   );
@@ -262,10 +266,17 @@ export function AtletaView() {
   if (!link)
     return (
       <section className="card">
-        <h2>Atleta</h2>
-        <p className="empty">
-          Non segui questo atleta, o si è scollegato. Torna ad <Link to="/atleti">Atleti</Link>.
-        </p>
+        <EmptyState
+          art={<EmptyPeople />}
+          title="Atleta non trovato"
+          actions={
+            <Link className="btn" to="/atleti">
+              Torna ad Atleti
+            </Link>
+          }
+        >
+          Non segui questo atleta, o si è scollegato.
+        </EmptyState>
       </section>
     );
 
@@ -273,14 +284,16 @@ export function AtletaView() {
     <>
       <PageTitle title={link.athleteName || 'Atleta'} />
       <section className="card">
-        <div className="card-h">
-          <h2 className="big">{nameOf(link.athleteName)}</h2>
+        <CardHead
+          big
+          title={nameOf(link.athleteName)}
+          help="Programmi i suoi giorni e vedi cosa ha fatto, anche fuori programma; registrazioni, grafici e livello sono in sola lettura."
+        >
           {/* su schermo largo l'elenco degli atleti è già a sinistra */}
           <Link className="link small only-narrow" to="/atleti">
             ‹ Atleti
           </Link>
-        </div>
-        <p className="sub">Programmi i suoi giorni e vedi cosa ha fatto, anche fuori programma; registrazioni, grafici e livello sono in sola lettura.</p>
+        </CardHead>
         <div className="mt-14">
           <Seg
             label="Sezione"
@@ -418,7 +431,11 @@ function AthletePlan() {
       )}
       <h3 className="day-title">{title.charAt(0).toUpperCase() + title.slice(1)}</h3>
       <div className="plan">
-        {items.length === 0 && !extra.length && <p className="empty">Niente in programma.</p>}
+        {items.length === 0 && !extra.length && (
+          <EmptyState small art={<CategoryRow />} title="Riposo">
+            Puoi aggiungere un esercizio qui sotto.
+          </EmptyState>
+        )}
         {items.map((p) => {
           const ex = byId.get(p.exerciseId)!;
           const sc = p.scheme;

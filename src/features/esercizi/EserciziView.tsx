@@ -1,11 +1,12 @@
 import { CategoryRow, ExIcon } from '../../components/ExIcon';
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
-import { ConfirmButton, EmptyState, Field, PageTitle, SearchSelect, Seg } from '../../components/ui';
+import { ActivityBars, CardHead, ConfirmButton, EmptyState, Field, PageTitle, SearchSelect, Seg } from '../../components/ui';
 import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useTrainerLock, useUpdateExercise } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
 import { CATEGORY_LABEL, MEASURE_LABEL, MEASURES, type CatalogExercise, type Exercise, type Measure } from '../../data/types';
 import { byCategory, matchCatalog } from '../../lib/catalog';
+import { weeklyCounts } from '../../lib/stats';
 
 type Source = 'catalog' | 'custom';
 
@@ -53,6 +54,7 @@ export function EserciziView() {
   const [form, setForm] = useState<Form | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const archived = exercises.filter((e) => e.archivedAt);
+  const today = todayStr();
 
   // voci del catalogo che l'utente non ha ancora (gli archiviati contano: si ripristinano dalla lista)
   const linked = new Set(exercises.map((e) => e.catalogId));
@@ -104,16 +106,14 @@ export function EserciziView() {
     <>
       <PageTitle title="Esercizi" />
       <section className="card">
-        <div className="card-h">
-          <h2>Esercizi</h2>
+        <CardHead
+          title="Esercizi"
+          help="Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi nel programma, giorno per giorno. Accanto a ogni esercizio, quante volte l'hai registrato nelle ultime 8 settimane."
+        >
           <button className="btn small" onClick={() => setForm(blank(free[0]))}>
             + Aggiungi
           </button>
-        </div>
-        <p className="sub">
-          Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi
-          nel programma, giorno per giorno.
-        </p>
+        </CardHead>
 
         {form && (
           <div className="form" id="xform">
@@ -210,6 +210,7 @@ export function EserciziView() {
           <div className="entry" key={e.id}>
             <div>
               <b className="ex-name"><ExIcon catalogId={e.catalogId} />{e.name}</b>
+              <Activity weeks={weeklyCounts(entries, e.id, today)} />
               <div className="chips">
                 {!e.catalogId && <span className="chip mut">Personalizzato</span>}
                 {e.measure === 'time' && <span className="chip mut">A tempo</span>}
@@ -272,5 +273,16 @@ export function EserciziView() {
         )}
       </section>
     </>
+  );
+}
+
+/** Registrazioni delle ultime 8 settimane come barre (V05), con il totale scritto accanto. */
+function Activity({ weeks }: { weeks: number[] }) {
+  const n = weeks.reduce((a, b) => a + b, 0);
+  return (
+    <div className="ex-activity">
+      <ActivityBars counts={weeks} label={`Ultime 8 settimane: ${n} ${n === 1 ? 'registrazione' : 'registrazioni'}`} />
+      <span className="pmeta">{n ? `${n} in 8 sett.` : 'Mai in 8 sett.'}</span>
+    </div>
   );
 }

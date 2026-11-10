@@ -1,4 +1,5 @@
 import { DEFAULT_REST, type Entry, type ExerciseType, type Measure, type PlanItem, type Scheme, type WorkSet } from '../data/types';
+import { addDays, daysBetween, mondayOf } from './dates';
 
 export type Metric = 'peso' | 'reps' | 'volume' | 'tenuta' | 'secondi';
 
@@ -210,4 +211,18 @@ export function lastRecordStep(entries: Entry[], exerciseId: string): RecordStep
         ? `+${a.reps - b.reps} rip.`
         : `+${a.seconds - b.seconds} s`;
   return { date: last.date, gain };
+}
+
+/**
+ * Registrazioni di un esercizio per settimana, dalla più vecchia alla corrente (V05: le barre in Esercizi).
+ * Le settimane vanno da lunedì; contano solo le date fino a `today`.
+ */
+export function weeklyCounts(entries: Entry[], exerciseId: string, today: string, weeks = 8): number[] {
+  const first = addDays(mondayOf(today), -7 * (weeks - 1));
+  const out = Array.from({ length: weeks }, () => 0);
+  for (const e of entries) {
+    if (e.exerciseId !== exerciseId || e.date < first || e.date > today) continue;
+    out[Math.floor(daysBetween(first, e.date) / 7)]++;
+  }
+  return out;
 }

@@ -1,11 +1,11 @@
-import { ExIcon } from '../../components/ExIcon';
+import { CategoryRow, ExIcon } from '../../components/ExIcon';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { refName, useExercisePicker } from '../../components/ExercisePicker';
 import { SchemeForm } from '../../components/SchemeForm';
-import { Cols, ConfirmButton, Field, PageTitle, Select, Skeleton, TypeChip, useWide } from '../../components/ui';
+import { CardHead, Cols, ConfirmButton, EmptyPeople, EmptyState, EmptyWeeks, Field, PageTitle, Select, Skeleton, TypeChip, useWide } from '../../components/ui';
 import {
   useAddProgramItems,
   useAssignProgram,
@@ -31,24 +31,32 @@ export function SchedeCard() {
   const programs = usePrograms();
   const create = useCreateProgram();
   const navigate = useNavigate();
+  const make = () => create.mutate({ name: 'Nuova scheda', weeks: 4 }, { onSuccess: (p) => navigate(`/schede/${p.id}`) });
 
   return (
     <section className="card">
-      <div className="card-h">
-        <h2>Schede</h2>
-        <button
-          className="btn small"
-          disabled={create.isPending}
-          onClick={() => create.mutate({ name: 'Nuova scheda', weeks: 4 }, { onSuccess: (p) => navigate(`/schede/${p.id}`) })}
-        >
-          + Nuova
-        </button>
-      </div>
-      <p className="sub">Prepari una scheda una volta, settimana per settimana, e la assegni a uno o più atleti da un lunedì.</p>
+      <CardHead title="Schede" help="Prepari una scheda una volta, settimana per settimana, e la assegni a uno o più atleti da un lunedì.">
+        {!!programs.data?.length && (
+          <button className="btn small" disabled={create.isPending} onClick={make}>
+            + Nuova
+          </button>
+        )}
+      </CardHead>
       {programs.isLoading ? (
         <Skeleton inline />
       ) : !programs.data?.length ? (
-        <p className="empty">Nessuna scheda per ora.</p>
+        <EmptyState
+          small
+          art={<EmptyWeeks />}
+          title="Nessuna scheda"
+          actions={
+            <button className="btn" disabled={create.isPending} onClick={make}>
+              Crea la prima scheda
+            </button>
+          }
+        >
+          Preparala una volta, settimana per settimana, e assegnala a più atleti.
+        </EmptyState>
       ) : (
         programs.data.map((p) => (
           <div className="entry" key={p.id}>
@@ -80,10 +88,17 @@ export function SchedaModelloView() {
   if (!program)
     return (
       <section className="card">
-        <h2>Scheda</h2>
-        <p className="empty">
-          Scheda non trovata. Torna ad <Link to="/atleti">Atleti</Link>.
-        </p>
+        <EmptyState
+          art={<EmptyWeeks />}
+          title="Scheda non trovata"
+          actions={
+            <Link className="btn" to="/atleti">
+              Torna ad Atleti
+            </Link>
+          }
+        >
+          Forse è stata eliminata.
+        </EmptyState>
       </section>
     );
   return <Editor key={program.id} id={program.id} name={program.name} weeks={program.weeks} />;
@@ -194,9 +209,16 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
           }}
         />
       </div>
+      {/* le settimane della scheda come blocchetti (V05): accesi quelli già preparati, contornato quello aperto */}
+      <span className="blocks weeks" aria-hidden="true">
+        {Array.from({ length: weeks }, (_, i) => (
+          <i key={i} className={`${items.some((x) => x.week === i + 1) ? 'on' : ''}${i + 1 === shownWeek ? ' cur' : ''}`.trim() || undefined} />
+        ))}
+      </span>
       <div className="days">
         {DAY_SHORT.map((d, i) => {
-          const n = weekItems.filter((x) => x.weekday === i).length;
+          const inDay = weekItems.filter((x) => x.weekday === i);
+          const n = inDay.length;
           return (
             <button
               key={d}
@@ -210,7 +232,16 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
               aria-pressed={i === day}
             >
               <span>{d}</span>
-              <small>{n ? `${n} es.` : '–'}</small>
+              {/* un pallino per esercizio, nel colore del tipo (V05); il numero è nell'etichetta del pulsante */}
+              {n ? (
+                <span className="dots" aria-hidden="true">
+                  {inDay.slice(0, 6).map((x) => (
+                    <em key={x.id} className={`${x.scheme.type} f`} />
+                  ))}
+                </span>
+              ) : (
+                <small>–</small>
+              )}
             </button>
           );
         })}
@@ -220,7 +251,11 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
       </h3>
 
       <div className="plan">
-        {!dayItems.length && <p className="empty">Riposo. Aggiungi un esercizio qui sotto.</p>}
+        {!dayItems.length && (
+          <EmptyState small art={<CategoryRow />} title="Riposo">
+            Aggiungi un esercizio qui sotto.
+          </EmptyState>
+        )}
         {dayItems.map((i) => (
           <div className="pitem" key={i.id}>
             <div>
@@ -348,9 +383,18 @@ function AssignCard({ programId, programName, weeks, empty }: { programId: strin
     <section className="card">
       <h2>Assegna</h2>
       {!athletes.length ? (
-        <p className="empty">
-          Non segui ancora nessun atleta: invitali da <Link to="/account">Account</Link>.
-        </p>
+        <EmptyState
+          small
+          art={<EmptyPeople />}
+          title="Nessun atleta"
+          actions={
+            <Link className="btn" to="/account">
+              Invita un atleta
+            </Link>
+          }
+        >
+          Per assegnare la scheda serve almeno un atleta collegato.
+        </EmptyState>
       ) : (
         <div className="form mt-14">
           <div className="grid2">

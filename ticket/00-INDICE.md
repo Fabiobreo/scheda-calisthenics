@@ -127,6 +127,6 @@ L'audit misura accessibilità, velocità e completezza, non quanto l'app trasmet
 | V01 | Primo blocco: un protagonista per pagina, titoli piccoli, spiegazioni dietro "?", anello in Oggi, serie a blocchetti, striscia del tipo, settimana con i pallini, record con il progresso, tendenza e settimane di fila, stati vuoti con disegno e azione | [21](21-carattere-visivo.md) | fatto 9/11 |
 | V02 | Secondo blocco: animazioni (ingresso delle pagine, spunta, blocchetti, anello, pentagono, numeri che salgono, nuovo record con scintille, record che lampeggia), pittogrammi per categoria negli esercizi, stati vuoti anche in Esercizi e Scheda | [22](22-animazioni-pittogrammi.md) | fatto 10/11 |
 | V03 | Sezione "carattere visivo" nell'audit con criteri verificabili: H a parte su 10, oggi 6,0 | [23](23-audit-carattere.md) | fatto 10/11 |
-| V04 | Stati vuoti con disegno e azione anche in Atleti, schede modello e Grafici filtrati (H1 +2) | — | da fare |
-| V05 | Un dato disegnato in Atleti, Esercizi e scheda modello (H3 +1) | — | da fare |
-| V06 | Meno testo in prima schermata in Atleti e Grafici, spiegazioni dietro "?" (H2 +1) | — | da fare |
+| V04 | Stati vuoti con disegno e azione anche in Atleti, schede modello e Grafici filtrati (H1 +2) | [24](24-carattere-v04-v06.md) | fatto 10/11 |
+| V05 | Un dato disegnato in Atleti, Esercizi e scheda modello (H3 +1) | [24](24-carattere-v04-v06.md) | fatto 10/11 |
+| V06 | Meno testo in prima schermata in Atleti e Grafici, spiegazioni dietro "?" (H2 +1) | [24](24-carattere-v04-v06.md) | fatto 10/11 |

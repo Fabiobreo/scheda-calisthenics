@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRepo, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { Avatar } from '../../components/Avatar';
-import { Field, PageTitle, PasswordField, Seg } from '../../components/ui';
+import { CardHead, Field, PageTitle, PasswordField, Seg } from '../../components/ui';
 import { useData, useDeleteAccount, useLevel, useProfile, useUpdateProfile } from '../../data/hooks';
 import { AVATAR_BODIES } from '../../lib/avatarFigure';
 import { todayStr } from '../../lib/dates';
@@ -88,8 +88,7 @@ function AvatarCard() {
   const body = profile.data?.avatarBody ?? null;
   return (
     <section className="card">
-      <h2>Avatar</h2>
-      <p className="sub">Cambia fisico ogni 10 livelli. Verso il livello 100 compare un'aura, in zona ELITE le scosse.</p>
+      <CardHead title="Avatar" help="Cambia fisico ogni 10 livelli. Verso il livello 100 compare un'aura, in zona ELITE le scosse." />
       <div className="avatar-pick">
         <Avatar name={profile.data?.displayName} avatar={summary.avatar} elite={summary.zone === 'elite'} body={body} />
         <div className="fld">

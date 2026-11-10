@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Entry, PlanItem } from '../data/types';
-import { lastRecordStep, niceScale, personalBest, recordEntryIds, repsByType, series, suggestedRest, suggestScheme, suggestType } from './stats';
+import { lastRecordStep, weeklyCounts, niceScale, personalBest, recordEntryIds, repsByType, series, suggestedRest, suggestScheme, suggestType } from './stats';
 import { fmtSets } from './format';
 import { addDays, mondayOf, weekLabel } from './dates';
 import { copyWeek } from './plan';
@@ -236,5 +236,17 @@ describe('lastRecordStep', () => {
     expect(lastRecordStep([dip([[0, 8]], '2026-11-02'), dip([[0, 9]], '2026-11-03')], 'dip')?.gain).toBe('+1 rip.');
     expect(lastRecordStep([dip([[0, 8]], '2026-11-02')], 'dip')).toEqual({ date: '2026-11-02', gain: null });
     expect(lastRecordStep([], 'dip')).toBeNull();
+  });
+});
+
+describe('weeklyCounts', () => {
+  it('conta le registrazioni per settimana da lunedì, la corrente per ultima', () => {
+    // 10/11/2026 è martedì: settimane dal 21/9 al 9/11
+    const es = [dip([[0, 8]], '2026-11-09'), dip([[0, 8]], '2026-11-10'), dip([[0, 8]], '2026-11-08'), dip([[0, 8]], '2026-09-21')];
+    expect(weeklyCounts(es, 'dip', '2026-11-10')).toEqual([1, 0, 0, 0, 0, 0, 1, 2]);
+  });
+  it('ignora altri esercizi, date future e settimane troppo vecchie', () => {
+    const es = [dip([[0, 8]], '2026-11-11'), dip([[0, 8]], '2026-09-20'), { ...dip([[0, 8]], '2026-11-10'), exerciseId: 'altro' }];
+    expect(weeklyCounts(es, 'dip', '2026-11-10', 4)).toEqual([0, 0, 0, 0]);
   });
 });

@@ -521,3 +521,49 @@ export function Sparks() {
     </span>
   );
 }
+
+/* ---------- Dati disegnati, secondo giro (V05) ---------- */
+
+/** Anello piccolo con una percentuale al centro: il rispetto del programma di un atleta nell'elenco. */
+export function MiniRing({ pct, label }: { pct: number | null; label: string }) {
+  const r = 16;
+  const c = 2 * Math.PI * r;
+  const v = pct === null ? 0 : Math.max(0, Math.min(100, pct));
+  return (
+    <span className={`mini-ring${pct !== null && pct >= 80 ? ' good' : ''}`} role="img" aria-label={label}>
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <circle className="ring-bg" cx="20" cy="20" r={r} />
+        <circle className="ring-fg" cx="20" cy="20" r={r} strokeDasharray={c} strokeDashoffset={c * (1 - v / 100)} />
+      </svg>
+      <b aria-hidden="true">{pct === null ? '–' : `${pct}%`}</b>
+    </span>
+  );
+}
+
+/** Barre verticali, una per settimana dalla più vecchia: quante volte un esercizio è stato registrato. */
+export function ActivityBars({ counts, label }: { counts: number[]; label: string }) {
+  const max = Math.max(1, ...counts);
+  const w = 8;
+  const gap = 3;
+  return (
+    <svg className="bars" viewBox={`0 0 ${counts.length * (w + gap) - gap} 40`} role="img" aria-label={label}>
+      {counts.map((n, i) => {
+        const h = n ? 6 + (34 * n) / max : 3;
+        return <rect key={i} className={n ? 'on' : undefined} x={i * (w + gap)} y={40 - h} width={w} height={h} rx="2" />;
+      })}
+    </svg>
+  );
+}
+
+/** Settimane come blocchetti: disegno dello stato vuoto delle schede modello. */
+export function EmptyWeeks() {
+  return (
+    <svg className="empty-art" viewBox="0 0 240 120" aria-hidden="true">
+      {Array.from({ length: 4 }, (_, w) =>
+        Array.from({ length: 7 }, (_, d) => (
+          <rect key={`${w}-${d}`} className={d % 2 === 0 && d < 6 ? (w === 3 ? 'ea-hot' : 'ea-on') : 'ea-off'} x={14 + d * 31} y={8 + w * 28} width="24" height="20" rx="5" />
+        )),
+      )}
+    </svg>
+  );
+}
