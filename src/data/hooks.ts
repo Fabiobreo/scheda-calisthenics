@@ -200,6 +200,25 @@ export const useCoachAddPlanItem = () =>
     true,
   );
 
+/**
+ * Più righe nel calendario dell'atleta in una volta (ticket 26: aggiunta multipla, duplica giorno). Una chiamata per
+ * riga, in fila: al primo errore si ferma e le righe già scritte restano. Restituisce quante ne ha scritte.
+ */
+export const useCoachAddPlanItems = () =>
+  useRepoMutation(
+    async (r, items: { date: string; ref: ExerciseRef; scheme: Scheme; note: string | null }[]) => {
+      let n = 0;
+      for (const a of items) {
+        await r.coachAddPlanItem(a.date, a.ref, a.scheme, a.note);
+        n++;
+      }
+      return n;
+    },
+    [K.plan, K.exercises],
+    undefined,
+    true,
+  );
+
 // Schede modello: sono del trainer collegato, non dell'utente che le viste stanno mostrando.
 
 export function usePrograms() {

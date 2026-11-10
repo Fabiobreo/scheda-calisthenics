@@ -7,11 +7,13 @@ import { Avatar } from '../../components/Avatar';
 import { useExercisePicker } from '../../components/ExercisePicker';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
+import { DuplicateDay, MultiAdd } from '../../components/QuickAdd';
 import { DotsLegend, WeekDays } from '../../components/WeekDays';
 import { CardHead, ConfirmButton, EmptyPeople, EmptyState, MiniRing, NestedView, PageTitle, Seg, SetBlocks, Skeleton, TypeChip, useWide } from '../../components/ui';
 import {
   useCatalog,
   useCoachAddPlanItem,
+  useCoachAddPlanItems,
   useData,
   useEndLink,
   useLevel,
@@ -23,9 +25,10 @@ import {
   useSetPlanScheme,
 } from '../../data/hooks';
 import { DIFFICULTY_LABEL, type ExerciseRef, type Measure } from '../../data/types';
-import { addDays, longDate, mondayOf, shortDate, todayStr, weekdayIndex } from '../../lib/dates';
-import { fmtScheme, fmtSets } from '../../lib/format';
-import { blankScheme, recordEntryIds, suggestType } from '../../lib/stats';
+import { DAY_LONG, DAY_SHORT, addDays, longDate, mondayOf, shortDate, todayStr, weekdayIndex } from '../../lib/dates';
+import { fmtScheme, fmtSets, plural } from '../../lib/format';
+import { recordEntryIds, suggestType } from '../../lib/stats';
+import { duplicatePlanDay, schemeFor, typeScheme } from '../../lib/editor';
 import { defaultType } from '../../lib/catalog';
 import { byDay, dayCount, offPlan } from '../../lib/plan';
 import { adherence, adherenceText, athleteAlerts, dayMarks, lastTrainingDate, movedText, summarizeStatuses, weekStatuses, type Alert } from '../../lib/adherence';
@@ -345,6 +348,7 @@ function AthletePlan() {
   const myId = session.status === 'ready' ? session.userId : '';
   const catalog = useCatalog().data ?? [];
   const addItem = useCoachAddPlanItem();
+  const addMany = useCoachAddPlanItems();
   const setScheme = useSetPlanScheme();
   const setNote = useSetPlanNote();
   const removeItem = useRemovePlanItem();
@@ -354,7 +358,10 @@ function AthletePlan() {
   const [monday, setMonday] = useState(thisMonday);
   const [day, setDay] = useState(weekdayIndex());
   const [editing, setEditing] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
+  // pannello aperto sotto il giorno: aggiunta singola, multipla (ticket 26) o duplica giorno
+  const [panel, setPanel] = useState<'single' | 'multi' | 'dup' | null>(null);
+  const adding = panel === 'single';
+  const setAdding = (on: boolean) => setPanel(on ? 'single' : null);
   const byId = new Map(exercises.map((e) => [e.id, e]));
   // anche quelli di esercizi che l'atleta ha archiviato: il trainer deve poterli vedere e togliere
   const visible = plan.filter((p) => byId.has(p.exerciseId));
@@ -391,7 +398,21 @@ function AthletePlan() {
     setMonday(m);
     setDay(d);
     setEditing(null);
-    setAdding(false);
+    setPanel(null);
+  };
+  const refOf = (exerciseId: string): ExerciseRef => {
+    const ex = byId.get(exerciseId)!;
+    return ex.catalogId ? { catalogId: ex.catalogId, customName: null } : { catalogId: null, customName: ex.name };
+  };
+  const duplicate = (to: number[]) => {
+    const rows = duplicatePlanDay(visible, date, to.map((d) => addDays(monday, d)));
+    if (!rows.length) return toast('Quei giorni hanno già questi esercizi');
+    // la nota si copia solo se è del trainer: quella dell'atleta resta sua
+    addMany.mutate(
+      rows.map(({ date: dt, item }) => ({ date: dt, ref: refOf(item.exerciseId), scheme: item.scheme, note: item.assignedBy === myId ? item.note : null })),
+      { onSuccess: (n) => toast(`${DAY_LONG[day]} copiato: ${plural(n, 'esercizio', 'esercizi')}`) },
+    );
+    setPanel(null);
   };
 
   // su schermo largo la settimana intera, giorno per giorno, con lo stato di ogni esercizio (audit A06)
@@ -531,17 +552,52 @@ function AthletePlan() {
         </div>
       )}
       <div className="form mt-12">
-        {picker.view}
-        {!adding ? (
+        {panel !== 'multi' && panel !== 'dup' && picker.view}
+        {panel === 'multi' ? (
+          <MultiAdd
+            catalog={catalog}
+            exclude={(r) => inDay.some((e) => e.catalogId === r.catalogId)}
+            hint={`Per ${title}.`}
+            busy={addMany.isPending}
+            onAdd={(picked, shared) => {
+              addMany.mutate(
+                picked.map(({ ref, measure }) => {
+                  // la misura di un esercizio che l'atleta ha già vince su quella del catalogo
+                  const m = exerciseFor(ref)?.measure ?? measure;
+                  return { date, ref, scheme: schemeFor(shared, m), note: null };
+                }),
+                { onSuccess: (n) => toast(plural(n, 'esercizio aggiunto', 'esercizi aggiunti')) },
+              );
+              setPanel(null);
+            }}
+            onCancel={() => setPanel(null)}
+          />
+        ) : panel === 'dup' ? (
+          <DuplicateDay
+            from={day}
+            days={DAY_SHORT.map((s, i) => ({ short: s, long: DAY_LONG[i], count: visible.filter((p) => p.date === addDays(monday, i)).length }))}
+            busy={addMany.isPending}
+            onDuplicate={duplicate}
+            onCancel={() => setPanel(null)}
+          />
+        ) : !adding ? (
           <div className="row">
             <button className="btn" onClick={() => (picker.ref() ? setAdding(true) : toast("Scrivi il nome dell'esercizio"))}>
               Aggiungi al giorno
             </button>
+            <button className="btn ghost" onClick={() => setPanel('multi')}>
+              + Più esercizi
+            </button>
+            {items.length > 0 && (
+              <button className="btn ghost" onClick={() => setPanel('dup')}>
+                Duplica giorno
+              </button>
+            )}
           </div>
         ) : (
           <SchemeForm
             key={picker.key}
-            initial={blankScheme(typeFor(addRef), addMeasure)}
+            initial={typeScheme(typeFor(addRef), addMeasure)}
             measure={addMeasure}
             measureEditable={addMeasureFree}
             note={null}

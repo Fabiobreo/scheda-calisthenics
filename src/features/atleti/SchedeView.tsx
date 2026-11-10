@@ -5,6 +5,7 @@ import { useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { refName, useExercisePicker } from '../../components/ExercisePicker';
 import { SchemeForm } from '../../components/SchemeForm';
+import { DuplicateDay, MultiAdd } from '../../components/QuickAdd';
 import { CardHead, Cols, ConfirmButton, EmptyPeople, EmptyState, EmptyWeeks, Field, PageTitle, Select, Skeleton, TypeChip, useWide } from '../../components/ui';
 import {
   useAddProgramItems,
@@ -23,8 +24,8 @@ import {
 import { type ExerciseRef, type Measure, type ProgramItem, type ProgramItemInput } from '../../data/types';
 import { DAY_LONG, DAY_SHORT, addDays, mondayOf, shortDate, todayStr, weekLabel } from '../../lib/dates';
 import { fmtScheme, isInt, plural } from '../../lib/format';
-import { blankScheme } from '../../lib/stats';
 import { defaultType } from '../../lib/catalog';
+import { addToProgramDay, duplicateProgramDay, typeScheme } from '../../lib/editor';
 
 /** Le schede modello del trainer, nella pagina Atleti. */
 export function SchedeCard() {
@@ -121,7 +122,10 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
   const [week, setWeek] = useState(1);
   const [day, setDay] = useState(0);
   const [editing, setEditing] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
+  // pannello aperto sotto il giorno: aggiunta singola, multipla (ticket 26) o duplica giorno
+  const [panel, setPanel] = useState<'single' | 'multi' | 'dup' | null>(null);
+  const adding = panel === 'single';
+  const setAdding = (on: boolean) => setPanel(on ? 'single' : null);
 
   const shownWeek = Math.min(week, weeks);
   const dayItems = items.filter((i) => i.week === shownWeek && i.weekday === day).sort((a, b) => a.sortOrder - b.sortOrder);
@@ -205,7 +209,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
           onChange={(v) => {
             setWeek(Number(v));
             setEditing(null);
-            setAdding(false);
+            setPanel(null);
           }}
         />
       </div>
@@ -215,9 +219,9 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
           <i key={i} className={`${items.some((x) => x.week === i + 1) ? 'on' : ''}${i + 1 === shownWeek ? ' cur' : ''}`.trim() || undefined} />
         ))}
       </span>
-      <div className="days">
+      <div className={`days${wide ? ' board' : ''}`}>
         {DAY_SHORT.map((d, i) => {
-          const inDay = weekItems.filter((x) => x.weekday === i);
+          const inDay = weekItems.filter((x) => x.weekday === i).sort((a, b) => a.sortOrder - b.sortOrder);
           const n = inDay.length;
           return (
             <button
@@ -226,14 +230,28 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
               onClick={() => {
                 setDay(i);
                 setEditing(null);
-                setAdding(false);
+                setPanel(null);
               }}
               aria-label={`${DAY_LONG[i]}, ${plural(n, 'esercizio', 'esercizi')}`}
               aria-pressed={i === day}
             >
               <span>{d}</span>
-              {/* un pallino per esercizio, nel colore del tipo (V05); il numero è nell'etichetta del pulsante */}
-              {n ? (
+              {/* su schermo largo la settimana è una griglia: ogni giorno con i suoi esercizi (ticket 26) */}
+              {wide ? (
+                n ? (
+                  <span className="board-list">
+                    {inDay.map((x) => (
+                      <span key={x.id} className={`b-item t-${x.scheme.type}`}>
+                        <ExIcon catalogId={x.catalogId} />
+                        <span>{refName(catalog, x)}</span>
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  <span className="board-empty">Riposo</span>
+                )
+              ) : /* un pallino per esercizio, nel colore del tipo (V05); il numero è nell'etichetta del pulsante */
+              n ? (
                 <span className="dots" aria-hidden="true">
                   {inDay.slice(0, 6).map((x) => (
                     <em key={x.id} className={`${x.scheme.type} f`} />
@@ -253,7 +271,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
       <div className="plan">
         {!dayItems.length && (
           <EmptyState small art={<CategoryRow />} title="Riposo">
-            Aggiungi un esercizio qui sotto.
+            Aggiungi esercizi qui sotto, o duplica un altro giorno.
           </EmptyState>
         )}
         {dayItems.map((i) => (
@@ -309,17 +327,51 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
       </div>
 
       <div className="form mt-12">
-        {picker.view}
-        {!adding ? (
+        {panel !== 'multi' && panel !== 'dup' && picker.view}
+        {panel === 'multi' ? (
+          <MultiAdd
+            catalog={catalog}
+            exclude={(r) => dayItems.some((i) => sameRef(i, r))}
+            hint={`Settimana ${shownWeek}, ${DAY_LONG[day].toLowerCase()}.`}
+            busy={addItems.isPending}
+            onAdd={(picked, shared) => {
+              const add = addToProgramDay(items, { programId: id, week: shownWeek, weekday: day }, picked, shared);
+              addItems.mutate(add, { onSuccess: () => toast(plural(add.length, 'esercizio aggiunto', 'esercizi aggiunti')) });
+              setPanel(null);
+            }}
+            onCancel={() => setPanel(null)}
+          />
+        ) : panel === 'dup' ? (
+          <DuplicateDay
+            from={day}
+            days={DAY_SHORT.map((s, i) => ({ short: s, long: DAY_LONG[i], count: weekItems.filter((x) => x.weekday === i).length }))}
+            busy={addItems.isPending}
+            onDuplicate={(to) => {
+              const add = duplicateProgramDay(items, shownWeek, day, to);
+              if (!add.length) return toast('Quei giorni hanno già questi esercizi');
+              addItems.mutate(add, { onSuccess: () => toast(`${DAY_LONG[day]} copiato: ${plural(add.length, 'esercizio', 'esercizi')}`) });
+              setPanel(null);
+            }}
+            onCancel={() => setPanel(null)}
+          />
+        ) : !adding ? (
           <div className="row">
             <button className="btn" onClick={() => (picker.ref() ? setAdding(true) : toast("Scrivi il nome dell'esercizio"))}>
               Aggiungi
             </button>
+            <button className="btn ghost" onClick={() => setPanel('multi')}>
+              + Più esercizi
+            </button>
+            {dayItems.length > 0 && (
+              <button className="btn ghost" onClick={() => setPanel('dup')}>
+                Duplica giorno
+              </button>
+            )}
           </div>
         ) : (
           <SchemeForm
             key={picker.key}
-            initial={blankScheme(defaultType(catalog, addRef ?? undefined), catalogMeasure(addRef) ?? customMeasure(addRef))}
+            initial={typeScheme(defaultType(catalog, addRef ?? undefined), catalogMeasure(addRef) ?? customMeasure(addRef))}
             measure={catalogMeasure(addRef) ?? customMeasure(addRef)}
             measureEditable={!!addRef && !addRef.catalogId}
             note={null}
