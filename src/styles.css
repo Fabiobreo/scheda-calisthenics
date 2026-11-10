@@ -890,7 +890,7 @@ main > :nth-child(n + 5), .cols > .col > :nth-child(n + 5) { animation-delay: .2
 /* ===== Ticket 27: offline — pastiglia in testata ed elenco dei salvataggi in attesa ===== */
 .top-end { display: flex; align-items: center; gap: 8px; flex: none; }
 .net-pill {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 12px; border-radius: 999px;
   background: var(--surface2); border: 1px solid var(--line-strong); font-size: 15px; font-weight: 600; white-space: nowrap;
 }
 .net-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow); animation: net-pulse 1.4s ease-in-out infinite; }

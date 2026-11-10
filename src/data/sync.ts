@@ -25,12 +25,13 @@ export const OP_KEYS: Record<QueueOp, QueryKey> = {
 
 /**
  * L'errore viene dalla rete, non dal server: vale la pena riprovare. Comprende i 5xx (gateway giù) e il token
- * scaduto, che si rinnova da solo appena torna la rete.
+ * scaduto (401), che si rinnova da solo appena torna la rete.
  */
 export function isRetryable(e: unknown): boolean {
   if (!(e instanceof Error)) return false;
   const { status, code } = e as Error & { status?: number; code?: string };
-  if (status === 0 || (status !== undefined && status >= 500)) return true;
+  // 401: la richiesta è partita senza un token valido (rinnovo non ancora riuscito), non è un rifiuto dei dati
+  if (status === 0 || status === 401 || (status !== undefined && status >= 500)) return true;
   if (code === 'PGRST301' || code === 'PGRST303' || /JWT/i.test(e.message)) return true;
   return e.name === 'TypeError' || /^(TypeError|FetchError|AbortError)\b|Failed to fetch|NetworkError|Load failed/i.test(e.message);
 }
@@ -221,7 +222,10 @@ export function restoreCache(qc: QueryClient, buster: string, storage: Pick<Stor
 }
 
 export function saveCache(qc: QueryClient, buster: string, storage: Pick<Storage, 'setItem'> = localStorage) {
-  const state = dehydrate(qc, { shouldDehydrateQuery: (q) => q.state.status === 'success' });
+  // Si salva ogni query che ha dati, anche se l'ultima rilettura è fallita: offline è proprio il caso normale, e
+  // scartarle farebbe sparire dalla copia esercizi e programma al primo tentativo senza rete. Si salvano come riuscite.
+  const raw = dehydrate(qc, { shouldDehydrateQuery: (q) => q.state.data !== undefined });
+  const state = { ...raw, queries: raw.queries.map((q) => ({ ...q, state: { ...q.state, status: 'success' as const, error: null, fetchStatus: 'idle' as const } })) };
   try {
     storage.setItem(CACHE_KEY, JSON.stringify({ buster, at: Date.now(), state } satisfies Saved));
   } catch {

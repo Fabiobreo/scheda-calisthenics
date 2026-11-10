@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useRepo, useScope } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
-import { enqueue, newId, pendingFor, type QueueOp } from './offline';
+import { enqueue, netDown, newId, pendingFor, type QueueOp } from './offline';
 import { todayStr } from '../lib/dates';
 import { currentBodyweight, levelSummary, withBodyweight } from '../lib/levels';
 import type {
@@ -82,7 +82,8 @@ export function useData() {
     done: entries.filter((e) => e.date <= today),
     plan: pl.data ?? [],
     isLoading: ex.isLoading || en.isLoading || pl.isLoading,
-    error: ex.error ?? en.error ?? pl.error,
+    // errore solo se mancano i dati: offline restano quelli in cache, e "non riesco a leggere" sarebbe falso (ticket 27)
+    error: ex.data && en.data && pl.data ? null : (ex.error ?? en.error ?? pl.error),
   };
 }
 
@@ -104,8 +105,8 @@ export const QUEUED_MSG = 'Salvato sul telefono: lo invio appena torna la rete';
 
 /**
  * Come `useRepoMutation`, ma senza rete il salvataggio va in coda invece di fallire (ticket 27): si vede subito nelle
- * viste e parte da solo quando la rete torna. Se in coda c'è già qualcosa si accoda anche con la rete, così l'ordine
- * dei salvataggi resta quello in cui l'utente li ha fatti. `networkMode: 'always'`: senza rete TanStack Query
+ * viste e parte da solo quando la rete torna. Se si è già offline non si prova nemmeno. Se in coda c'è già qualcosa si
+ * accoda anche con la rete, così l'ordine dei salvataggi resta quello in cui l'utente li ha fatti. `networkMode: 'always'`: senza rete TanStack Query
  * metterebbe la mutazione in pausa invece di farla fallire, e il salvataggio non arriverebbe mai alla coda.
  */
 function useQueuedMutation<A>(op: QueueOp, toArgs: (a: A) => unknown[], keys: QueryKey[], okMsg?: string) {
@@ -116,7 +117,8 @@ function useQueuedMutation<A>(op: QueueOp, toArgs: (a: A) => unknown[], keys: Qu
     networkMode: 'always',
     mutationFn: async (a: A): Promise<{ queued: boolean }> => {
       const args = toArgs(a);
-      if (!pendingFor(userId).length)
+      // già offline: dritto in coda, senza aspettare (col token scaduto auth-js riproverebbe il rinnovo per 30 s)
+      if (!pendingFor(userId).length && !netDown.get())
         try {
           await (repo[op] as (...x: unknown[]) => Promise<unknown>).apply(repo, args);
           return { queued: false };
@@ -335,7 +337,7 @@ export function useLevel() {
   return {
     ...computed,
     isLoading: bw.isLoading || lr.isLoading,
-    error: bw.error ?? lr.error,
+    error: bw.data && lr.data ? null : (bw.error ?? lr.error),
   };
 }
 

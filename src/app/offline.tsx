@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { K } from '../data/hooks';
 import { netDown, pendingFor, queue, savesText } from '../data/offline';
+import { supabase } from '../lib/supabase';
 import { useRepo, useScope } from './session';
 import { useToast } from './toast';
 
@@ -31,6 +32,9 @@ function useFlush() {
   const toast = useToast();
   return async () => {
     if (!pendingFor(userId).length) return;
+    // prima un token valido: dopo ore senza rete è scaduto, e con la sola chiave pubblica il server rifiuterebbe tutto
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user.id !== userId) return;
     const sync = await loadSync();
     const r = await sync.flushQueue(repo, userId);
     const done = [...r.sent, ...r.rejected.map((x) => x.item)];
@@ -120,7 +124,9 @@ export function OfflinePill() {
   }, [open]);
 
   if (!down && !n && !open) return null;
-  const text = [down && 'Offline', n > 0 && `${n} in attesa`].filter(Boolean).join(' · ');
+  // corta, per stare accanto al riepilogo del livello a 375 px: con qualcosa in coda il pallino rosso dice "offline"
+  const text = n ? `${n} in attesa` : down ? 'Offline' : 'Inviato';
+  const full = [down ? 'Offline' : 'In linea', n > 0 && `${n} in attesa di invio`].filter(Boolean).join(', ');
 
   const send = async () => {
     setBusy(true);
@@ -138,10 +144,11 @@ export function OfflinePill() {
         className={`net-pill${down ? ' down' : ''}`}
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        aria-label={`${text || 'In linea'}: vedi cosa aspetta di essere inviato`}
+        aria-label={`${full}: vedi i dettagli`}
+        title={full}
       >
         <span className="net-dot" aria-hidden="true" />
-        {text || 'In linea'}
+        {text}
       </button>
       {open && (
         <div className="sheet-back" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>

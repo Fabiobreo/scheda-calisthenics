@@ -21,7 +21,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event, s) => setSession(s ?? (event === 'INITIAL_SESSION' ? storedSession() : null)));
-    return () => data.subscription.unsubscribe();
+    // Senza rete e con il token scaduto auth-js riprova il rinnovo per 30 s prima di rispondere: dopo un secondo si
+    // parte con la sessione salvata (ticket 27). Se poi auth-js dice altro, vale quello.
+    const slow = window.setTimeout(() => setSession((cur) => (cur === undefined ? storedSession() ?? undefined : cur)), 1000);
+    return () => {
+      clearTimeout(slow);
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   const loading = session === undefined;

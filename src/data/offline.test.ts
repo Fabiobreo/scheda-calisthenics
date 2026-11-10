@@ -41,6 +41,8 @@ describe('errori da riprovare', () => {
     expect(isRetryable(new Error('TypeError: Load failed'))).toBe(true);
     expect(isRetryable(pgError('bad gateway', 502))).toBe(true);
     expect(isRetryable(pgError('JWT expired', 401, 'PGRST303'))).toBe(true);
+    // partita con la sola chiave pubblica (token non ancora rinnovato): RLS risponde 401
+    expect(isRetryable(pgError('new row violates row-level security policy for table "body_weights"', 401, '42501'))).toBe(true);
   });
   it('rifiuto del server: no', () => {
     expect(isRetryable(pgError('insert or update on table "entries" violates foreign key constraint', 409, '23503'))).toBe(false);
@@ -219,6 +221,18 @@ describe('cache persistita', () => {
     const b = new QueryClient();
     expect(restoreCache(b, 'v1', localStorage)).toBe(true);
     expect(b.getQueryData<Entry[]>(['entries', U])!.map((e) => e.id)).toEqual(['e1']);
+  });
+
+  it('salva anche una query con dati la cui ultima rilettura è fallita (offline), come riuscita', async () => {
+    const a = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    a.setQueryData(['plan', U], [{ id: 'p' }]);
+    await a.fetchQuery({ queryKey: ['plan', U], queryFn: () => Promise.reject(new TypeError('Failed to fetch')), staleTime: 0 }).catch(() => {});
+    expect(a.getQueryState(['plan', U])!.status).toBe('error');
+    saveCache(a, 'v1', localStorage);
+    const b = new QueryClient();
+    restoreCache(b, 'v1', localStorage);
+    expect(b.getQueryData(['plan', U])).toEqual([{ id: 'p' }]);
+    expect(b.getQueryState(['plan', U])!.status).toBe('success');
   });
 
   it('una versione diversa dell’app scarta la copia', () => {
