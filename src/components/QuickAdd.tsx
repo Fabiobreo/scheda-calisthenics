@@ -145,7 +145,7 @@ export function DuplicateDay({
         <div className="days dup" role="group" aria-label="Giorni in cui copiare">
           {days.map((d, i) =>
             i === from ? (
-              <span key={d.short} className="day src" aria-hidden="true">
+              <span key={d.short} className="day src">
                 <span>{d.short}</span>
                 <small>da qui</small>
               </span>

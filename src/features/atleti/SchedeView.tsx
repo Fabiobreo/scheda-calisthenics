@@ -195,8 +195,8 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
     </section>
   );
   const assignCard = <AssignCard programId={id} programName={name} weeks={weeks} empty={!items.length} />;
-  const daysCard = (
-    <section className="card">
+  const weekPart = (
+    <>
       <h2>Giorni</h2>
       <div className="grid2 mt-14">
         <Select
@@ -264,6 +264,10 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
           );
         })}
       </div>
+    </>
+  );
+  const dayPart = (
+    <>
       <h3 className="day-title">
         Settimana {shownWeek} · {DAY_LONG[day]}
       </h3>
@@ -271,7 +275,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
       <div className="plan">
         {!dayItems.length && (
           <EmptyState small art={<CategoryRow />} title="Riposo">
-            Aggiungi esercizi qui sotto, o duplica un altro giorno.
+            Aggiungi esercizi qui sotto.
           </EmptyState>
         )}
         {dayItems.map((i) => (
@@ -389,27 +393,45 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
           />
         )}
       </div>
-
-      {shownWeek < weeks && weekItems.length > 0 && (
-        <div className="row mt-16">
-          <ConfirmButton confirmLabel={`Sostituire le settimane ${shownWeek + 1}–${weeks}?`} onConfirm={copyToNext}>
-            Copia la settimana {shownWeek} nelle successive
-          </ConfirmButton>
-        </div>
-      )}
-    </section>
+    </>
+  );
+  const copyRow = shownWeek < weeks && weekItems.length > 0 && (
+    <div className="row mt-16">
+      <ConfirmButton confirmLabel={`Sostituire le settimane ${shownWeek + 1}–${weeks}?`} onConfirm={copyToNext}>
+        Copia la settimana {shownWeek} nelle successive
+      </ConfirmButton>
+    </div>
   );
 
   return (
     <>
       <PageTitle title={name || 'Scheda modello'} />
-      {/* su schermo largo i giorni (dove si lavora) a sinistra, nome e assegnazione a destra (audit A06) */}
+      {/* su schermo largo la settimana a griglia occupa tutta la larghezza (ticket 26); sotto, il giorno aperto
+          a sinistra e nome e assegnazione a destra (audit A06) */}
       {wide ? (
-        <Cols left={daysCard} right={<>{headCard}{assignCard}</>} />
+        <>
+          <section className="card">
+            {weekPart}
+            {copyRow}
+          </section>
+          <Cols
+            left={<section className="card day-card">{dayPart}</section>}
+            right={
+              <>
+                {headCard}
+                {assignCard}
+              </>
+            }
+          />
+        </>
       ) : (
         <>
           {headCard}
-          {daysCard}
+          <section className="card">
+            {weekPart}
+            {dayPart}
+            {copyRow}
+          </section>
           {assignCard}
         </>
       )}
