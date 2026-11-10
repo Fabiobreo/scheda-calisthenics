@@ -264,6 +264,6 @@ describe('etichette dell’elenco in attesa', () => {
     expect(label(qc, item('deleteEntry', ['old1']))).toBe('Eliminazione · Trazioni');
     expect(label(qc, item('setBodyWeight', ['2026-11-10', 72.5]))).toMatch(/^Peso · 72,5 kg · /);
     expect(label(qc, item('createLevelRecord', [{ subId: 'trazioni', stage: 'zavorra', value: 10, date: '2026-11-10', note: null }, 'r1']))).toBe('Record · Trazioni');
-    expect(label(qc, item('deleteEntry', ['sconosciuta']))).toBe('Eliminazione · Esercizio');
+    expect(label(qc, item('deleteEntry', ['sconosciuta']))).toBe('Allenamento eliminato');
   });
 });

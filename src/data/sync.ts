@@ -108,8 +108,11 @@ export function describe(qc: QueryClient, item: QueueItem): string {
       const [id, p] = args as [string, Partial<EntryInput>];
       return `Modifica · ${exName(p.exerciseId ?? entryEx(id))}`;
     }
-    case 'deleteEntry':
-      return `Eliminazione · ${exName(entryEx(args[0] as string))}`;
+    case 'deleteEntry': {
+      // di solito la riga non è più in cache (tolta subito dalla vista): resta solo che cosa si è fatto
+      const ex = entryEx(args[0] as string);
+      return ex ? `Eliminazione · ${exName(ex)}` : 'Allenamento eliminato';
+    }
     case 'setBodyWeight':
       return `Peso · ${String(args[1]).replace('.', ',')} kg · ${shortDate(args[0] as string)}`;
     case 'deleteBodyWeight':
@@ -120,8 +123,10 @@ export function describe(qc: QueryClient, item: QueueItem): string {
       const [id, p] = args as [string, Partial<LevelRecordInput>];
       return `Record modificato · ${subName(p.subId ?? recordSub(id))}`;
     }
-    case 'deleteLevelRecord':
-      return `Record tolto · ${subName(recordSub(args[0] as string))}`;
+    case 'deleteLevelRecord': {
+      const sub = recordSub(args[0] as string);
+      return sub ? `Record tolto · ${subName(sub)}` : 'Record eliminato';
+    }
   }
 }
 
