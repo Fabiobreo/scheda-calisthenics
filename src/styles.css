@@ -267,8 +267,8 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 /* Pagina Grafici (ticket 36). Sta in una schermata: titolo, periodo, metrica, esercizio, grafico con la riga del
    record, ultime 5 sessioni, barra. La pagina è alta almeno quanto lo schermo (108 px = spazio sopra 18 + testata 82 +
    stacco 6 + 2 di margine, più la barra in basso) e il grafico prende lo spazio che resta. Le righe da toccare restano
-   di 44 px, quindi il resto non si può stringere: con 5 sessioni il grafico arriva al minimo di 140 px intorno ai
-   830 px di altezza; sotto, la pagina scorre invece di tagliare. Bianco solo per titolo e date: i valori sono in oro,
+   di 44 px, quindi il resto non si può stringere: con 5 sessioni il grafico arriva al minimo di 140 px intorno agli
+   825 px di altezza; sotto, la pagina scorre invece di tagliare. Bianco solo per titolo e date: i valori sono in oro,
    il resto in --muted. */
 .gr {
   display: flex; flex-direction: column; gap: 6px; min-width: 0;
