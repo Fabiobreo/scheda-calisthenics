@@ -3,7 +3,7 @@ import { K } from './hooks';
 import { CACHE_KEY, dequeue, isStale, pendingFor, type QueueItem, type QueueOp } from './offline';
 import type { Repo } from './repo';
 import { shortDate } from '../lib/dates';
-import { SUBS } from '../lib/levels';
+import { chainRule } from '../lib/levels';
 import type { Entry, EntryInput, Exercise, LevelRecordInput, LevelRecordRow, PlanItem } from './types';
 
 /**
@@ -107,7 +107,7 @@ export function describe(qc: QueryClient, item: QueueItem): string {
   const entries = qc.getQueryData<Entry[]>(['entries', userId]) ?? [];
   const records = qc.getQueryData<LevelRecordRow[]>(['level-records', userId]) ?? [];
   const exName = (id?: string) => qc.getQueryData<Exercise[]>(['exercises', userId])?.find((e) => e.id === id)?.name ?? 'Esercizio';
-  const subName = (id?: string) => SUBS.find((s) => s.id === id)?.name ?? 'Record';
+  const subName = (id?: string) => (id ? chainRule(id)?.name : undefined) ?? 'Record';
   const entryEx = (id: string) => entries.find((e) => e.id === id)?.exerciseId;
   const recordSub = (id: string) => records.find((r) => r.id === id)?.subId;
   // rimasto in coda da una versione vecchia dell'app: il peso corporeo a parte non esiste più

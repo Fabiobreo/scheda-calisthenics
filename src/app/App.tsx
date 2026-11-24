@@ -5,13 +5,13 @@ import { TopBar } from '../components/TopBar';
 import { IconAtleti, IconEsercizi, IconGrafici, IconLivello, IconScheda } from '../components/icons';
 import { useData, useProfile } from '../data/hooks';
 import { Skeleton } from '../components/ui';
-import { HomeView } from '../features/home/HomeView';
+import { LivelloView } from '../features/livello/LivelloView';
 import { LoggerProvider } from '../features/logger/Logger';
 import { whenIdle } from '../lib/idle';
 import { netDown, pendingFor, queue } from '../data/offline';
 import { usePasswordRecovery, useSession } from './session';
 
-// Home e registratore servono subito; il resto si scarica quando lo apri (audit A12): chi non è trainer non scarica
+// Livello e registratore servono subito; il resto si scarica quando lo apri (audit A12): chi non è trainer non scarica
 // mai la parte trainer, chi è già dentro non scarica l'accesso. Il service worker li tiene comunque in cache.
 // La Scheda, seconda voce della barra, si scarica subito dopo il primo disegno, appena il browser è libero (audit A4).
 const loadScheda = () => import('../features/scheda/SchedaView');
@@ -29,7 +29,7 @@ const SyncAgent = lazy(() => import('./offline').then((m) => ({ default: m.SyncA
 const GraficiView = lazy(() => import('../features/grafici/GraficiView').then((m) => ({ default: m.GraficiView })));
 
 const TABS: { to: string; label: string; icon: ReactNode }[] = [
-  { to: '/', label: 'Livello', icon: <IconLivello /> },
+  { to: '/livello', label: 'Livello', icon: <IconLivello /> },
   { to: '/scheda', label: 'Scheda', icon: <IconScheda /> },
   { to: '/grafici', label: 'Grafici', icon: <IconGrafici /> },
   { to: '/esercizi', label: 'Esercizi', icon: <IconEsercizi /> },
@@ -158,8 +158,9 @@ function Main() {
           <Suspense fallback={<Skeleton />}>
             {/* chiave sul percorso: cambiando pagina il contenuto si rimonta ed entra con l'animazione (V02) */}
             <Routes key={location.pathname}>
-              {/* Home "Livello" (ticket 10); la Scheda, che prima era qui, è a /scheda */}
-              <Route path="/" element={<HomeView />} />
+              {/* pagina Livello (ticket 34). "/" porta lì finché non c'è la Home (ticket 39) */}
+              <Route path="/livello" element={<LivelloView />} />
+              <Route path="/" element={<Navigate to="/livello" replace />} />
               <Route path="/scheda" element={<SchedaView />} />
               <Route path="/grafici" element={<GraficiView />} />
               {/* il Registro non c'è più (ticket 04): chi l'aveva salvato torna alla Scheda */}

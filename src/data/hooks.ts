@@ -5,7 +5,7 @@ import { useToast } from '../app/toast';
 import type { Repo } from './repo';
 import { enqueue, netDown, newId, pendingFor, QUEUE_FORMAT, type QueueOp } from './offline';
 import { todayStr } from '../lib/dates';
-import { levelSummary, toLegacyRecords } from '../lib/levels';
+import { levelSummary, type LevelRecord } from '../lib/levels';
 import type {
   CatalogExercise,
   EntryInput,
@@ -13,6 +13,7 @@ import type {
   ExerciseInput,
   ExerciseRef,
   LevelRecordInput,
+  LevelRecordRow,
   PlanChanges,
   Profile,
   PlanItem,
@@ -316,18 +317,17 @@ export function useLevelRecords() {
   return useQuery({ queryKey: useKey(K.levelRecords), queryFn: () => repo.listLevelRecords() });
 }
 
+/** Record letto dal database, pronto per il motore: catena e voce coi nomi che il motore si aspetta. */
+export type LevelRow = LevelRecordRow & LevelRecord;
+
 /**
- * Livello calcolato dai soli record, ognuno col peso corporeo che porta dentro. Non si salva mai: cambiando un
- * record o una soglia delle regole si ricalcola da solo.
- *
- * Finché la pagina Livello non passa al motore v2 (ticket 34) il riepilogo è ancora quello del motore vecchio:
- * `records` ha le progressioni coi nomi di quel motore (`toLegacyRecords`), mentre `useLevelRecords` e le
- * scritture usano le voci v2 del database.
+ * Livello calcolato dai soli record col motore v2 (`src/lib/levels`), ognuno col peso corporeo che porta dentro. Non
+ * si salva mai: cambiando un record o una soglia delle regole si ricalcola da solo.
  */
 export function useLevel() {
   const lr = useLevelRecords();
   const computed = useMemo(() => {
-    const records = toLegacyRecords(lr.data ?? []);
+    const records: LevelRow[] = (lr.data ?? []).map((r) => ({ ...r, chainId: r.subId, entry: r.stage }));
     return { summary: levelSummary(records), records };
   }, [lr.data]);
   return { ...computed, isLoading: lr.isLoading, error: lr.data ? null : lr.error };

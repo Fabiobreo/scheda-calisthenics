@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { availableOptions, legacyStage, stageLimits as oldStageLimits, SUBS, toLegacyRecords, v2EntryId } from '.';
 import { stageLimits } from './v2';
 
 /**
@@ -8,6 +7,28 @@ import { stageLimits } from './v2';
  * Qui si legge il testo della migration; l'esecuzione vera su un database è in scripts/prova-migration-0015.mjs.
  */
 const sql = Object.values(import.meta.glob<string>('../../../supabase/migrations/0015_levels_v2.sql', { query: '?raw', import: 'default', eager: true }))[0];
+
+/**
+ * Le 56 progressioni del motore vecchio (migration 0012), cancellato col ticket 34: restano qui come dato fisso,
+ * perché sono quello che la migration deve saper convertire.
+ */
+const OLD_STAGES: Record<string, string[]> = {
+  trazioni: ['zavorra'],
+  'muscle-up': ['zavorra'],
+  oap: ['gomito', 'bicipite', 'spalla', 'oap'],
+  dip: ['zavorra'],
+  military: ['bilanciere'],
+  'panca-piana': ['bilanciere'],
+  planche: ['tuck', 'advanced-tuck', 'one-leg', 'straddle', 'half-lay', 'full', 'wide', 'maltese'],
+  'planche-push-up': ['tuck', 'advanced-tuck', 'one-leg', 'straddle', 'half-lay', 'full'],
+  'planche-press': ['tuck', 'advanced-tuck', 'one-leg', 'straddle', 'half-lay', 'full'],
+  'front-lever': ['tuck', 'advanced-tuck', 'one-leg', 'straddle', 'half-lay', 'full', 'wide', 'victorian'],
+  'front-lever-pull-up': ['tuck', 'advanced-tuck', 'one-leg', 'straddle', 'half-lay', 'full', 'wide'],
+  'front-lever-touch': ['tuck', 'advanced-tuck', 'one-leg', 'straddle', 'half-lay', 'full', 'wide'],
+  verticale: ['verticale', 'straddle-mono-braccio', 'full-mono-braccio'],
+  hspu: ['libera', 'zavorra'],
+};
+const oldStageLimits = () => Object.entries(OLD_STAGES).flatMap(([subId, stages]) => stages.map((stage) => ({ subId, stage })));
 
 const key = (sub: string, stage: string) => `${sub}/${stage}`;
 const v2 = new Set(stageLimits().map((l) => key(l.chainId, l.entry)));
@@ -35,6 +56,10 @@ function fate(sub: string, stage: string): string | null {
 }
 
 describe('conversione dei record al formato v2 (migration 0015)', () => {
+  it('le progressioni vecchie sono 56', () => {
+    expect(oldStageLimits()).toHaveLength(56);
+  });
+
   it('ogni progressione vecchia finisce su una voce del motore v2, oppure è tra quelle eliminate', () => {
     for (const { subId, stage } of oldStageLimits()) {
       const to = fate(subId, stage);
@@ -69,39 +94,5 @@ describe('conversione dei record al formato v2 (migration 0015)', () => {
   it('solo le voci elencate cambiano: le altre hanno lo stesso identificativo nei due motori', () => {
     const changed = oldStageLimits().filter(({ subId, stage }) => fate(subId, stage) !== stage).map(({ subId, stage }) => key(subId, stage));
     expect(changed.sort()).toEqual([...renamed.keys(), ...moved.keys(), ...deleted].sort());
-  });
-});
-
-describe('ponte tra le voci v2 e il motore vecchio (fino al ticket 34)', () => {
-  it('le voci rinominate dalla migration tornano al nome vecchio, e viceversa', () => {
-    for (const [k, entry] of renamed) {
-      const [sub, old] = k.split('/');
-      expect(legacyStage(sub, entry), k).toBe(old);
-      expect(v2EntryId(sub, old), k).toBe(entry);
-    }
-    expect(legacyStage('planche', 'straddle')).toBe('straddle');
-    expect(v2EntryId('trazioni', 'zavorra')).toBe('zavorra');
-    // nata col v2: il motore vecchio non la conosce, resta com'è (e viene ignorata)
-    expect(legacyStage('trazioni', 'australian')).toBe('australian');
-  });
-
-  it('i record cambiano solo il nome della voce', () => {
-    const rows = [
-      { id: 'a', subId: 'military', stage: 'massimale', value: 50, bodyweightKg: 75 },
-      { id: 'b', subId: 'oap', stage: 'ripetizioni', value: 2, bodyweightKg: 75 },
-      { id: 'c', subId: 'trazioni', stage: 'ripetizioni', value: 8, bodyweightKg: 75 },
-    ];
-    expect(toLegacyRecords(rows)).toEqual([
-      { ...rows[0], stage: 'bilanciere' },
-      { ...rows[1], stage: 'oap' },
-      rows[2],
-    ]);
-  });
-
-  it('ogni sotto-esercizio del motore vecchio ha almeno una progressione che il database accetta ancora', () => {
-    for (const sub of SUBS) {
-      const ok = availableOptions(sub.id, []).filter((o) => v2.has(key(sub.id, v2EntryId(sub.id, o.stageId))));
-      expect(ok.length, sub.id).toBeGreaterThan(0);
-    }
   });
 });
