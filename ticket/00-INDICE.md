@@ -143,7 +143,7 @@ impostazione, con stile, sfondo e caratteri di Home e Livello e **al massimo 3â€
 | # | Ticket | Fase | Figura principale | Stima | Stato |
 |---|--------|------|-------------------|-------|-------|
 | 30 | [Specifica dei punteggi v2](30-specifica-punteggi-v2.md) | 1 | Product owner + coach | S (bloccante) | confermata da Michael il 24/11 |
-| 31 | [Motore dei punteggi v2](31-motore-punteggi-v2.md) | 1 | TypeScript (logica + test) | M | da fare |
+| 31 | [Motore dei punteggi v2](31-motore-punteggi-v2.md) | 1 | TypeScript (logica + test) | M | fatto 24/11 in `src/lib/levels/v2` (le pagine lo usano dal 34); tabella di verifica da far controllare a Michael |
 | 32 | [Dati dei livelli v2: peso nel record, conversione](32-dati-livelli-v2.md) | 1 | Backend | M | da fare |
 | 33 | [Stile nuovo: oro, foto, testata, barra](33-stile-oro.md) | 1 (in parallelo) | UI designer + frontend | L | da fare |
 | 34 | [Pagina Livello](34-pagina-livello.md) | 2 | Frontend + UI designer | L | da fare |
