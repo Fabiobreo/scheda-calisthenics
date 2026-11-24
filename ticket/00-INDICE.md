@@ -144,8 +144,8 @@ impostazione, con stile, sfondo e caratteri di Home e Livello e **al massimo 3â€
 |---|--------|------|-------------------|-------|-------|
 | 30 | [Specifica dei punteggi v2](30-specifica-punteggi-v2.md) | 1 | Product owner + coach | S (bloccante) | confermata da Michael il 24/11 |
 | 31 | [Motore dei punteggi v2](31-motore-punteggi-v2.md) | 1 | TypeScript (logica + test) | M | fatto 24/11 in `src/lib/levels/v2` (le pagine lo usano dal 34); tabella di verifica da far controllare a Michael |
-| 32 | [Dati dei livelli v2: peso nel record, conversione](32-dati-livelli-v2.md) | 1 | Backend | M | fatto 24/11 sul ramo `claude/ticket-32-dati-v2-903f79` (non unito): migration `0015`, da rilasciare col 34; provata su PGlite, **non** su Supabase locale (manca Docker); 3 scelte di conversione da confermare con Michael |
-| 33 | [Stile nuovo: oro, foto, testata, barra](33-stile-oro.md) | 1 (in parallelo) | UI designer + frontend | L | da fare |
+| 32 | [Dati dei livelli v2: peso nel record, conversione](32-dati-livelli-v2.md) | 1 | Backend | M | fatto 24/11, unito su main: migration `0015`, da rilasciare col 34; provata su PGlite, **non** su Supabase locale (manca Docker); 3 scelte di conversione confermate il 24/11 |
+| 33 | [Stile nuovo: oro, foto, testata, barra](33-stile-oro.md) | 1 (in parallelo) | UI designer + frontend | L | fatto il 24/11 (da far approvare a Michael) |
 | 34 | [Pagina Livello](34-pagina-livello.md) | 2 | Frontend + UI designer | L | da fare |
 | 35 | [Pagina Esercizi e catalogo](35-pagina-esercizi.md) | 2 | Frontend + backend | M | da fare |
 | 36 | [Pagina Grafici](36-pagina-grafici.md) | 2 | Frontend + data-viz | M | da fare |
@@ -175,8 +175,7 @@ in chiaro.
 ### Cosa serve ancora
 
 - ~~Da Michael: il file del busto dorato con fondo trasparente (34).~~ Ritagliato dal mockup il 24/11 (`public/avatar/`); l'originale di Michael, se arriva, lo sostituisce.
-- Da Fabio: profilo pubblico o privato alla registrazione e informativa privacy (38, bloccanti per la fase 3); ingresso
-  ad Account dal nome in testata (33); tipo dell'esercizio come testo in Scheda (37).
+- Da Fabio: profilo pubblico o privato alla registrazione e informativa privacy (38, bloccanti per la fase 3); tipo dell'esercizio come testo in Scheda (37).
 
 ### Funzioni che spariscono (richieste dai PDF, da sapere prima di iniziare)
 

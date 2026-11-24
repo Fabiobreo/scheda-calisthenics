@@ -59,6 +59,59 @@ voci (Home, Livello, Scheda, Grafici, Esercizi), quella attiva in un riquadro do
 1. **Carattere**: Michael non sa quale sia quello dei mockup: si usa **Inter**, che è quello che gli somiglia.
 2. **Foto di sfondo**: l'ha generata lui con un'AI, si usa così com'è (nessuna licenza di terzi).
 
-## Domande aperte
+3. **Account** (Fabio, 24 novembre): si raggiunge toccando il nome in testata.
 
-1. Account: va bene raggiungerlo toccando il nome in testata? (Fabio)
+## Stato
+
+**Fatto il 24 novembre 2026** (solo app, nessuna migration). Manca l'approvazione di Michael sugli screenshot.
+
+Come è fatto:
+
+- **Token** (`styles.css`): quattro ori — `--gold` #d6a84e (valori, icone attive, linee dei grafici; 8,2:1 su
+  `--surface`), `--gold-hi` #f2d58c (cima dei gradienti, record, zona ELITE finché c'è; 12,6:1), `--gold-deep` #9c712c
+  (bronzo, fondo dei gradienti e bordi; 4,1:1, quindi **mai per il testo**), `--gold-dim` #bca37a (titoli piccoli delle
+  schede, livello in testata; 7,5:1) — più neutri antracite, `--fg` bianco caldo e `--muted` (6,6:1). Testo scuro
+  `--on-gold` sull'oro (8,5:1). `--accent`, `--elite` e `--elite-hot` non ci sono più: il ciano sparisce da CSS,
+  grafici, pentagono, icona dell'app (PNG rigenerati), `theme-color` e manifest (#0b0b0d). ELITE e record passano
+  all'oro chiaro. Forza/Volume/Tecnico in tinte spente (#8ea4c8, #b996c6, #8fc49c). Raggi più ampi (schede 22 px).
+- **Carattere**: `@fontsource-variable/inter` (un file per tutti i pesi, il browser scarica solo il latino) al posto di
+  Barlow e Barlow Condensed, tolti dalle dipendenze. Titoli senza maiuscolo forzato, peso 700, spaziatura negativa;
+  numeri grandi ridotti del 10–20% (Inter è più largo del condensato). Ho letto "titoli in minuscolo" come "scritti come
+  sono" (niente MAIUSCOLO): se Michael li vuole tutti minuscoli è una riga di CSS. Le etichette piccole dei campi
+  restano in maiuscoletto.
+- **Sfondo**: la foto di Michael (sorgente in [riferimenti/33-sfondo-palestra.webp](riferimenti/33-sfondo-palestra.webp),
+  688×1536, nessun originale più grande) diventa `public/bg/palestra-688.webp` (22 KB) e `palestra-480.webp` (12 KB)
+  con `node scripts/bg-photo.mjs <foto>` (senza argomento fa un segnaposto). È in `index.html`, fuori da React, con
+  `srcset` e `<link rel="preload">`: arriva col primo disegno. In alto, sfuma nel fondo con un velo che tiene leggibile
+  la testata. Il service worker la mette in cache (`webp` nei `globPatterns`). `topo.svg` tolto.
+- **Testata comune** ([TopBar.tsx](../src/components/TopBar.tsx), al posto di marchio, `LevelStrip` e avatar): nome
+  grande con un'icona persona (tocco → Account), "Livello N" in oro spento sotto, cerchio "Totale" a destra (tocco →
+  Livello) con arco dorato pari al livello attuale (pieno da 100). Dati da `useLevel`, calcoli invariati: il 31 cambierà
+  livello (Base…Leggenda) e percentuale, non il componente. Pastiglia "Offline" tra nome e cerchio. Mentre la sessione
+  si apre resta il nome dell'app.
+- **Barra in basso**: pillola flottante staccata dal bordo, voce attiva in un riquadro dorato; restano le 4 voci (+ Atleti
+  per i trainer). `--tabbar` passa a 84 px, quindi timer, toast e fogli restano sopra la pillola.
+- **Componenti** ([ui.tsx](../src/components/ui.tsx) + CSS): `Card` (con `star`), bottone primario a gradiente oro con
+  bordo bronzo, secondario a contorno bronzo e testo oro, segmenti a pillola con la voce attiva nel riquadro dorato,
+  `SearchField` (lente a sinistra, anche per la scelta con ricerca già esistente), `MoreMenu` "⋯" (menu ARIA: frecce,
+  Home/Fine, Esc, tocco fuori, fuoco che torna al pulsante; non ancora usato, serve al 35), fogli dal basso più
+  arrotondati con maniglia, toast scuro con bordo dorato, scheletri sui nuovi neutri.
+- **Pagine fuori dai mockup** (accesso, Account, Atleti, schede modello, registratore, sessione, riepilogo): solo i token
+  e i componenti, nessuna funzione tolta o spostata (lo fanno 34–37).
+- **Desktop** (20): colonna laterale al posto della pillola, due colonne invariate; la foto diventa una fascia alta
+  380 px, larga al massimo 688 px (niente ingrandimento) e sfumata ai lati.
+
+Prove fatte: unitari 232, `tsc -b` e `vite build` OK. **JS iniziale 156,5 KB gzip** (101,9 + 34,2 + 20,3, misurato come
+in AUDIT.md con `.env.local`): invariato, A4 resta 2. Nessun `--accent` né colore ciano nel codice; al massimo 4 ori
+(`grep -o "--gold[a-z-]*:" src/styles.css`). Nell'app locale con l'account di Fabio, a 390×844 e 360×640: accesso,
+Livello, Scheda, Grafici, Esercizi, Account, registratore; a 1280×800 Livello e Scheda in due colonne. Nessuno
+scorrimento orizzontale a 360 px; uno script su Livello, Scheda, Grafici, Esercizi e Account non trova bersagli
+sotto 44 px.
+
+Note per chi viene dopo:
+
+- Non provati nel browser: Atleti e schede modello (l'account di prova non è trainer), modalità sessione e riepilogo
+  (serve un programma per oggi), cronometro delle tenute. Hanno solo i token, nessun cambio di struttura.
+- Gli screenshot sono stati mandati a Fabio per Michael; i mockup non sono nel repository, quindi la sovrapposizione
+  precisa a Home/Livello va fatta da chi li ha.
+- `scripts/bg-photo.mjs` usa `sharp`, che arriva con `@vite-pwa/assets-generator`.
