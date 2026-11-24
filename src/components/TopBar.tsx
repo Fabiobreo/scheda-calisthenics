@@ -5,25 +5,22 @@ import { useLevel, useProfile } from '../data/hooks';
 /**
  * Testata comune di tutte le pagine (ticket 33, al posto di marchio e riepilogo del 12): nome grande con il livello
  * sotto (toccandoli si va ad Account, l'icona accanto lo dice) e a destra il cerchio "Totale", che porta a Livello.
- * I numeri sono quelli del motore attuale (`useLevel`): il livello 0–100 riempie il cerchio, oltre è ELITE. Il motore
- * v2 (ticket 31) cambierà livello (Base…Leggenda) e percentuale, non la testata. Altezza fissa: il contenuto non salta
- * quando i dati arrivano.
+ * I numeri sono quelli del motore v2 (`useLevel`): sotto il nome il livello complessivo col suo nome ("Avanzato"),
+ * nel cerchio la % dentro quel livello (30, decisione 1). Altezza fissa: il contenuto non salta quando i dati arrivano.
  */
 export function TopBar({ email, end }: { email: string | null; end?: ReactNode }) {
   const profile = useProfile().data;
   const { summary, isLoading } = useLevel();
   const name = profile?.displayName || email?.split('@')[0] || 'Il tuo profilo';
-  const elite = summary.zone === 'elite';
-  const level = isLoading ? null : summary.level;
-  const levelText = level === null ? 'Livello' : `Livello ${level}${elite ? ' · ELITE' : ''}`;
+  const level = isLoading ? null : { name: summary.name, percent: summary.percent };
   return (
     <>
-      <NavLink to="/account" className="top-id" aria-label={`${name}, ${levelText}: apri l'account`}>
+      <NavLink to="/account" className="top-id" aria-label={`${name}${level ? `, livello ${level.name}` : ''}: apri l'account`}>
         <span className="top-name">
           <span>{name}</span>
           <IconUser />
         </span>
-        <span className="top-level">{levelText}</span>
+        <span className="top-level">{level ? level.name : 'Livello'}</span>
       </NavLink>
       <span className="top-end">
         {end}
@@ -33,14 +30,14 @@ export function TopBar({ email, end }: { email: string | null; end?: ReactNode }
   );
 }
 
-/** Cerchio "Totale": arco dorato pari al livello (pieno da 100 in su), numero al centro. Porta a Livello. */
-function TotalRing({ level }: { level: number | null }) {
+/** Cerchio "Totale": arco dorato e numero al centro sono la % dentro il livello complessivo. Porta a Livello. */
+function TotalRing({ level }: { level: { name: string; percent: number } | null }) {
   const gid = useId();
   const r = 30;
   const c = 2 * Math.PI * r;
-  const pct = level === null ? 0 : Math.min(Math.max(level, 0), 100) / 100;
+  const pct = level === null ? 0 : level.percent / 100;
   return (
-    <NavLink to="/" end className="total" aria-label={level === null ? 'Totale: apri Livello' : `Totale ${level}: apri Livello`}>
+    <NavLink to="/livello" className="total" aria-label={level === null ? 'Totale: apri Livello' : `Totale: ${level.percent}% del livello ${level.name}. Apri Livello`}>
       <svg viewBox="0 0 68 68" aria-hidden="true">
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
@@ -52,7 +49,10 @@ function TotalRing({ level }: { level: number | null }) {
         <circle className="tot-fg" cx="34" cy="34" r={r} stroke={`url(#${gid})`} strokeDasharray={c} strokeDashoffset={c * (1 - pct)} />
       </svg>
       <b aria-hidden="true">
-        {level ?? '–'}
+        <span>
+          {level ? level.percent : '–'}
+          {level && <i>%</i>}
+        </span>
         <small>Totale</small>
       </b>
     </NavLink>

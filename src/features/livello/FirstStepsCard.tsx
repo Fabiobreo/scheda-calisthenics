@@ -4,7 +4,7 @@ import { CardHead } from '../../components/ui';
 import type { StepId, Steps } from './firstSteps';
 
 /**
- * "Per iniziare" (ticket 28, audit C6): la checklist del primo accesso in Home. Ogni passo ha il suo pulsante, la spunta
+ * "Per iniziare" (ticket 28, audit C6): la checklist del primo accesso nella pagina Livello. Ogni passo ha il suo pulsante, la spunta
  * rimbalza quando un passo si compie, i blocchetti in alto dicono a che punto sei. Sparisce da sola a passi fatti;
  * "Più tardi" la nasconde su questo dispositivo.
  */
@@ -18,8 +18,6 @@ export function FirstSteps({ steps, onRecord, onDismiss }: { steps: Steps; onRec
 
   const action = (id: StepId) => {
     switch (id) {
-      case 'figura':
-        return <Link className="btn small ghost" to="/account" aria-label="Scegli la figura dell'avatar">Scegli</Link>;
       case 'record':
         return <button type="button" className="btn small ghost" onClick={onRecord} aria-label="Aggiungi il primo record">Aggiungi</button>;
       case 'allenamento':
@@ -29,7 +27,7 @@ export function FirstSteps({ steps, onRecord, onDismiss }: { steps: Steps; onRec
 
   return (
     <section className="card first-steps" aria-labelledby="fs-h">
-      <CardHead title="Per iniziare" help="Tre passi per far contare livello e allenamenti. Si spuntano da soli quando li fai.">
+      <CardHead title="Per iniziare" help="Due passi per far contare livello e allenamenti. Si spuntano da soli quando li fai.">
         <span className="fs-prog" role="img" aria-label={`${steps.done} di ${steps.total} passi fatti`}>
           <span className="fs-blocks" aria-hidden="true">
             {steps.steps.map((s) => (

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AthleteScope, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
-import { Avatar } from '../../components/Avatar';
+import { Bust } from '../../components/Bust';
 import { useExercisePicker } from '../../components/ExercisePicker';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
@@ -19,7 +19,6 @@ import {
   useLevel,
   useLevelRecords,
   useLinks,
-  useProfile,
   useRemovePlanItem,
   useSetPlanNote,
   useSetPlanScheme,
@@ -32,9 +31,9 @@ import { duplicatePlanDay, schemeFor, typeScheme } from '../../lib/editor';
 import { defaultType } from '../../lib/catalog';
 import { byDay, dayCount, offPlan } from '../../lib/plan';
 import { adherence, adherenceText, athleteAlerts, dayMarks, lastTrainingDate, movedText, summarizeStatuses, weekStatuses, type Alert } from '../../lib/adherence';
-import { subRule } from '../../lib/levels';
+import { chainRule } from '../../lib/levels';
 import { GraficiView } from '../grafici/GraficiView';
-import { HomeView } from '../home/HomeView';
+import { LivelloView } from '../livello/LivelloView';
 import { SchedeCard } from './SchedeView';
 
 const nameOf = (n: string | null) => n ?? 'Atleta senza nome';
@@ -168,21 +167,18 @@ function AthletesCard({ selected }: { selected?: string }) {
 }
 
 /**
- * Atleta in elenco: avatar, nome, livello e data del collegamento. Va dentro il suo `AthleteScope`: il livello usa la
+ * Atleta in elenco: busto, nome, livello (nome e % dentro il livello) e data del collegamento. Va dentro il suo `AthleteScope`: il livello usa la
  * stessa cache della sua scheda Livello.
  */
 function AthleteHead({ name, since }: { name: string | null; since: string }) {
   const { summary, records, isLoading, error } = useLevel();
   const data = useData();
-  // dentro lo scope dell'atleta: il suo profilo, per la figura dell'avatar
-  const body = useProfile().data?.avatarBody;
-  const elite = summary.zone === 'elite';
   const today = todayStr();
   const adh = adherence(data.plan, data.entries, today);
   const last = lastTrainingDate(data.entries, today);
   return (
     <div className="ath">
-      <Avatar name={name} avatar={summary.avatar} elite={elite} small body={body} />
+      <Bust band={summary.band} small />
       <div>
         <b>{nameOf(name)}</b>
         <div className="ath-level">
@@ -194,8 +190,7 @@ function AthleteHead({ name, since }: { name: string | null; since: string }) {
             'Nessun record'
           ) : (
             <>
-              Livello <b className={elite ? 'elite' : undefined}>{summary.level}</b>
-              {elite && <span className="tag-elite">ELITE</span>}
+              <b>{summary.name}</b> {summary.percent}%
             </>
           )}
         </div>
@@ -239,7 +234,7 @@ function AthleteAlerts({ athleteId, name }: { athleteId: string; name: string })
     levelRecords: lr.data ?? [],
     today: todayStr(),
     nameOf: (id) => byId.get(id),
-    subName: (id) => subRule(id)?.name,
+    subName: (id) => chainRule(id)?.name,
   });
   if (!alerts.length) return null;
   return (
@@ -323,7 +318,7 @@ function AthleteData({ tab }: { tab: Tab }) {
   if (tab === 'livello')
     return (
       <NestedView>
-        <HomeView />
+        <LivelloView />
       </NestedView>
     );
   if (isLoading) return <Skeleton />;

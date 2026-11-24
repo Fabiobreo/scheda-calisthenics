@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useRepo, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
-import { Avatar } from '../../components/Avatar';
-import { CardHead, Field, PageTitle, PasswordField, Seg } from '../../components/ui';
-import { useData, useDeleteAccount, useLevel, useProfile, useUpdateProfile } from '../../data/hooks';
-import { AVATAR_BODIES } from '../../lib/avatarFigure';
+import { Field, PageTitle, PasswordField } from '../../components/ui';
+import { useData, useDeleteAccount, useProfile, useUpdateProfile } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
 import { supabase } from '../../lib/supabase';
 import { plural } from '../../lib/format';
@@ -23,7 +21,6 @@ export function AccountView({ inviteCode }: { inviteCode?: string }) {
       {/* su schermo largo le schede vanno su due colonne (audit A06) */}
       <div className="masonry">
         <ProfileCard />
-        <AvatarCard />
         {!inviteCode && <MyTrainerCard />}
         <TrainerModeCard />
         <SecurityCard />
@@ -74,27 +71,6 @@ function ProfileCard() {
           <button className="btn small" onClick={save} disabled={name === null || value.trim() === saved}>
             Salva
           </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/** Figura dell'avatar (ticket 11): uomo o donna, con l'anteprima al livello di oggi. */
-function AvatarCard() {
-  const profile = useProfile();
-  const update = useUpdateProfile('Avatar salvato');
-  const { summary } = useLevel();
-  const body = profile.data?.avatarBody ?? null;
-  return (
-    <section className="card">
-      <CardHead title="Avatar" help="Cambia fisico ogni 10 livelli. Verso il livello 100 compare un'aura, in zona ELITE le scosse." />
-      <div className="avatar-pick">
-        <Avatar name={profile.data?.displayName} avatar={summary.avatar} elite={summary.zone === 'elite'} body={body} />
-        <div className="fld">
-          <span className="fld-l">Figura</span>
-          <Seg label="Figura dell'avatar" value={body} options={AVATAR_BODIES} onChange={(v) => v !== body && update.mutate({ avatarBody: v })} />
-          {!body && <span className="fld-hint">Finché non scegli, al posto della figura c'è la tua iniziale.</span>}
         </div>
       </div>
     </section>

@@ -1,32 +1,30 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { radial, BASE_RING } from '../features/home/levelView';
+import { pentagonText, type PentagonScale } from '../features/livello/levelView';
 
-export interface PentagonAxis {
-  /** Nome dell'asse; uno spazio va a capo ("Fondamentali spinta" → due righe). */
-  label: string;
-  /** 0–200 */
-  value: number;
-}
-
-const W = 380;
-const H = 300;
-const CX = 190;
-const CY = 158;
-const R = 104;
-const LH = 14;
+const W = 220;
+const H = 188;
+const CX = 110;
+const CY = 104;
+const R = 68;
+/** Livelli sotto il contorno, al massimo: Base…Titano quando il contorno è Leggenda. */
+const RINGS = 5;
 
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-/** Valori che crescono verso il bersaglio (dallo zero all'apertura, dal valore di prima quando cambia). */
-function useAnimated(target: number[]): number[] {
-  const [shown, setShown] = useState(() => (reducedMotion() ? target : target.map(() => 0)));
+/**
+ * Valori che scorrono verso il bersaglio quando cambia. All'apertura partono da zero (`fromZero`: l'area cresce dal
+ * centro) oppure sono già al loro posto (la griglia).
+ */
+function useAnimated(target: number[], fromZero: boolean): number[] {
+  const [shown, setShown] = useState(() => (reducedMotion() || !fromZero ? target : target.map(() => 0)));
   const shownRef = useRef(shown);
   shownRef.current = shown;
   const key = target.join(',');
   useEffect(() => {
     const to = key.split(',').map(Number);
-    if (reducedMotion()) return setShown(to);
-    const from = shownRef.current.length === to.length ? shownRef.current : to.map(() => 0);
+    const from = shownRef.current;
+    if (reducedMotion() || from.length !== to.length) return setShown(to);
+    if (from.every((v, i) => v === to[i])) return;
     const start = performance.now();
     const ms = 700;
     let raf = 0;
@@ -51,105 +49,82 @@ function at(i: number, n: number, d: number): [number, number] {
 const poly = (pts: [number, number][]) => pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 
 /**
- * Grafico a pentagono (ticket 10), SVG senza librerie. Scala 0–200 a due tratti con l'anello del 100 in evidenza;
- * area e punti nel colore base, punti e lati verso una categoria in zona ELITE nel colore elite.
- * Stile del design system (06): area sfumata, lati con bagliore (copia sfocata sotto), alone sui punti; nel mini niente
- * bagliore né aloni (è piccolo e sta in ogni intestazione).
- * I valori sono anche nel testo alternativo e nelle etichette.
+ * Pentagono del livello (ticket 34), SVG senza librerie. La scala la decide `pentagonScale`: il contorno è la fine
+ * del livello più alto raggiunto tra le 5 categorie, gli anelli interni le fini dei livelli sotto, ogni asse in
+ * scala sui punti della sua categoria. Quando una categoria sale di livello la scala cambia: area e anelli scorrono
+ * verso il centro e il contorno pulsa, cioè il pentagono "si allarga". Accanto a ogni vertice la sigla della
+ * categoria e la % dentro il suo livello; nomi e valori per intero nel testo alternativo.
  */
-export function Pentagon({ axes, title = 'Livello per categoria', mini }: { axes: PentagonAxis[]; title?: string; /** piccolo, senza etichette né griglia fine, decorativo */ mini?: boolean }) {
+export function Pentagon({ scale }: { scale: PentagonScale }) {
+  const { axes } = scale;
   const n = axes.length;
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const values = useAnimated(axes.map((a) => a.value));
-  const pts = values.map((v, i) => at(i, n, radial(v)));
-  const elite = axes.map((a) => a.value > 100);
-  const ring = (d: number) => poly(axes.map((_, i) => at(i, n, d)));
-  const summary = `${title}: ${axes.map((a) => `${a.label} ${a.value} su ${a.value > 100 ? 200 : 100}${a.value > 100 ? ', ELITE' : ''}`).join('; ')}.`;
+  const values = useAnimated(
+    axes.map((a) => a.at),
+    true,
+  );
+  // sempre RINGS anelli per asse: quelli dei livelli dal contorno in su stanno sul contorno (1) e non si disegnano
+  const ringAt = useAnimated(
+    Array.from({ length: RINGS }, (_, k) => axes.map((a) => a.rings[k] ?? 1)).flat(),
+    false,
+  );
+  const pts = values.map((v, i) => at(i, n, v));
+  const rim = poly(axes.map((_, i) => at(i, n, 1)));
 
   return (
-    <svg
-      className={mini ? 'penta penta-mini' : 'penta'}
-      viewBox={mini ? `${CX - R - 8} ${CY - R - 8} ${2 * R + 16} ${2 * R + 16}` : `0 0 ${W} ${H}`}
-      {...(mini ? { 'aria-hidden': true } : { role: 'img', 'aria-label': summary })}
-    >
-      {/* griglia: anelli ogni 25 fino al 100, poi 150 e 200 nella zona ELITE */}
-      {!mini &&
-        [0.25, 0.5, 0.75].map((f) => <polygon key={f} className="penta-grid" points={ring(BASE_RING * f)} />)}
-      <path className="penta-elite-band" d={`M${ring(1)}Z M${ring(BASE_RING)}Z`} fillRule="evenodd" />
-      {!mini && <polygon className="penta-grid" points={ring(radial(150))} />}
-      <polygon className="penta-grid" points={ring(1)} />
-      <polygon className="penta-100" points={ring(BASE_RING)} />
-      {axes.map((_, i) => {
-        const [x, y] = at(i, n, 1);
-        return <line key={i} className="penta-grid" x1={CX} y1={CY} x2={x} y2={y} />;
-      })}
-
+    <svg className="penta" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={pentagonText(scale)}>
       <defs>
         <radialGradient id={`${uid}-a`} cx={CX} cy={CY} r={R} gradientUnits="userSpaceOnUse">
           <stop offset="0" className="penta-area-in" />
           <stop offset="1" className="penta-area-out" />
         </radialGradient>
-        {!mini && (
-          <filter id={`${uid}-g`} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" />
-          </filter>
-        )}
-        {pts.map((p, i) => {
-          const j = (i + 1) % n;
-          if (!elite[i] && !elite[j]) return null;
-          const q = pts[j];
-          return (
-            <linearGradient key={i} id={`${uid}-e${i}`} gradientUnits="userSpaceOnUse" x1={p[0]} y1={p[1]} x2={q[0]} y2={q[1]}>
-              <stop offset="0" className={elite[i] ? 'penta-stop-elite' : 'penta-stop-base'} />
-              <stop offset="1" className={elite[j] ? 'penta-stop-elite' : 'penta-stop-base'} />
-            </linearGradient>
-          );
-        })}
+        <filter id={`${uid}-g`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2.4" />
+        </filter>
       </defs>
+
+      <polygon className="penta-back" points={rim} />
+      {Array.from({ length: RINGS }, (_, k) => {
+        const ds = axes.map((_, i) => ringAt[k * n + i]);
+        if (ds.every((d) => d > 0.995)) return null;
+        return <polygon key={k} className="penta-grid" points={poly(ds.map((d, i) => at(i, n, Math.min(1, d))))} />;
+      })}
+      {axes.map((_, i) => {
+        const [x, y] = at(i, n, 1);
+        return <line key={i} className="penta-grid" x1={CX} y1={CY} x2={x} y2={y} />;
+      })}
+      {/* contorno: la chiave sul livello lo fa pulsare quando la scala cambia */}
+      <polygon key={scale.band} className="penta-rim" points={rim} />
+
       <polygon className="penta-area" points={poly(pts)} fill={`url(#${uid}-a)`} />
-      {/* lati uno per uno: verso un vertice ELITE il colore sfuma nel colore elite. Il gradiente va in style: un
-          attributo stroke perderebbe contro il colore della classe nel CSS. Sotto, la stessa linea sfocata fa il bagliore. */}
-      {(mini ? [false] : [true, false]).map((glow) =>
-        pts.map((p, i) => {
-          const j = (i + 1) % n;
-          const q = pts[j];
-          const grad = elite[i] || elite[j];
-          return (
-            <line
-              key={`${glow ? 'g' : 'e'}${i}`}
-              className={`penta-edge${grad ? ' hot' : ''}${glow ? ' penta-glow' : ''}`}
-              x1={p[0]}
-              y1={p[1]}
-              x2={q[0]}
-              y2={q[1]}
-              style={grad ? { stroke: `url(#${uid}-e${i})` } : undefined}
-              filter={glow ? `url(#${uid}-g)` : undefined}
-            />
-          );
-        }),
-      )}
-      {!mini && pts.map(([x, y], i) => <circle key={i} className={elite[i] ? 'penta-halo elite' : 'penta-halo'} cx={x} cy={y} r={elite[i] ? 12 : 9} />)}
+      <polygon className="penta-edge penta-glow" points={poly(pts)} filter={`url(#${uid}-g)`} />
+      <polygon className="penta-edge" points={poly(pts)} />
       {pts.map(([x, y], i) => (
-        <circle key={i} className={elite[i] ? 'penta-dot elite' : 'penta-dot'} cx={x} cy={y} r={mini ? 9 : elite[i] ? 5.5 : 4.5} />
+        <circle key={i} className="penta-dot" cx={x} cy={y} r={3.4} />
       ))}
 
-      {!mini && axes.map((a, i) => {
-        const [lx, ly] = at(i, n, 1 + 14 / R);
-        const dx = lx - CX;
-        const anchor = Math.abs(dx) < 10 ? 'middle' : dx > 0 ? 'start' : 'end';
-        const lines = a.label.split(' ');
-        const count = lines.length + 1;
-        // sopra: il blocco finisce sul vertice; sotto: comincia dal vertice; ai lati: centrato
-        const top = ly < CY - R * 0.6 ? ly - (count - 1) * LH - 2 : ly > CY + R * 0.5 ? ly + 11 : ly - ((count - 1) * LH) / 2 + 4;
-        return (
-          <text key={i} className="penta-label" x={lx} y={top} textAnchor={anchor} aria-hidden="true">
-            {lines.map((l, k) => (
-              <tspan key={k} x={lx} dy={k === 0 ? 0 : LH}>
-                {l}
+      {axes.map((a, i) => {
+        const [vx, vy] = at(i, n, 1);
+        const dx = vx - CX;
+        const pct = `${a.percent}%`;
+        // in alto e in basso: sigla e % su una riga; ai lati: su due righe, verso l'esterno
+        if (vy < CY - R * 0.6 || vy > CY + R * 0.5) {
+          const top = vy < CY;
+          return (
+            <text key={a.id} className="penta-label" x={vx + Math.sign(Math.round(dx)) * 6} y={top ? vy - 9 : vy + 18} textAnchor="middle" aria-hidden="true">
+              {a.code}
+              <tspan className="penta-val" dx="5">
+                {pct}
               </tspan>
-            ))}
-            <tspan x={lx} dy={LH} className={a.value > 100 ? 'penta-val elite' : 'penta-val'}>
-              {a.value}
+            </text>
+          );
+        }
+        const x = vx + Math.sign(dx) * 7;
+        return (
+          <text key={a.id} className="penta-label" x={x} y={vy - 3} textAnchor={dx > 0 ? 'start' : 'end'} aria-hidden="true">
+            {a.code}
+            <tspan className="penta-val" x={x} dy="15">
+              {pct}
             </tspan>
           </text>
         );
