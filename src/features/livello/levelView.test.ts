@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { availableEntries, CATEGORIES, CHAINS, levelSummary, type LevelRecord } from '../../lib/levels';
 import {
   AXES,
+  CARDS,
   SIGLA,
   celebrations,
   chainLevelText,
@@ -34,6 +35,11 @@ describe('ordine e sigle delle categorie', () => {
   it('ci sono tutte e 5 le categorie, una volta sola, nell\'ordine HB, SS, FT, FS, ST', () => {
     expect([...AXES].sort()).toEqual(CATEGORIES.map((c) => c.id).sort());
     expect(AXES.map((id) => SIGLA[id])).toEqual(['HB', 'SS', 'FT', 'FS', 'ST']);
+  });
+
+  it('le schede seguono il mockup: HB, SS, FS, ST, FT', () => {
+    expect([...CARDS].sort()).toEqual([...AXES].sort());
+    expect(CARDS.map((id) => SIGLA[id])).toEqual(['HB', 'SS', 'FS', 'ST', 'FT']);
   });
 });
 

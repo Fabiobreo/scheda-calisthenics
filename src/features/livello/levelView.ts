@@ -19,11 +19,11 @@ import {
   type ValidationError,
 } from '../../lib/levels';
 
-/**
- * Categorie nell'ordine della pagina: assi del pentagono in senso orario dall'alto e schede dall'alto in basso.
- * È l'ordine delle sigle nella descrizione del mockup (HB, SS, FT, FS, ST): per cambiarlo basta questa riga.
- */
+/** Assi del pentagono in senso orario dall'alto, come nel mockup "Livello": HB, SS, FT, FS, ST. */
 export const AXES: readonly CategoryId[] = ['handbalance', 'skill-spinta', 'fondamentali-tirata', 'fondamentali-spinta', 'skill-tirata'];
+
+/** Schede delle categorie dall'alto in basso, come nel mockup "Livello": HB, SS, FS, ST, FT (non è l'ordine degli assi). */
+export const CARDS: readonly CategoryId[] = ['handbalance', 'skill-spinta', 'fondamentali-spinta', 'skill-tirata', 'fondamentali-tirata'];
 
 /** Sigle accanto ai vertici del pentagono. */
 export const SIGLA: Record<CategoryId, string> = {

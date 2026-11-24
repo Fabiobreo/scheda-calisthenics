@@ -152,9 +152,9 @@ push, niente merge. Da rilasciare insieme alla migration `0015` del 32. Manca l'
 
 **Scelte dove il ticket non dice** (da far vedere a Michael)
 
-1. **Ordine delle categorie**: HB, SS, FT, FS, ST, cioè l'ordine delle sigle nella descrizione del mockup, sia per
-   gli assi (in senso orario dall'alto) sia per le schede. I mockup non sono nel repository: se l'ordine è un altro
-   è una riga (`AXES` in `levelView.ts`).
+1. **Ordine delle categorie**: assi del pentagono HB, SS, FT, FS, ST in senso orario dall'alto (`AXES` in
+   `levelView.ts`); schede HB, SS, FS, ST, FT (`CARDS`). Corretto il 25/11 dopo l'unione, guardando il mockup: le
+   schede non seguono l'ordine degli assi.
 2. **Testata**: sotto il nome c'è solo "Avanzato", senza la parola "Livello"; nel cerchio "45%" e "Totale".
 3. **"Inizia allenamento" resta in questa pagina**, in una riga sola tra pentagono e categorie, e solo quando oggi c'è
    ancora qualcosa da fare (o una sessione da continuare): era soltanto nella scheda "Oggi", toglierlo l'avrebbe reso

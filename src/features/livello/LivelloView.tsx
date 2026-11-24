@@ -12,7 +12,7 @@ import { current, position, totalItems } from '../../lib/workout';
 import { useWorkout } from '../logger/Logger';
 import { dismissKey, firstSteps } from './firstSteps';
 import { FirstSteps } from './FirstStepsCard';
-import { AXES, categoryName, chainLevelText, chainName, chainPercent, missingBodyweight, pentagonScale, recordText } from './levelView';
+import { CARDS, categoryName, chainLevelText, chainName, chainPercent, missingBodyweight, pentagonScale, recordText } from './levelView';
 
 // Il foglio del record si apre a un tocco: si scarica dopo il primo disegno della pagina (audit A4)
 const loadRecordSheet = () => import('./RecordSheet');
@@ -62,7 +62,7 @@ export function LivelloView() {
   if (level.isLoading) return <Skeleton />;
 
   const { summary, records } = level;
-  const cats = AXES.map((id) => summary.categories.find((c) => c.categoryId === id)!);
+  const cats = CARDS.map((id) => summary.categories.find((c) => c.categoryId === id)!);
 
   const toggle = (id: CategoryId) => {
     const next = open === id ? null : id;
@@ -87,7 +87,7 @@ export function LivelloView() {
       <PageTitle title="Livello" />
       {level.error && <div className="banner">Non riesco a leggere livello e record. Controlla la connessione e riprova.</div>}
       <div className={nested ? 'lv nested' : 'lv'}>
-        {guide.visible && <FirstSteps steps={guide.steps} onRecord={() => toggle(AXES[0])} onDismiss={guide.dismiss} />}
+        {guide.visible && <FirstSteps steps={guide.steps} onRecord={() => toggle(CARDS[0])} onDismiss={guide.dismiss} />}
         {readOnly && records.length === 0 && <p className="coach-note">Non ha ancora inserito record: li inserisce dalla sua pagina Livello.</p>}
 
         <section className="lv-hero" aria-label={`Livello complessivo: ${summary.name}, ${summary.percent}%`}>
