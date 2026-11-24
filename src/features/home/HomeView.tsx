@@ -5,11 +5,10 @@ import { useScope } from '../../app/session';
 import { Avatar } from '../../components/Avatar';
 import { Pentagon } from '../../components/Pentagon';
 import { IconFondSpinta, IconFondTirata, IconHandbalance, IconSkillSpinta, IconSkillTirata } from '../../components/icons';
-import { useData, useLevel, useLinks, useProfile, useSetBodyWeight } from '../../data/hooks';
+import { useData, useLevel, useLinks, useProfile } from '../../data/hooks';
 import { adherence, weekStreak } from '../../lib/adherence';
-import { fmt, numInput, parseNum } from '../../lib/format';
 import { mondayOf, shortDate, todayStr } from '../../lib/dates';
-import { levelSummary, subRule, validateBodyweight, LIMITS, type AvatarStage, type CategoryId, type CategoryScore, type SubId, type SubScore } from '../../lib/levels';
+import { levelSummary, subRule, type AvatarStage, type CategoryId, type CategoryScore, type SubId, type SubScore } from '../../lib/levels';
 import { AXES, categoryName, recordText, subPercentText } from './levelView';
 import { dismissKey, firstSteps } from './firstSteps';
 import { FirstSteps } from './FirstStepsCard';
@@ -17,11 +16,9 @@ import { TodayCard } from './TodayCard';
 import type { LevelRecordRow } from '../../data/types';
 import { whenIdle } from '../../lib/idle';
 
-// I fogli del record e del peso si aprono a un tocco: si scaricano dopo il primo disegno della Home (audit A4)
+// Il foglio del record si apre a un tocco: si scarica dopo il primo disegno della Home (audit A4)
 const loadRecordSheet = () => import('./RecordSheet');
-const loadWeightSheet = () => import('./WeightSheet');
 const RecordSheet = lazy(() => loadRecordSheet().then((m) => ({ default: m.RecordSheet })));
-const WeightSheet = lazy(() => loadWeightSheet().then((m) => ({ default: m.WeightSheet })));
 
 const ICON: Record<CategoryId, ReactNode> = {
   'fondamentali-tirata': <IconFondTirata />,
@@ -31,7 +28,7 @@ const ICON: Record<CategoryId, ReactNode> = {
   handbalance: <IconHandbalance />,
 };
 
-type Row = LevelRecordRow & { bodyweightKg: number | null };
+type Row = LevelRecordRow;
 
 /**
  * Home "Livello" (ticket 10): profilo, pentagono, barre delle categorie, sotto-esercizi e record.
@@ -45,9 +42,7 @@ export function HomeView() {
   const [sheet, setSheet] = useState<SubId | null>(null);
   const [party, setParty] = useState<string[]>([]);
   const guide = useGuide(level.isLoading ? null : level, readOnly, userId);
-  // "Inserisci" del primo passo: apre il campo del peso nel profilo
-  const [askWeight, setAskWeight] = useState(0);
-  useEffect(() => whenIdle(() => void Promise.all([loadRecordSheet(), loadWeightSheet()])), []);
+  useEffect(() => whenIdle(() => void loadRecordSheet()), []);
 
   // tutti i passi fatti adesso, a card aperta: si festeggia
   const wasOpen = useRef(false);
@@ -68,7 +63,7 @@ export function HomeView() {
 
   if (level.isLoading) return <Skeleton />;
 
-  const { summary, records, weights, bodyweight } = level;
+  const { summary, records } = level;
   const byId = new Map(summary.categories.map((c) => [c.categoryId, c]));
   const axes = AXES.map((id) => byId.get(id)!);
   const fresh = records.length === 0;
@@ -83,12 +78,11 @@ export function HomeView() {
       <div className={nested ? 'flat' : 'cols'}>
       <div className={nested ? 'flat' : 'col'}>
       {!readOnly && <TodayCard />}
-      <Profile level={summary.level} gain={summary.level - before} elite={summary.zone === 'elite'} avatar={summary.avatar} bodyweight={bodyweight} readOnly={readOnly} guided={guide.visible} askWeight={askWeight} />
+      <Profile level={summary.level} gain={summary.level - before} elite={summary.zone === 'elite'} avatar={summary.avatar} readOnly={readOnly} guided={guide.visible} />
 
       {guide.visible && (
         <FirstSteps
           steps={guide.steps}
-          onWeight={() => setAskWeight((n) => n + 1)}
           onRecord={() => {
             setOpen(AXES[0]);
             requestAnimationFrame(() => document.getElementById(`cat-${AXES[0]}`)?.scrollIntoView({ behavior: smooth(), block: 'center' }));
@@ -109,22 +103,8 @@ export function HomeView() {
         )}
       </div>
 
-      {readOnly && (fresh || !bodyweight) && (
-        <p className="coach-note">
-          {fresh
-            ? 'Non ha ancora inserito record: li inserisce dalla sua Home.'
-            : 'Non ha ancora inserito il peso corporeo: i suoi record in kg non contano finché non lo fa.'}
-        </p>
-      )}
-      {!readOnly && !guide.visible && (fresh || !bodyweight) && (
-        <p className="coach-note">
-          {fresh && !bodyweight
-            ? 'Per iniziare inserisci il tuo peso qui sopra, poi tocca una categoria e aggiungi i tuoi primi record.'
-            : fresh
-              ? 'Tocca una categoria qui sotto e aggiungi i tuoi primi record.'
-              : 'Inserisci il tuo peso qui sopra: senza, i record in kg non contano.'}
-        </p>
-      )}
+      {readOnly && fresh && <p className="coach-note">Non ha ancora inserito record: li inserisce dalla sua Home.</p>}
+      {!readOnly && !guide.visible && fresh && <p className="coach-note">Tocca una categoria qui sotto e aggiungi i tuoi primi record.</p>}
 
       <section className="card penta-card" aria-label="Pentagono">
         <Pentagon axes={axes.map((c) => ({ label: categoryName(c.categoryId), value: c.value }))} />
@@ -149,8 +129,7 @@ export function HomeView() {
         <Suspense fallback={null}>
           <RecordSheet
             subId={sheet}
-            records={records as Row[]}
-            weights={weights}
+            records={records}
             summary={summary}
             onClose={() => setSheet(null)}
             onCelebrate={setParty}
@@ -176,7 +155,7 @@ const readDismissed = (key: string) => {
  * Primo accesso guidato (ticket 28): i passi dai dati che ci sono già, "Più tardi" in `localStorage` per utente.
  * Mai nella vista del trainer né sulla Home di un account in modalità trainer.
  */
-function useGuide(level: { records: unknown[]; bodyweight: unknown } | null, readOnly: boolean, userId: string) {
+function useGuide(level: { records: unknown[] } | null, readOnly: boolean, userId: string) {
   const profile = useProfile();
   const data = useData();
   const links = useLinks();
@@ -184,7 +163,6 @@ function useGuide(level: { records: unknown[]; bodyweight: unknown } | null, rea
   const [dismissed, setDismissed] = useState(() => readDismissed(key));
   const today = todayStr();
   const steps = firstSteps({
-    hasBodyweight: !!level?.bodyweight,
     hasAvatarBody: !!profile.data?.avatarBody,
     records: level?.records.length ?? 0,
     trainings: data.done.filter((e) => e.kind === 'training').length,
@@ -208,28 +186,23 @@ function useGuide(level: { records: unknown[]; bodyweight: unknown } | null, rea
   };
 }
 
-/** Intestazione: avatar (segnaposto finché non c'è il ticket 11), nome, livello, peso con modifica rapida. */
+/** Intestazione: avatar, nome, livello. Il peso corporeo non è più del profilo: sta dentro ogni record (ticket 32). */
 function Profile({
   level,
   gain,
   elite,
   avatar,
-  bodyweight,
   readOnly,
   guided,
-  askWeight,
 }: {
   level: number;
   /** punti guadagnati da lunedì */
   gain: number;
   elite: boolean;
   avatar: AvatarStage;
-  bodyweight: { date: string; kg: number } | null;
   readOnly: boolean;
   /** c'è la checklist del primo accesso: il suo passo sostituisce il link alla figura */
   guided: boolean;
-  /** cresce a ogni "Inserisci" della checklist: riapre il campo del peso */
-  askWeight: number;
 }) {
   const profile = useProfile().data;
   const name = profile?.displayName;
@@ -274,102 +247,7 @@ function Profile({
           </div>
         </div>
       )}
-      {readOnly ? <WeightReadOnly current={bodyweight} /> : <Weight key={askWeight} current={bodyweight} editing={askWeight > 0} />}
     </section>
-  );
-}
-
-/** Il peso dell'atleta visto dal trainer: solo lettura. */
-function WeightReadOnly({ current }: { current: { date: string; kg: number } | null }) {
-  const [history, setHistory] = useState(false);
-  return (
-    <div className="weight">
-      <span className="fld-l">Peso</span>
-      <b>{current ? `${fmt(current.kg)} kg` : '—'}</b>
-      {current && (
-        <button type="button" className="link" onClick={() => setHistory(true)}>
-          Storico
-        </button>
-      )}
-      {current && <span className="hint">dal {shortDate(current.date)}</span>}
-      {history && (
-        <Suspense fallback={null}>
-          <WeightSheet readOnly onClose={() => setHistory(false)} />
-        </Suspense>
-      )}
-    </div>
-  );
-}
-
-function Weight({ current, editing }: { current: { date: string; kg: number } | null; editing?: boolean }) {
-  const [draft, setDraft] = useState<string | null>(editing ? (current ? numInput(current.kg) : '') : null);
-  const [err, setErr] = useState<string | null>(null);
-  const [history, setHistory] = useState(false);
-  const save = useSetBodyWeight();
-
-  if (draft === null)
-    return (
-      <div className="weight">
-        <span className="fld-l">Peso</span>
-        <b>{current ? `${fmt(current.kg)} kg` : '—'}</b>
-        <button type="button" className="link" onClick={() => setDraft(current ? numInput(current.kg) : '')} aria-label={current ? 'Modifica peso corporeo' : 'Inserisci peso corporeo'}>
-          {current ? 'Modifica' : 'Inserisci'}
-        </button>
-        {current && (
-          <button type="button" className="link" onClick={() => setHistory(true)}>
-            Storico
-          </button>
-        )}
-        {current && <span className="hint">dal {shortDate(current.date)}</span>}
-        {history && (
-          <Suspense fallback={null}>
-            <WeightSheet onClose={() => setHistory(false)} />
-          </Suspense>
-        )}
-      </div>
-    );
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const kg = Math.round(parseNum(draft) * 10) / 10;
-    if (!validateBodyweight(kg)) return setErr(`Tra ${LIMITS.minBodyweightKg} e ${LIMITS.maxBodyweightKg} kg`);
-    if (current && kg === current.kg) return setDraft(null);
-    save.mutate({ kg }, { onSuccess: () => setDraft(null) });
-  };
-
-  return (
-    <form className="weight edit" onSubmit={submit}>
-      <label className="fld-l" htmlFor="bw-input">
-        Peso di oggi (kg)
-      </label>
-      <div className="row">
-        <input
-          id="bw-input"
-          className="bw-in"
-          inputMode="decimal"
-          autoComplete="off"
-          autoFocus
-          value={draft}
-          aria-invalid={err ? true : undefined}
-          aria-describedby={err ? 'bw-err' : undefined}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            setErr(null);
-          }}
-        />
-        <button className="btn small" disabled={save.isPending} aria-busy={save.isPending || undefined}>
-          Salva
-        </button>
-        <button type="button" className="btn small ghost" onClick={() => setDraft(null)}>
-          Annulla
-        </button>
-      </div>
-      {err && (
-        <span className="fld-err" id="bw-err">
-          {err}
-        </span>
-      )}
-    </form>
   );
 }
 

@@ -34,7 +34,10 @@ export function stageUnit(subId: string, stageId: string): string {
   return stage ? UNIT[stage.measure] : '';
 }
 
-/** Testo di un record: "Straddle · 5 s", "OAP · 2 rip.", "Zavorra 30 kg", "Bilanciere 60 kg". */
+/**
+ * Testo di un record: "Straddle · 5 s", "OAP · 2 rip.", "Zavorra 30 kg", "Bilanciere 60 kg". Una voce che il motore
+ * vecchio non conosce (nata col v2, ticket 32) si legge col suo identificativo finché la pagina non passa al v2 (34).
+ */
 export function recordText(r: { subId: string; stage: string; value: number }): string {
   const stage = subRule(r.subId)?.stages.find((s) => s.id === r.stage);
   if (!stage) return `${r.stage} · ${num(r.value)}`;

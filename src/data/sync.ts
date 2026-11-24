@@ -1,10 +1,10 @@
 import { dehydrate, hydrate, type QueryClient, type QueryKey } from '@tanstack/react-query';
 import { K } from './hooks';
-import { CACHE_KEY, dequeue, pendingFor, type QueueItem, type QueueOp } from './offline';
+import { CACHE_KEY, dequeue, isStale, pendingFor, type QueueItem, type QueueOp } from './offline';
 import type { Repo } from './repo';
 import { shortDate } from '../lib/dates';
 import { SUBS } from '../lib/levels';
-import type { BodyWeight, Entry, EntryInput, Exercise, LevelRecordInput, LevelRecordRow, PlanItem } from './types';
+import type { Entry, EntryInput, Exercise, LevelRecordInput, LevelRecordRow, PlanItem } from './types';
 
 /**
  * Offline (ticket 27), la parte che si scarica dopo il primo disegno: invio della coda, modifiche ottimistiche alla
@@ -16,8 +16,6 @@ export const OP_KEYS: Record<QueueOp, QueryKey> = {
   createEntry: K.entries,
   updateEntry: K.entries,
   deleteEntry: K.entries,
-  setBodyWeight: K.bodyWeights,
-  deleteBodyWeight: K.bodyWeights,
   createLevelRecord: K.levelRecords,
   updateLevelRecord: K.levelRecords,
   deleteLevelRecord: K.levelRecords,
@@ -42,9 +40,15 @@ export const callOp = (repo: Repo, op: QueueOp, args: unknown[]) =>
 /** Doppione: la riga creata offline era già arrivata (la risposta si era persa). Conta come inviata. */
 const isDuplicate = (e: unknown) => (e as { code?: string }).code === '23505';
 
+/** Motivo del rifiuto di un salvataggio fatto con una versione vecchia dell'app (vedi `isStale`). */
+export const STALE_REASON = "Salvato con una versione vecchia dell'app";
+
 export interface FlushResult {
   sent: QueueItem[];
-  /** rifiutati dal server (es. esercizio eliminato nel frattempo): tolti dalla coda, l'utente lo sa da un messaggio */
+  /**
+   * rifiutati dal server (es. esercizio eliminato nel frattempo) o scartati perché di una versione vecchia dell'app:
+   * tolti dalla coda, l'utente lo sa da un messaggio
+   */
   rejected: { item: QueueItem; reason: string }[];
   /** la rete è caduta di nuovo a metà: il resto resta in coda */
   stopped: boolean;
@@ -66,6 +70,12 @@ export function flushQueue(repo: Repo, userId: string): Promise<FlushResult> {
 async function sendAll(repo: Repo, userId: string): Promise<FlushResult> {
   const out: FlushResult = { sent: [], rejected: [], stopped: false };
   for (const item of pendingFor(userId)) {
+    if (isStale(item)) {
+      // formato di prima del ticket 32: il server non lo accetterebbe mai, non si prova nemmeno
+      out.rejected.push({ item, reason: STALE_REASON });
+      dequeue([item.id]);
+      continue;
+    }
     try {
       await callOp(repo, item.op, item.args);
       out.sent.push(item);
@@ -83,12 +93,13 @@ async function sendAll(repo: Repo, userId: string): Promise<FlushResult> {
 
 /** Dopo l'invio: le query toccate si rileggono, così le righe ottimistiche diventano quelle vere del server. */
 export function refreshAfter(qc: QueryClient, items: QueueItem[]) {
-  const keys = new Set(items.map((i) => OP_KEYS[i.op]));
+  // i salvataggi scartati di una versione vecchia possono avere un'operazione che non esiste più
+  const keys = new Set(items.map((i) => OP_KEYS[i.op]).filter(Boolean));
   return Promise.all([...keys].map((queryKey) => qc.invalidateQueries({ queryKey })));
 }
 
 /**
- * Cosa mostrare nell'elenco "in attesa": "Allenamento · Trazioni · 10/11", "Peso · 72,5 kg · 10/11". I nomi vengono
+ * Cosa mostrare nell'elenco "in attesa": "Allenamento · Trazioni · 10/11", "Record · Planche". I nomi vengono
  * dalla cache; si calcola qui e non al salvataggio per tenere leggero il JS iniziale.
  */
 export function describe(qc: QueryClient, item: QueueItem): string {
@@ -99,6 +110,8 @@ export function describe(qc: QueryClient, item: QueueItem): string {
   const subName = (id?: string) => SUBS.find((s) => s.id === id)?.name ?? 'Record';
   const entryEx = (id: string) => entries.find((e) => e.id === id)?.exerciseId;
   const recordSub = (id: string) => records.find((r) => r.id === id)?.subId;
+  // rimasto in coda da una versione vecchia dell'app: il peso corporeo a parte non esiste più
+  if (/BodyWeight$/.test(item.op)) return 'Peso corporeo';
   switch (item.op) {
     case 'createEntry': {
       const [a] = args as [EntryInput];
@@ -113,10 +126,6 @@ export function describe(qc: QueryClient, item: QueueItem): string {
       const ex = entryEx(args[0] as string);
       return ex ? `Eliminazione · ${exName(ex)}` : 'Allenamento eliminato';
     }
-    case 'setBodyWeight':
-      return `Peso · ${String(args[1]).replace('.', ',')} kg · ${shortDate(args[0] as string)}`;
-    case 'deleteBodyWeight':
-      return `Peso tolto · ${shortDate(args[0] as string)}`;
     case 'createLevelRecord':
       return `Record · ${subName((args[0] as LevelRecordInput).subId)}`;
     case 'updateLevelRecord': {
@@ -137,15 +146,17 @@ function patchList<T>(qc: QueryClient, key: QueryKey, fn: (rows: T[]) => T[]) {
 }
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
-/** Stesso ordine del repository: pesi e record dal più vecchio, registrazioni dalla più recente. */
+/** Stesso ordine del repository: record dal più vecchio, registrazioni dalla più recente. */
 const byDate = <T extends { date: string }>(rows: T[]) => [...rows].sort((a, b) => cmp(a.date, b.date));
 const newestFirst = (rows: Entry[]) => [...rows].sort((a, b) => cmp(b.date, a.date) || cmp(b.createdAt, a.createdAt));
 
 /**
- * Il salvataggio in coda si vede subito, come se fosse arrivato: l'allenamento compare nella giornata, il peso nel
- * grafico. La cache è salvata sul telefono, quindi si vede anche riaprendo l'app senza rete.
+ * Il salvataggio in coda si vede subito, come se fosse arrivato: l'allenamento compare nella giornata, il record
+ * nella sua catena. La cache è salvata sul telefono, quindi si vede anche riaprendo l'app senza rete.
  */
 export function applyOptimistic(qc: QueryClient, item: QueueItem) {
+  // un salvataggio di una versione vecchia non arriverà mai al server: non si mostra come fatto
+  if (isStale(item)) return;
   const { userId, args } = item;
   const now = new Date(item.at).toISOString();
   switch (item.op) {
@@ -164,14 +175,6 @@ export function applyOptimistic(qc: QueryClient, item: QueueItem) {
     case 'deleteEntry': {
       const [id] = args as [string];
       return patchList<Entry>(qc, ['entries', userId], (rows) => rows.filter((r) => r.id !== id));
-    }
-    case 'setBodyWeight': {
-      const [date, kg] = args as [string, number];
-      return patchList<BodyWeight>(qc, ['body-weights', userId], (rows) => byDate([...rows.filter((r) => r.date !== date), { date, kg }]));
-    }
-    case 'deleteBodyWeight': {
-      const [date] = args as [string];
-      return patchList<BodyWeight>(qc, ['body-weights', userId], (rows) => rows.filter((r) => r.date !== date));
     }
     case 'createLevelRecord': {
       const [input, id] = args as [LevelRecordInput, string];

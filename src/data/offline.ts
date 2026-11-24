@@ -4,13 +4,11 @@
  * cache e la cache persistita sono in `sync.ts`, che si scarica dopo (il service worker lo tiene in cache).
  */
 
-/** Salvataggi che, senza rete, finiscono in coda (scelta dell'utente: allenamenti, peso e record). */
+/** Salvataggi che, senza rete, finiscono in coda (scelta dell'utente: allenamenti e record). */
 export type QueueOp =
   | 'createEntry'
   | 'updateEntry'
   | 'deleteEntry'
-  | 'setBodyWeight'
-  | 'deleteBodyWeight'
   | 'createLevelRecord'
   | 'updateLevelRecord'
   | 'deleteLevelRecord';
@@ -25,6 +23,21 @@ export interface QueueItem {
   op: QueueOp;
   /** argomenti del metodo del repository, già pronti (gli id delle righe nuove li sceglie il telefono) */
   args: unknown[];
+  /** formato dei dati al momento del salvataggio (`QUEUE_FORMAT`); manca in quelli fatti prima del ticket 32 */
+  v?: number;
+}
+
+/** Formato dei salvataggi in coda. 2 = ticket 32: record di livello con le voci v2 e il peso corporeo dentro. */
+export const QUEUE_FORMAT = 2;
+
+/**
+ * Salvataggio messo in coda da una versione dell'app di prima del ticket 32 e che il database non accetta più: il
+ * peso corporeo a parte (la tabella non esiste più) e i record di livello nel formato vecchio. Non si invia: si
+ * toglie dalla coda con un avviso, altrimenti resterebbe lì a riprovare per sempre. Eliminare un record resta valido.
+ */
+export function isStale(item: Pick<QueueItem, 'v'> & { op: string }): boolean {
+  if (item.op === 'setBodyWeight' || item.op === 'deleteBodyWeight') return true;
+  return (item.op === 'createLevelRecord' || item.op === 'updateLevelRecord') && item.v !== QUEUE_FORMAT;
 }
 
 const QUEUE_KEY = 'scheda:queue';

@@ -319,7 +319,7 @@ export function AtletaView() {
 
 function AthleteData({ tab }: { tab: Tab }) {
   const { isLoading, error } = useData();
-  // il livello ha i suoi dati (record e peso): non aspetta registrazioni e programma
+  // il livello ha i suoi dati (i record): non aspetta registrazioni e programma
   if (tab === 'livello')
     return (
       <NestedView>

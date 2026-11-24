@@ -279,10 +279,10 @@ function ExportCard() {
     let coaching: Record<string, unknown[]>;
     let levels: Record<string, unknown[]>;
     try {
-      const [c, bodyWeights, levelRecords] = await Promise.all([repo.exportCoaching(), repo.listBodyWeights(), repo.listLevelRecords()]);
+      const [c, levelRecords] = await Promise.all([repo.exportCoaching(), repo.listLevelRecords()]);
       coaching = c;
-      // peso corporeo e record di livello (ticket 09); il livello si ricalcola dai record
-      levels = { bodyWeights, levelRecords };
+      // record di livello, ognuno col suo peso corporeo dove serve (ticket 32); il livello si ricalcola dai record
+      levels = { levelRecords };
     } catch {
       setBusy(false);
       return toast('Non riesco a leggere tutti i dati. Riprova.');
@@ -313,7 +313,7 @@ function ExportCard() {
       <h2>I tuoi dati</h2>
       <p className="sub">
         Scarica tutto in un file JSON: {plural(exercises.length, 'esercizio', 'esercizi')}, {plural(entries.length, 'registrazione', 'registrazioni')},{' '}
-        {plural(plan.length, 'esercizio', 'esercizi')} in programma, peso corporeo e record di livello, più schede e collegamenti con i trainer.
+        {plural(plan.length, 'esercizio', 'esercizi')} in programma e record di livello, più schede e collegamenti con i trainer.
       </p>
       <div className="row mt-14">
         <button className="btn small ghost" disabled={busy} onClick={download}>
@@ -332,7 +332,7 @@ function DeleteCard() {
   return (
     <section className="card">
       <h2>Elimina account</h2>
-      <p className="sub">Cancella l'account con esercizi, registrazioni, programma, peso e record. Non si può annullare: se vuoi tenere i dati, esportali prima.</p>
+      <p className="sub">Cancella l'account con esercizi, registrazioni, programma e record. Non si può annullare: se vuoi tenere i dati, esportali prima.</p>
       {!open ? (
         <div className="row mt-14">
           <button className="btn small ghost" onClick={() => setOpen(true)}>
