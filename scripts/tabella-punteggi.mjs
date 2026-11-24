@@ -43,7 +43,7 @@ function normalized(chain, entry, value, bw) {
 function loadFor(chain, entry, level, g, bw) {
   const d = Math.pow(REF_KG / bw, chain.exponent);
   const raw = entry.load === 'bilanciere' ? g / d : g / d - bw;
-  const min = entry.load === 'bilanciere' || level.formula.gate !== 'threshold' ? 0.1 : 0;
+  const min = 0.1;
   return Math.max(min, Math.ceil(raw * 10 - 1e-6) / 10);
 }
 

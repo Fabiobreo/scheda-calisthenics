@@ -42,7 +42,10 @@ export type LoadKind = 'zavorra' | 'bilanciere';
  *
  * - `reps`: `SE(rip>=1; MIN(100; (100/target) × rip [× PC×D/F2]); 0)`. Senza MAX(1), come nel PDF.
  * - `window`: `SE(condizione; MIN(100; MAX(1; 100 × (G − start) / width)); 0)`. La condizione (`gate`) è
- *   `G >= start` ('threshold'), `C2 > 0` ('load') oppure `E(C2 > 0; G >= start)` ('load-and-threshold').
+ *   `E(C2 > 0; G >= start)` ('threshold') oppure solo `C2 > 0` ('load', per il muscle up B che parte "da 0%").
+ *   Il carico deve essere sempre maggiore di zero e la panca e il military partono dalla soglia del 35%
+ *   (Michael, 24 novembre 2026): nel PDF trazioni, dip e HSPU F avevano solo `G >= start`, panca B e
+ *   military A solo `C2 > 0`.
  * - `oap`: `SE(rip>=1; MIN(100; MAX(1; 100 × (PC × (1 + rip/repsDivisor) × D − start) / width)); 0)`.
  * - `hold`: `SE(s>=1; MIN(100; MAX(1; 100 × s / target)); 0)`. Non usa il peso.
  * - `hold-window`: `SE(s>=start; MIN(100; MAX(1; 100 × (s − start) / width)); 0)`. Non usa il peso.
@@ -51,7 +54,7 @@ export type LoadKind = 'zavorra' | 'bilanciere';
  */
 export type Formula =
   | { kind: 'reps'; target: number; normalized: boolean }
-  | { kind: 'window'; gate: 'threshold' | 'load' | 'load-and-threshold'; start: number; width: number }
+  | { kind: 'window'; gate: 'threshold' | 'load'; start: number; width: number }
   | { kind: 'oap'; repsDivisor: number; start: number; width: number }
   | { kind: 'hold'; target: number }
   | { kind: 'hold-window'; start: number; width: number }
@@ -128,7 +131,7 @@ export const ESP_SKILL_RIPETIZIONI = 2.0;
 
 /**
  * Limiti di validazione (PDF, "Normalizzazione e controlli"). Il PDF non dà un massimo per la zavorra: si usa
- * lo stesso del massimale. Il massimale deve essere > 0, la zavorra può essere 0.
+ * lo stesso del massimale. Massimale e zavorra devono essere > 0 (Michael, 24 novembre 2026).
  */
 export const LIMITS = {
   minBodyweightKg: 30,
@@ -183,12 +186,10 @@ export const BANDS: Record<BandScope, readonly Band[]> = {
 const L = (letter: Letter, name: string, band: BandId, max: number, formula: Formula): LevelRule => ({ letter, name, band, max, formula });
 
 const reps = (target: number, normalized: boolean): Formula => ({ kind: 'reps', target, normalized });
-/** `SE(G>=start; …(G−start)/width…)` */
+/** `SE(E(C2>0;G>=start); …(G−start)/width…)` */
 const win = (start: number, width: number): Formula => ({ kind: 'window', gate: 'threshold', start, width });
 /** `SE(C2>0; …(G−start)/width…)` */
 const winLoad = (start: number, width: number): Formula => ({ kind: 'window', gate: 'load', start, width });
-/** `SE(E(C2>0;G>=start); …(G−start)/width…)` */
-const winBoth = (start: number, width: number): Formula => ({ kind: 'window', gate: 'load-and-threshold', start, width });
 /** `100×((A2×(1+B2/30)×D3)−60)/6`, uguale per i livelli A–D dell'OAP. */
 const OAP_REPS: Formula = { kind: 'oap', repsDivisor: 30, start: 60, width: 6 };
 const hold = (target: number): Formula => ({ kind: 'hold', target });
@@ -255,7 +256,7 @@ export const CHAINS: readonly ChainRule[] = [
       L('B', 'OAP assistenza mano-bicipite 1–3 rip.', 'avanzato', 50, OAP_REPS),
       L('C', 'OAP assistenza mano-spalla 1–3 rip.', 'elite', 100, OAP_REPS),
       L('D', 'OAP 1–3 rip.', 'titano', 100, OAP_REPS),
-      L('E', 'OAP 5%–30% PC', 'leggenda', 100, winBoth(63, 15)),
+      L('E', 'OAP 5%–30% PC', 'leggenda', 100, win(63, 15)),
     ],
     entries: [
       E('avambraccio', 'OAP assistenza mano-avambraccio', 'reps', ['A'], true),
@@ -293,7 +294,7 @@ export const CHAINS: readonly ChainRule[] = [
     exponent: EXPONENTS['panca-piana'],
     levels: [
       L('A', 'Push up 1–20 rip.', 'base', 50, reps(20, false)),
-      L('B', 'Panca piana 35%–88% PC', 'intermedio', 33, winLoad(21, 31.8)),
+      L('B', 'Panca piana 35%–88% PC', 'intermedio', 33, win(21, 31.8)),
       L('C', 'Panca piana 88%–120% PC', 'avanzato', 100, win(52.8, 19.2)),
       L('D', 'Panca piana 120%–158% PC', 'elite', 100, win(72, 22.8)),
       L('E', 'Panca piana 158%–199% PC', 'titano', 100, win(94.8, 24.6)),
@@ -310,7 +311,7 @@ export const CHAINS: readonly ChainRule[] = [
     category: 'fondamentali-spinta',
     exponent: EXPONENTS.military,
     levels: [
-      L('A', 'Military 35%–55% PC', 'intermedio', 33, winLoad(21, 12)),
+      L('A', 'Military 35%–55% PC', 'intermedio', 33, win(21, 12)),
       L('B', 'Military 55%–77% PC', 'avanzato', 100, win(33, 13.2)),
       L('C', 'Military 77%–102% PC', 'elite', 100, win(46.2, 15)),
       L('D', 'Military 102%–128% PC', 'titano', 100, win(61.2, 15.6)),
@@ -330,7 +331,7 @@ export const CHAINS: readonly ChainRule[] = [
       L('B', 'Pike push up su rialzo 1–10 rip.', 'intermedio', 50, reps(10, true)),
       L('C', 'HSPU a muro 1–5 rip.', 'avanzato', 150, reps(5, true)),
       L('D', 'HSPU 1–10 rip.', 'elite', 150, reps(10, true)),
-      L('E', 'HSPU 5%–30% PC', 'titano', 150, winBoth(63, 15)),
+      L('E', 'HSPU 5%–30% PC', 'titano', 150, win(63, 15)),
       L('F', 'HSPU 30%–65% PC', 'leggenda', 150, win(78, 21)),
     ],
     entries: [

@@ -108,7 +108,22 @@ Chi usa il motore: `data/hooks.ts` (`useLevel`), `HomeView`, `RecordSheet`, `lev
 5. `validateRecord(record, records)` rifiuta una voce già piena solo se gli si passano i record; senza, lo storico resta
    correggibile (30, decisione 6).
 
+## Risposte di Michael (24 novembre 2026, sera)
+
+| Punto | Risposta | Cosa è cambiato |
+|---|---|---|
+| 1. Panca: qualsiasi carico entra nel livello B | Deve partire dal 35% del peso, riferito a 60 kg | Panca B e military A hanno ora la condizione `E(C2>0; G>=21)`. Sotto soglia il record vale 0 e non dà più i punti dei push up. Il military non era nella domanda: stessa riga in tabella, stesso trattamento. |
+| 2. Zavorra sotto la soglia = 0 punti | Richiesta con due esempi (trazione +5 kg, panca 15 kg): **0 punti** in entrambi | Niente: resta 0. |
+| 4. Persone molto pesanti a zavorra 0 | Chiedere sempre una zavorra minima | Tutti i livelli zavorrati chiedono `C2>0`; zavorra 0 non è più un valore valido (`minExclusive` vale per tutti i kg). Il tipo di condizione `load-and-threshold` non serve più: restano `threshold` e `load` (solo muscle up B). |
+| 7. % dentro il livello | Confermata | Niente. |
+| 3. Percentuali valide solo a 60 kg | Niente percentuali nei testi, per tutti gli esercizi | Niente nel motore: `LevelRule.name` resta la riga del PDF e **non va mostrato** (34). |
+
+Test aggiornati (139 nel v2, 371 in tutto, verdi); la tabella di verifica rigenerata è identica (i casi cambiati non
+sono tra le sue righe: 60, 70 e 80 kg da inizio livello in su).
+
 ## Punti da far vedere a Michael
+
+_Scritti prima delle risposte qui sopra: i punti 1 e 4 non valgono più._
 
 Nessuna formula è stata cambiata: dove il PDF si può leggere in due modi è stata presa la lettura letterale. Questi sono
 i punti in cui la formula dà un risultato che la tabella dei livelli non fa aspettare.

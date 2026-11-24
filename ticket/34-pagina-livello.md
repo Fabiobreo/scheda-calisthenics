@@ -45,6 +45,12 @@ vede per un atleta (15).
 10. **Trainer**: stessa pagina in sola lettura, senza modulo.
 11. **Modalità sessione** (25): "Inizia allenamento" stava in "Oggi": si sposta in Scheda (37).
 
+## Testi dei livelli (Michael, 24 novembre 2026, sera)
+
+Nell'app non si scrivono le percentuali del peso corporeo ("Trazioni 15%–45% PC"): valgono solo a 60 kg. Si mostra la
+voce e la lettera del livello ("Trazioni zavorrate, livello C"); `LevelRule.name` del motore non va in pagina. La
+zavorra è sempre maggiore di zero (30, decisione 14): il campo non accetta 0.
+
 ## Criteri di accettazione
 
 - A 390×844 e 360×640 la pagina a categorie chiuse non scorre e niente è tagliato.

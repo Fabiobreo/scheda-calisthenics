@@ -134,11 +134,22 @@ describe('formule del PDF a 60 kg', () => {
     expect(levelPercent('military', 'E', 76.8 + 2.1, 60)).toBeCloseTo(50, 9);
   });
 
-  it('le condizioni "C2>0" e "E(C2>0;G>=63)" sono quelle del PDF', () => {
-    // muscle up B, panca B, military A: basta un carico > 0, sotto la soglia vale 1%
+  it('carico sempre > 0; panca e military dalla soglia del 35% (Michael, 24/11)', () => {
+    // muscle up B parte "da 0%": basta un carico > 0
     expect(levelPercent('muscle-up', 'B', 0, 60)).toBe(0);
-    expect(levelPercent('panca-piana', 'B', 5, 60)).toBe(1);
-    expect(levelPercent('military', 'A', 5, 60)).toBe(1);
+    expect(levelPercent('muscle-up', 'B', 0.1, 60)).toBeGreaterThanOrEqual(1);
+    // panca B e military A: sotto 21 kg (35% di 60) valgono 0
+    expect(levelPercent('panca-piana', 'B', 5, 60)).toBe(0);
+    expect(levelPercent('panca-piana', 'B', 20.9, 60)).toBe(0);
+    expect(levelPercent('panca-piana', 'B', 21, 60)).toBe(1);
+    expect(levelPercent('military', 'A', 5, 60)).toBe(0);
+    expect(levelPercent('military', 'A', 20.9, 60)).toBe(0);
+    expect(levelPercent('military', 'A', 21, 60)).toBe(1);
+    // persone molto pesanti: senza zavorra non si entra nei livelli zavorrati, con zavorra sì
+    expect(levelPercent('trazioni', 'C', 0, 140)).toBe(0);
+    expect(levelPercent('trazioni', 'C', 0.5, 140)).toBeGreaterThanOrEqual(1);
+    expect(levelPercent('dip', 'C', 0, 160)).toBe(0);
+    expect(levelPercent('hspu', 'F', 0, 180)).toBe(0);
     // OAP E e HSPU E: carico > 0 e soglia
     expect(levelPercent('oap', 'E', 0, 60)).toBe(0);
     expect(levelPercent('oap', 'E', 2.9, 60)).toBe(0);
@@ -362,14 +373,17 @@ describe('scoreRecord', () => {
 
   it('un record valido può non raggiungere nessun livello', () => {
     expect(scoreRecord(rec('trazioni', 'zavorra', 5, 60))).toEqual({ points: 0, level: null, percent: 0 });
-    expect(scoreRecord(rec('trazioni', 'zavorra', 0, 60))).toEqual({ points: 0, level: null, percent: 0 });
     expect(scoreRecord(rec('oap', 'zavorra', 2, 60))).toEqual({ points: 0, level: null, percent: 0 });
+    // zavorra 0 non è un record valido
+    expect(scoreRecord(rec('trazioni', 'zavorra', 0, 60))).toBeNull();
   });
 
-  it('la panca con un carico qualsiasi entra nel livello B: push up pieni', () => {
-    const s = scoreRecord(rec('panca-piana', 'massimale', 10, 60))!;
+  it('la panca entra nel livello B solo dal 35% del peso (a 60 kg: 21 kg)', () => {
+    expect(scoreRecord(rec('panca-piana', 'massimale', 10, 60))).toEqual({ points: 0, level: null, percent: 0 });
+    const s = scoreRecord(rec('panca-piana', 'massimale', 21, 60))!;
     expect(s.level).toBe('B');
     expect(s.points).toBeCloseTo(50 + 0.33, 9);
+    expect(scoreRecord(rec('military', 'massimale', 10, 60))).toEqual({ points: 0, level: null, percent: 0 });
   });
 
   it('il peso corporeo è ignorato dalle voci che non lo usano', () => {
@@ -541,7 +555,7 @@ describe('availableEntries', () => {
     expect(availableEntries('trazioni', [])).toEqual([
       { entryId: 'australian', name: 'Australian pull up', measure: 'reps', levels: ['A'], usesBodyweight: false, min: 1, max: 50, minExclusive: false, whole: true },
       { entryId: 'ripetizioni', name: 'Trazioni a ripetizioni', measure: 'reps', levels: ['B'], usesBodyweight: true, min: 1, max: 50, minExclusive: false, whole: true },
-      { entryId: 'zavorra', name: 'Trazioni zavorrate', measure: 'kg', load: 'zavorra', levels: ['C', 'D', 'E', 'F'], usesBodyweight: true, min: 0, max: 400, minExclusive: false, whole: false },
+      { entryId: 'zavorra', name: 'Trazioni zavorrate', measure: 'kg', load: 'zavorra', levels: ['C', 'D', 'E', 'F'], usesBodyweight: true, min: 0, max: 400, minExclusive: true, whole: false },
     ]);
     expect(availableEntries('military', [])[0]).toMatchObject({ entryId: 'massimale', load: 'bilanciere', min: 0, minExclusive: true, max: 400 });
     expect(availableEntries('verticale', [])[0]).toMatchObject({ entryId: 'muro', measure: 'seconds', min: 1, max: 60, whole: true });
@@ -602,9 +616,10 @@ describe('validazione', () => {
     expect(validateRecord(rec('front-lever', 'full', 7.5, 80))).toBe('not-integer');
   });
 
-  it('zavorra ≥ 0, massimale > 0 e ≤ 400', () => {
+  it('zavorra e massimale > 0 e ≤ 400', () => {
     expect(validateRecord(rec('trazioni', 'zavorra', -1, 60))).toBe('below-min');
-    expect(validateRecord(rec('trazioni', 'zavorra', 0, 60))).toBeNull();
+    expect(validateRecord(rec('trazioni', 'zavorra', 0, 60))).toBe('below-min');
+    expect(validateRecord(rec('trazioni', 'zavorra', 0.5, 60))).toBeNull();
     expect(validateRecord(rec('trazioni', 'zavorra', 12.5, 60))).toBeNull();
     expect(validateRecord(rec('panca-piana', 'massimale', 0, 60))).toBe('below-min');
     expect(validateRecord(rec('panca-piana', 'massimale', 0.5, 60))).toBeNull();
@@ -630,7 +645,7 @@ describe('validazione', () => {
     const limits = stageLimits();
     expect(limits).toHaveLength(CHAINS.reduce((t, c) => t + c.entries.length, 0));
     expect(limits).toHaveLength(64);
-    expect(limits[2]).toEqual({ chainId: 'trazioni', entry: 'zavorra', min: 0, max: 400, minExclusive: false, whole: false, usesBodyweight: true });
+    expect(limits[2]).toEqual({ chainId: 'trazioni', entry: 'zavorra', min: 0, max: 400, minExclusive: true, whole: false, usesBodyweight: true });
     expect(LIMITS).toEqual({ minBodyweightKg: 30, maxBodyweightKg: 250, minReps: 1, maxReps: 50, minSeconds: 1, maxSeconds: 60, maxLoadKg: 400 });
   });
 });

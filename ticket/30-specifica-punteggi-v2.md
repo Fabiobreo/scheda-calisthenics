@@ -86,6 +86,10 @@ Le formule di ogni livello sono nel PDF (pagine 3–15) e vanno copiate tali e q
 | 10 | Ripetizioni oltre il completamento (Michael, 24/11) | Si possono inserire (limite 1–50) e valgono 100%. |
 | 11 | OAP assistiti con peso basso (Michael, 24/11) | Formula lasciata com'è: sotto i 50 kg non ci sono utenti reali. La validazione resta 30–250 kg come nel PDF. |
 | 12 | Verifica dei calcoli (Michael, 24/11) | Non c'è un foglio Excel: **le verifiche le fa Michael** sull'app. Il 31 gli prepara una tabella di casi. |
+| 13 | Panca e military (Michael, 24/11 sera) | Il primo livello a carico parte **dal 35% del peso** (riferito a 60 kg: G ≥ 21), non da qualsiasi carico. Sotto la soglia il record vale 0. Michael lo ha detto per la panca; il military ha la stessa riga in tabella ed è stato trattato allo stesso modo. |
+| 14 | Zavorra (Michael, 24/11 sera) | Nei livelli zavorrati la zavorra deve essere **sempre maggiore di zero**: zavorra 0 non si può inserire. |
+| 15 | % dentro il livello (Michael, 24/11 sera) | Confermata: 100 punti = Base 100%, 101 = Intermedio 1%, per difetto. |
+| 16 | Testi nell'app (Michael, 24/11 sera) | **Niente percentuali del peso corporeo nei nomi dei livelli**, per tutti gli esercizi: valgono solo a 60 kg. Si scrive la voce e la lettera ("Trazioni zavorrate, livello C"). |
 
 ## Interpretazioni adottate
 
@@ -96,4 +100,7 @@ Le formule di ogni livello sono nel PDF (pagine 3–15) e vanno copiate tali e q
 
 ## Stato
 
-**Confermata da Michael il 24 novembre 2026.** Nessuna domanda aperta: il 31 può partire.
+**Confermata da Michael il 24 novembre 2026.** Decisioni 13–16 aggiunte la sera stessa, dopo la tabella di verifica.
+
+Decisione 17 (Michael, 24/11 sera): un carico **sotto la soglia** del primo livello a carico (trazione con +5 kg a
+60 kg, panca da 15 kg) vale **0 punti**, non i livelli sotto pieni. Nessuna domanda aperta.

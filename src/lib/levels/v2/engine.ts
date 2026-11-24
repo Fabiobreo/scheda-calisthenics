@@ -100,7 +100,7 @@ export interface EntryOption {
   usesBodyweight: boolean;
   min: number;
   max: number;
-  /** true se il minimo è escluso (massimale > 0). */
+  /** true se il minimo è escluso (zavorra e massimale > 0). */
   minExclusive: boolean;
   /** true se il valore deve essere intero (ripetizioni e secondi). */
   whole: boolean;
@@ -164,7 +164,7 @@ function formulaPercent(f: Formula, value: number, bw: number, exponent: number 
       const g = load === 'bilanciere' ? value * d : (bw + value) * d;
       const loaded = value > 0;
       const reached = g >= f.start - EPS;
-      const ok = f.gate === 'load' ? loaded : f.gate === 'threshold' ? reached : loaded && reached;
+      const ok = loaded && (f.gate === 'load' || reached);
       return ok ? snap(clamp((100 * (g - f.start)) / f.width)) : 0;
     }
     case 'oap':
@@ -198,7 +198,7 @@ export function levelPercent(chainId: ChainId, letter: Letter, value: number, bo
 function entryRange(entry: EntryRule): { min: number; max: number; minExclusive: boolean; whole: boolean } {
   if (entry.measure === 'reps') return { min: LIMITS.minReps, max: LIMITS.maxReps, minExclusive: false, whole: true };
   if (entry.measure === 'seconds') return { min: LIMITS.minSeconds, max: LIMITS.maxSeconds, minExclusive: false, whole: true };
-  return { min: 0, max: LIMITS.maxLoadKg, minExclusive: entry.load === 'bilanciere', whole: false };
+  return { min: 0, max: LIMITS.maxLoadKg, minExclusive: true, whole: false };
 }
 
 function structuralError(entry: EntryRule, record: LevelRecord): ValidationError | null {
@@ -218,7 +218,7 @@ function structuralError(entry: EntryRule, record: LevelRecord): ValidationError
 /**
  * Punti di un singolo record, oppure null se il record non è valido (catena o voce sconosciute, valore fuori
  * dai limiti, peso corporeo mancante o fuori dai limiti quando la voce lo usa): fuori range non si calcola.
- * Un record valido può valere 0 (es. zavorra sotto la soglia del primo livello a carico).
+ * Un record valido può valere 0 (es. zavorra o massimale sotto la soglia del primo livello a carico).
  */
 export function scoreRecord(record: LevelRecord): RecordScore | null {
   const chain = CHAIN_BY_ID.get(record.chainId);
