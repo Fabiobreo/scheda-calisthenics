@@ -20,8 +20,8 @@ export default defineConfig({
         lang: 'it',
         start_url: '/',
         display: 'standalone',
-        background_color: '#0a1013',
-        theme_color: '#0a1013',
+        background_color: '#0b0b0d',
+        theme_color: '#0b0b0d',
         icons: [
           { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
@@ -30,7 +30,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // webp: la foto di sfondo (ticket 33), anche offline
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webp}'],
         navigateFallback: '/index.html',
       },
     }),
