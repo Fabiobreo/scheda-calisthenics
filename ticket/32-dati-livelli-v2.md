@@ -144,7 +144,7 @@ non entrare in conflitto col ramo del 33.
 - Non provato nel browser: l'app nuova ha bisogno della colonna `bodyweight_kg`, cioè di un database con la 0015.
 - `measure.test.sql`, citato al punto 3, non ha niente su livelli o peso: non è cambiato.
 
-**Scelte dove il ticket e il motore non dicono** (lettura più prudente; le prime tre da confermare con Michael)
+**Scelte dove il ticket e il motore non dicono** (lettura più prudente; le prime tre **confermate il 24 novembre 2026**)
 
 1. **Zavorra 0** (prima ammessa come "corpo libero, non conta"): nel v2 non è un valore valido (30, decisione 14) e
    non ha un equivalente → il record **si elimina**. Non l'ho trasformato in un record a ripetizioni: sarebbe un dato

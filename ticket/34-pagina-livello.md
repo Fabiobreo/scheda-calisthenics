@@ -62,7 +62,12 @@ zavorra è sempre maggiore di zero (30, decisione 14): il campo non accetta 0.
 ## Materiale da ricevere
 
 - **Il file del busto dorato** con fondo trasparente (almeno 800 px di lato): nel mockup c'è solo dentro lo screenshot.
-  Bloccante per la chiusura; nel frattempo si ritaglia dallo screenshot.
+  **Non più bloccante** (Fabio, 24/11): il busto è stato ritagliato dallo screenshot del mockup "Livello" e sta in
+  [`public/avatar/busto-540.webp`](../public/avatar/busto-540.webp) e `busto-270.webp` (fondo trasparente, senza
+  l'alone: quello si rifà in CSS); il ritaglio di partenza è
+  [`riferimenti/34-busto-ritagliato.png`](riferimenti/34-busto-ritagliato.png). Limite: nel mockup il busto è largo
+  circa 270 px, quindi i 540 px sono un ingrandimento e i bordi sono un po' morbidi. Va bene alla misura del mockup
+  (circa 135 px CSS a 2x); se Michael manda l'originale si sostituiscono i due file.
 
 ## Decisioni (Michael, 24 novembre 2026)
 

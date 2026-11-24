@@ -174,7 +174,7 @@ in chiaro.
 
 ### Cosa serve ancora
 
-- Da Michael: il **file del busto dorato** con fondo trasparente (34).
+- ~~Da Michael: il file del busto dorato con fondo trasparente (34).~~ Ritagliato dal mockup il 24/11 (`public/avatar/`); l'originale di Michael, se arriva, lo sostituisce.
 - Da Fabio: profilo pubblico o privato alla registrazione e informativa privacy (38, bloccanti per la fase 3); ingresso
   ad Account dal nome in testata (33); tipo dell'esercizio come testo in Scheda (37).
 
