@@ -3,7 +3,7 @@
  * Nessun dato nuovo da salvare: ogni passo è fatto quando esiste quello che chiede.
  */
 
-export type StepId = 'peso' | 'figura' | 'record' | 'allenamento';
+export type StepId = 'figura' | 'record' | 'allenamento';
 
 export interface Step {
   id: StepId;
@@ -14,7 +14,6 @@ export interface Step {
 }
 
 export interface StepsInput {
-  hasBodyweight: boolean;
   hasAvatarBody: boolean;
   records: number;
   trainings: number;
@@ -33,7 +32,6 @@ export interface Steps {
 }
 
 const HINT: Record<Exclude<StepId, 'allenamento'>, string> = {
-  peso: 'Senza, i record in kg non contano.',
   figura: 'Cambia fisico man mano che sali di livello.',
   record: 'Tocca una categoria e scegli un esercizio.',
 };
@@ -46,7 +44,6 @@ function trainingHint(i: StepsInput): string {
 
 export function firstSteps(i: StepsInput): Steps {
   const base: Omit<Step, 'hint'>[] = [
-    { id: 'peso', title: 'Il tuo peso', done: i.hasBodyweight },
     { id: 'figura', title: "La figura dell'avatar", done: i.hasAvatarBody },
     { id: 'record', title: 'Il primo record', done: i.records > 0 },
     { id: 'allenamento', title: 'Il primo allenamento', done: i.trainings > 0 },

@@ -2,7 +2,6 @@ import { isAvatarBody } from '../lib/avatarFigure';
 import type { Db } from '../lib/supabase';
 import type { Repo } from './repo';
 import type {
-  BodyWeight,
   CatalogExercise,
   CoachLink,
   Entry,
@@ -253,16 +252,20 @@ interface LevelRow {
   stage: string;
   /** numeric: PostgREST lo può restituire come stringa */
   value: number | string;
+  bodyweight_kg: number | string | null;
   date: string;
   note: string | null;
   created_at: string;
 }
+
+const LEVEL_COLS = 'id, sub_id, stage, value, bodyweight_kg, date, note, created_at';
 
 const toLevelRecord = (r: LevelRow): LevelRecordRow => ({
   id: r.id,
   subId: r.sub_id,
   stage: r.stage,
   value: Number(r.value),
+  bodyweightKg: r.bodyweight_kg === null ? null : Number(r.bodyweight_kg),
   date: r.date,
   note: r.note,
   createdAt: r.created_at,
@@ -273,6 +276,7 @@ function levelPatch(p: Partial<LevelRecordInput>) {
   if (p.subId !== undefined) row.sub_id = p.subId;
   if (p.stage !== undefined) row.stage = p.stage;
   if (p.value !== undefined) row.value = p.value;
+  if (p.bodyweightKg !== undefined) row.bodyweight_kg = p.bodyweightKg;
   if (p.date !== undefined) row.date = p.date;
   if (p.note !== undefined) row.note = p.note;
   return row;
@@ -287,7 +291,7 @@ function must(res: { data: unknown; error: { message: string; code?: string } | 
   return res.data;
 }
 
-type Table = 'exercises' | 'entries' | 'plan_items' | 'body_weights' | 'level_records';
+type Table = 'exercises' | 'entries' | 'plan_items' | 'level_records';
 
 /**
  * Repo dei dati di `userId`. Ogni query filtra per utente in modo esplicito: le policy RLS non bastano a
@@ -321,27 +325,11 @@ export function createSupabaseRepo(sb: Db, userId: string): Repo {
       await sb.auth.signOut({ scope: 'local' });
     },
 
-    async listBodyWeights() {
-      // una riga al giorno: dopo qualche anno si superano le 1000 righe di una richiesta
-      const out: BodyWeight[] = [];
-      for (let from = 0; ; from += PAGE) {
-        const rows = must(await select('body_weights', 'date, kg').order('date').range(from, from + PAGE - 1)) as { date: string; kg: number | string }[];
-        out.push(...rows.map((r) => ({ date: r.date, kg: Number(r.kg) })));
-        if (rows.length < PAGE) return out;
-      }
-    },
-    async setBodyWeight(date, kg) {
-      must(await sb.from('body_weights').upsert({ user_id: userId, date, kg }, { onConflict: 'user_id,date' }));
-    },
-    async deleteBodyWeight(date) {
-      must(await remove('body_weights').eq('date', date));
-    },
-
     async listLevelRecords() {
       const out: LevelRecordRow[] = [];
       for (let from = 0; ; from += PAGE) {
         const rows = must(
-          await select('level_records', 'id, sub_id, stage, value, date, note, created_at')
+          await select('level_records', LEVEL_COLS)
             .order('date')
             .order('created_at')
             .order('id')
@@ -352,7 +340,7 @@ export function createSupabaseRepo(sb: Db, userId: string): Repo {
       }
     },
     async createLevelRecord(input, id) {
-      const row = must(await insert('level_records', [{ ...levelPatch(input), ...(id && { id }) }]).select('id, sub_id, stage, value, date, note, created_at').single());
+      const row = must(await insert('level_records', [{ ...levelPatch(input), ...(id && { id }) }]).select(LEVEL_COLS).single());
       return toLevelRecord(row as LevelRow);
     },
     async updateLevelRecord(id, patch) {

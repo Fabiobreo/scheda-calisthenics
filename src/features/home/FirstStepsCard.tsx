@@ -8,7 +8,7 @@ import type { StepId, Steps } from './firstSteps';
  * rimbalza quando un passo si compie, i blocchetti in alto dicono a che punto sei. Sparisce da sola a passi fatti;
  * "Più tardi" la nasconde su questo dispositivo.
  */
-export function FirstSteps({ steps, onWeight, onRecord, onDismiss }: { steps: Steps; onWeight: () => void; onRecord: () => void; onDismiss: () => void }) {
+export function FirstSteps({ steps, onRecord, onDismiss }: { steps: Steps; onRecord: () => void; onDismiss: () => void }) {
   // passi compiuti mentre la card era a schermo: solo quelli fanno il rimbalzo
   const seen = useRef<Set<StepId> | null>(null);
   const fresh = new Set(seen.current ? steps.steps.filter((s) => s.done && !seen.current!.has(s.id)).map((s) => s.id) : []);
@@ -18,8 +18,6 @@ export function FirstSteps({ steps, onWeight, onRecord, onDismiss }: { steps: St
 
   const action = (id: StepId) => {
     switch (id) {
-      case 'peso':
-        return <button type="button" className="btn small ghost" onClick={onWeight} aria-label="Inserisci il tuo peso">Inserisci</button>;
       case 'figura':
         return <Link className="btn small ghost" to="/account" aria-label="Scegli la figura dell'avatar">Scegli</Link>;
       case 'record':
@@ -31,7 +29,7 @@ export function FirstSteps({ steps, onWeight, onRecord, onDismiss }: { steps: St
 
   return (
     <section className="card first-steps" aria-labelledby="fs-h">
-      <CardHead title="Per iniziare" help="Quattro passi per far contare livello e allenamenti. Si spuntano da soli quando li fai.">
+      <CardHead title="Per iniziare" help="Tre passi per far contare livello e allenamenti. Si spuntano da soli quando li fai.">
         <span className="fs-prog" role="img" aria-label={`${steps.done} di ${steps.total} passi fatti`}>
           <span className="fs-blocks" aria-hidden="true">
             {steps.steps.map((s) => (

@@ -1,5 +1,4 @@
 import type {
-  BodyWeight,
   CatalogExercise,
   CoachLink,
   Entry,
@@ -24,12 +23,6 @@ export interface Repo {
   updateProfile(patch: Partial<Profile>): Promise<void>;
   /** Elimina l'account con tutti i suoi dati. Non si torna indietro. */
   deleteAccount(): Promise<void>;
-
-  /** storico del peso corporeo, dal giorno più vecchio */
-  listBodyWeights(): Promise<BodyWeight[]>;
-  /** inserisce o corregge il peso del giorno */
-  setBodyWeight(date: string, kg: number): Promise<void>;
-  deleteBodyWeight(date: string): Promise<void>;
 
   /** record di livello, dal più vecchio (a parità di data, in ordine d'inserimento) */
   listLevelRecords(): Promise<LevelRecordRow[]>;

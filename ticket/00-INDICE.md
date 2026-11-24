@@ -144,7 +144,7 @@ impostazione, con stile, sfondo e caratteri di Home e Livello e **al massimo 3â€
 |---|--------|------|-------------------|-------|-------|
 | 30 | [Specifica dei punteggi v2](30-specifica-punteggi-v2.md) | 1 | Product owner + coach | S (bloccante) | confermata da Michael il 24/11 |
 | 31 | [Motore dei punteggi v2](31-motore-punteggi-v2.md) | 1 | TypeScript (logica + test) | M | fatto 24/11 in `src/lib/levels/v2` (le pagine lo usano dal 34); tabella di verifica da far controllare a Michael |
-| 32 | [Dati dei livelli v2: peso nel record, conversione](32-dati-livelli-v2.md) | 1 | Backend | M | da fare |
+| 32 | [Dati dei livelli v2: peso nel record, conversione](32-dati-livelli-v2.md) | 1 | Backend | M | fatto 24/11 sul ramo `claude/ticket-32-dati-v2-903f79` (non unito): migration `0015`, da rilasciare col 34; provata su PGlite, **non** su Supabase locale (manca Docker); 3 scelte di conversione da confermare con Michael |
 | 33 | [Stile nuovo: oro, foto, testata, barra](33-stile-oro.md) | 1 (in parallelo) | UI designer + frontend | L | da fare |
 | 34 | [Pagina Livello](34-pagina-livello.md) | 2 | Frontend + UI designer | L | da fare |
 | 35 | [Pagina Esercizi e catalogo](35-pagina-esercizi.md) | 2 | Frontend + backend | M | da fare |

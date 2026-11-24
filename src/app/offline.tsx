@@ -42,7 +42,12 @@ function useFlush() {
     // i salvataggi ancora in coda restano visibili anche dopo la rilettura
     sync.reapplyPending(qc, userId);
     if (r.rejected.length)
-      toast(`${savesText(r.rejected.length, 'non inviato')}: ${sync.describe(qc, r.rejected[0].item)}. Il server l'ha rifiutato.`, { label: 'Ok', run: () => {} });
+      toast(
+        `${savesText(r.rejected.length, 'non inviato')}: ${sync.describe(qc, r.rejected[0].item)}. ${
+          r.rejected[0].reason === sync.STALE_REASON ? "Era stato salvato con una versione vecchia dell'app: inseriscilo di nuovo." : "Il server l'ha rifiutato."
+        }`,
+        { label: 'Ok', run: () => {} },
+      );
     else if (r.sent.length) toast(`${savesText(r.sent.length, 'inviato')} al server`);
   };
 }
@@ -161,7 +166,7 @@ export function OfflinePill() {
             </div>
             <p className="hint">
               {down
-                ? 'Vedi gli ultimi dati salvati sul telefono. Allenamenti, peso e record si salvano qui e partono da soli quando torna la rete, anche se chiudi l’app.'
+                ? 'Vedi gli ultimi dati salvati sul telefono. Allenamenti e record si salvano qui e partono da soli quando torna la rete, anche se chiudi l’app.'
                 : n
                   ? 'La rete c’è: li sto inviando.'
                   : 'Il server ha ricevuto tutto.'}

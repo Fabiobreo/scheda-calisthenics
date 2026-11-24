@@ -1,10 +1,10 @@
 import { QueryClient } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Repo } from './repo';
-import type { BodyWeight, Entry, EntryInput, PlanItem } from './types';
+import type { Entry, EntryInput, LevelRecordInput, LevelRecordRow, PlanItem } from './types';
 
 // gli hook portano dietro il client Supabase (vuole il browser): alla coda servono solo le chiavi delle query
-vi.mock('./hooks', () => ({ K: { entries: ['entries'], bodyWeights: ['body-weights'], levelRecords: ['level-records'], profile: ['profile'] } }));
+vi.mock('./hooks', () => ({ K: { entries: ['entries'], levelRecords: ['level-records'], profile: ['profile'] } }));
 
 // localStorage finto: la coda e la cache ci scrivono, in node non c'è
 const mem = new Map<string, string>();
@@ -14,13 +14,27 @@ vi.stubGlobal('localStorage', {
   removeItem: (k: string) => void mem.delete(k),
 });
 
-const { enqueue, newId, pendingFor, queue, savesText, CACHE_KEY } = await import('./offline');
-const { applyOptimistic, describe: label, isRetryable, flushQueue, reapplyPending, restoreCache, saveCache } = await import('./sync');
+const { enqueue, isStale, newId, pendingFor, queue, savesText, CACHE_KEY, QUEUE_FORMAT } = await import('./offline');
+const { applyOptimistic, describe: label, isRetryable, flushQueue, refreshAfter, reapplyPending, restoreCache, saveCache, STALE_REASON } = await import('./sync');
 type QueueItem = import('./offline').QueueItem;
 
 const U = 'user-a';
 let seq = 0;
-const item = (op: QueueItem['op'], args: unknown[], userId = U): QueueItem => ({ id: `q${++seq}`, userId, at: Date.parse('2026-11-10T18:00:00Z') + seq, op, args });
+const item = (op: QueueItem['op'], args: unknown[], userId = U): QueueItem => ({
+  id: `q${++seq}`,
+  userId,
+  at: Date.parse('2026-11-10T18:00:00Z') + seq,
+  op,
+  args,
+  v: QUEUE_FORMAT,
+});
+/** Salvataggio rimasto in coda da una versione dell'app di prima del ticket 32: senza `v`, anche con operazioni che non esistono più. */
+const oldItem = (op: string, args: unknown[]): QueueItem => {
+  const { v: _v, ...rest } = item(op as QueueItem['op'], args);
+  return rest;
+};
+
+const record: LevelRecordInput = { subId: 'trazioni', stage: 'zavorra', value: 10, bodyweightKg: 75, date: '2026-11-10', note: null };
 
 const input: EntryInput = { exerciseId: 'trazioni', kind: 'training', date: '2026-11-10', sets: [{ weight: 0, reps: 8, seconds: 0 }], difficulty: null, note: null };
 const entry = (id: string, date: string, createdAt = `${date}T10:00:00Z`): Entry => ({ ...input, id, date, type: 'forza', createdAt });
@@ -42,7 +56,7 @@ describe('errori da riprovare', () => {
     expect(isRetryable(pgError('bad gateway', 502))).toBe(true);
     expect(isRetryable(pgError('JWT expired', 401, 'PGRST303'))).toBe(true);
     // partita con la sola chiave pubblica (token non ancora rinnovato): RLS risponde 401
-    expect(isRetryable(pgError('new row violates row-level security policy for table "body_weights"', 401, '42501'))).toBe(true);
+    expect(isRetryable(pgError('new row violates row-level security policy for table "level_records"', 401, '42501'))).toBe(true);
   });
   it('rifiuto del server: no', () => {
     expect(isRetryable(pgError('insert or update on table "entries" violates foreign key constraint', 409, '23503'))).toBe(false);
@@ -54,10 +68,10 @@ describe('errori da riprovare', () => {
 describe('coda', () => {
   it('si salva nel localStorage, divisa per account', () => {
     enqueue(item('createEntry', [input, 'e1']));
-    enqueue(item('setBodyWeight', ['2026-11-10', 72], 'user-b'));
+    enqueue(item('createLevelRecord', [record, 'r1'], 'user-b'));
     expect(JSON.parse(mem.get('scheda:queue')!)).toHaveLength(2);
     expect(pendingFor(U).map((i) => i.op)).toEqual(['createEntry']);
-    expect(pendingFor('user-b').map((i) => i.op)).toEqual(['setBodyWeight']);
+    expect(pendingFor('user-b').map((i) => i.op)).toEqual(['createLevelRecord']);
   });
 
   it('id nuovi: uuid v4 diversi', () => {
@@ -87,10 +101,10 @@ describe('invio della coda', () => {
   it('in ordine di salvataggio, e svuota la coda', async () => {
     enqueue(item('createEntry', [input, 'e1']));
     enqueue(item('updateEntry', ['e1', { note: 'ok' }]));
-    enqueue(item('setBodyWeight', ['2026-11-10', 72]));
+    enqueue(item('createLevelRecord', [record, 'r1']));
     const { repo, calls } = repoWith(async () => undefined);
     const r = await flushQueue(repo, U);
-    expect(calls.map((c) => c[0])).toEqual(['createEntry', 'updateEntry', 'setBodyWeight']);
+    expect(calls.map((c) => c[0])).toEqual(['createEntry', 'updateEntry', 'createLevelRecord']);
     expect(calls[0][1]).toEqual([input, 'e1']);
     expect(r.sent).toHaveLength(3);
     expect(pendingFor(U)).toEqual([]);
@@ -131,16 +145,56 @@ describe('invio della coda', () => {
 
   it('rifiuto del server (esercizio eliminato nel frattempo): tolto dalla coda e segnalato, gli altri partono', async () => {
     enqueue(item('createEntry', [input, 'e1']));
-    enqueue(item('setBodyWeight', ['2026-11-10', 72]));
+    enqueue(item('createLevelRecord', [record, 'r1']));
     const { repo, calls } = repoWith(async (op) => {
       if (op === 'createEntry') throw pgError('violates foreign key constraint', 409, '23503');
     });
     const r = await flushQueue(repo, U);
     expect(r.rejected.map((x) => x.item.op)).toEqual(['createEntry']);
     expect(r.rejected[0].reason).toMatch(/foreign key/);
-    expect(r.sent.map((x) => x.op)).toEqual(['setBodyWeight']);
+    expect(r.sent.map((x) => x.op)).toEqual(['createLevelRecord']);
     expect(calls).toHaveLength(2);
     expect(pendingFor(U)).toEqual([]);
+  });
+
+  it('salvataggi di una versione vecchia (peso a parte, record senza peso dentro): scartati con un avviso, mai inviati', async () => {
+    const oldRecord = { subId: 'military', stage: 'bilanciere', value: 50, date: '2026-11-10', note: null };
+    enqueue(oldItem('setBodyWeight', ['2026-11-10', 72]));
+    enqueue(oldItem('createLevelRecord', [oldRecord, 'r0']));
+    enqueue(oldItem('updateLevelRecord', ['r9', { value: 12 }]));
+    enqueue(oldItem('deleteBodyWeight', ['2026-11-01']));
+    // questi restano validi anche se vecchi: il loro formato non è cambiato
+    enqueue(oldItem('createEntry', [input, 'e1']));
+    enqueue(oldItem('deleteLevelRecord', ['r8']));
+    enqueue(item('createLevelRecord', [record, 'r1']));
+    const { repo, calls } = repoWith(async () => undefined);
+    const r = await flushQueue(repo, U);
+    expect(calls.map((c) => c[0])).toEqual(['createEntry', 'deleteLevelRecord', 'createLevelRecord']);
+    expect(r.rejected.map((x) => x.item.op)).toEqual(['setBodyWeight', 'createLevelRecord', 'updateLevelRecord', 'deleteBodyWeight']);
+    expect(r.rejected.every((x) => x.reason === STALE_REASON)).toBe(true);
+    expect(r.stopped).toBe(false);
+    // non restano in coda a riprovare
+    expect(pendingFor(U)).toEqual([]);
+    expect(await flushQueue(repo, U)).toEqual({ sent: [], rejected: [], stopped: false });
+  });
+
+  it('quali salvataggi sono di una versione vecchia', () => {
+    expect(isStale(oldItem('setBodyWeight', []))).toBe(true);
+    expect(isStale(oldItem('createLevelRecord', []))).toBe(true);
+    expect(isStale(item('createLevelRecord', []))).toBe(false);
+    expect(isStale(item('updateLevelRecord', []))).toBe(false);
+    expect(isStale(oldItem('deleteLevelRecord', []))).toBe(false);
+    expect(isStale(oldItem('updateEntry', []))).toBe(false);
+  });
+
+  it('dopo lo scarto si rileggono solo le query che esistono ancora', async () => {
+    const qc = new QueryClient();
+    qc.setQueryData(['plan', U], []);
+    qc.setQueryData(['level-records', U], []);
+    await refreshAfter(qc, [oldItem('setBodyWeight', ['2026-11-10', 72]), oldItem('createLevelRecord', [{}, 'r0'])]);
+    expect(qc.getQueryState(['level-records', U])!.isInvalidated).toBe(true);
+    // un'operazione sconosciuta non deve far rileggere tutto
+    expect(qc.getQueryState(['plan', U])!.isInvalidated).toBe(false);
   });
 
   it('due invii insieme fanno un solo giro', async () => {
@@ -156,7 +210,7 @@ describe('modifiche ottimistiche', () => {
   const setup = () => {
     const qc = new QueryClient();
     qc.setQueryData<Entry[]>(['entries', U], [entry('old2', '2026-11-09'), entry('old1', '2026-11-01')]);
-    qc.setQueryData<BodyWeight[]>(['body-weights', U], [{ date: '2026-11-01', kg: 70 }]);
+    qc.setQueryData<LevelRecordRow[]>(['level-records', U], [{ ...record, id: 'r0', date: '2026-11-01', createdAt: '2026-11-01T10:00:00Z' }]);
     qc.setQueryData<PlanItem[]>(['plan', U], [
       { id: 'p', date: '2026-11-10', exerciseId: 'trazioni', sortOrder: 0, scheme: { type: 'volume', sets: 3, reps: 8, seconds: 0, weight: 0, rest: 90 }, assignedBy: null, note: null },
     ]);
@@ -187,14 +241,25 @@ describe('modifiche ottimistiche', () => {
     expect(entries(qc).map((e) => e.id)).toEqual(['old1']);
   });
 
-  it('peso del giorno: sostituisce quello della stessa data, in ordine', () => {
+  it('record in coda: compare col suo peso corporeo, la modifica lo cambia', () => {
     const qc = setup();
-    applyOptimistic(qc, item('setBodyWeight', ['2026-11-10', 72]));
-    applyOptimistic(qc, item('setBodyWeight', ['2026-11-10', 71.5]));
-    expect(qc.getQueryData(['body-weights', U])).toEqual([
-      { date: '2026-11-01', kg: 70 },
-      { date: '2026-11-10', kg: 71.5 },
+    const records = () => qc.getQueryData<LevelRecordRow[]>(['level-records', U])!;
+    applyOptimistic(qc, item('createLevelRecord', [record, 'r1']));
+    expect(records().map((r) => [r.id, r.bodyweightKg])).toEqual([
+      ['r0', 75],
+      ['r1', 75],
     ]);
+    applyOptimistic(qc, item('updateLevelRecord', ['r1', { value: 12, bodyweightKg: 74.5 }]));
+    expect(records()[1]).toMatchObject({ value: 12, bodyweightKg: 74.5, stage: 'zavorra' });
+    applyOptimistic(qc, item('deleteLevelRecord', ['r0']));
+    expect(records().map((r) => r.id)).toEqual(['r1']);
+  });
+
+  it('un salvataggio di una versione vecchia non si mostra come fatto', () => {
+    const qc = setup();
+    applyOptimistic(qc, oldItem('createLevelRecord', [{ subId: 'military', stage: 'bilanciere', value: 50, date: '2026-11-10', note: null }, 'r1']));
+    applyOptimistic(qc, oldItem('setBodyWeight', ['2026-11-10', 72]));
+    expect(qc.getQueryData<LevelRecordRow[]>(['level-records', U])!.map((r) => r.id)).toEqual(['r0']);
   });
 
   it('dopo una rilettura dal server i salvataggi in coda si riapplicano', () => {
@@ -255,15 +320,15 @@ describe('cache persistita', () => {
 });
 
 describe('etichette dell’elenco in attesa', () => {
-  it('nome dell’esercizio dalla cache, data corta, peso con la virgola', () => {
+  it('nome dell’esercizio dalla cache, data corta', () => {
     const qc = new QueryClient();
     qc.setQueryData(['exercises', U], [{ id: 'trazioni', catalogId: null, name: 'Trazioni', inRecords: true, measure: 'reps', sortOrder: 0, archivedAt: null }]);
     qc.setQueryData<Entry[]>(['entries', U], [entry('old1', '2026-11-01')]);
     expect(label(qc, item('createEntry', [input, 'e1']))).toMatch(/^Allenamento · Trazioni · /);
     expect(label(qc, item('createEntry', [{ ...input, kind: 'attempt' }, 'e2']))).toMatch(/^Tentativo · Trazioni/);
     expect(label(qc, item('deleteEntry', ['old1']))).toBe('Eliminazione · Trazioni');
-    expect(label(qc, item('setBodyWeight', ['2026-11-10', 72.5]))).toMatch(/^Peso · 72,5 kg · /);
-    expect(label(qc, item('createLevelRecord', [{ subId: 'trazioni', stage: 'zavorra', value: 10, date: '2026-11-10', note: null }, 'r1']))).toBe('Record · Trazioni');
+    expect(label(qc, oldItem('setBodyWeight', ['2026-11-10', 72.5]))).toBe('Peso corporeo');
+    expect(label(qc, item('createLevelRecord', [record, 'r1']))).toBe('Record · Trazioni');
     expect(label(qc, item('deleteEntry', ['sconosciuta']))).toBe('Allenamento eliminato');
   });
 });
