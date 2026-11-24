@@ -207,3 +207,12 @@ export function dayMarks(
     .map((e) => ({ type: e.type, state: 'done' as const }));
   return [...planned, ...extra];
 }
+
+/**
+ * Il segno unico di un giorno nella Scheda dell'atleta (ticket 37), dai pallini di `dayMarks`: pieno se tutto quello
+ * che c'era è fatto, vuoto se resta (o è rimasto) qualcosa da fare, nessuno se il giorno non ha esercizi.
+ */
+export function daySign(marks: { state: 'done' | 'missed' | 'pending' }[]): 'done' | 'todo' | null {
+  if (!marks.length) return null;
+  return marks.every((m) => m.state === 'done') ? 'done' : 'todo';
+}

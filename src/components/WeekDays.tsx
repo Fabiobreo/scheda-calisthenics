@@ -32,6 +32,7 @@ export function WeekDays({
   onChange,
   detail,
   marks,
+  sign,
 }: {
   monday: string;
   /** 0 = lunedì ... 6 = domenica */
@@ -43,6 +44,8 @@ export function WeekDays({
   detail?: (date: string) => ReactNode;
   /** un pallino per esercizio al posto di "2 es." */
   marks?: (date: string) => DayMark[];
+  /** un solo segno dorato per giorno (Scheda dell'atleta, ticket 37): pieno = fatto, vuoto = da fare, null = niente */
+  sign?: (date: string) => 'done' | 'todo' | null;
 }) {
   const today = todayStr();
   const thisMonday = mondayOf(today);
@@ -71,18 +74,21 @@ export function WeekDays({
         {DAY_SHORT.map((d, i) => {
           const dt = addDays(monday, i);
           const n = count(dt);
+          const sg = sign ? sign(dt) : null;
           return (
             <button
               key={d}
               className={`day${i === day ? ' on' : ''}${dt === today ? ' today' : ''}`}
               onClick={() => onChange(monday, i)}
-              aria-label={`${longDate(dt)}, ${plural(n, 'esercizio', 'esercizi')}`}
+              aria-label={`${longDate(dt)}, ${plural(n, 'esercizio', 'esercizi')}${sg ? (sg === 'done' ? ', fatto' : ', da fare') : ''}`}
               aria-pressed={i === day}
             >
               <span>{d}</span>
               <i>{parseDate(dt).getDate()}</i>
               {detail ? (
                 detail(dt)
+              ) : sign ? (
+                <span className={`sign ${sg ?? 'none'}`} aria-hidden="true" />
               ) : marks ? (
                 <span className="dots" aria-hidden="true">
                   {marks(dt).slice(0, 6).map((m, k) => (
