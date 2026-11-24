@@ -1,8 +1,5 @@
-import '@fontsource/barlow/400.css';
-import '@fontsource/barlow/500.css';
-import '@fontsource/barlow/600.css';
-import '@fontsource/barlow-condensed/600.css';
-import '@fontsource/barlow-condensed/700.css';
+// Inter variabile (ticket 33): un solo file per tutti i pesi; il browser scarica solo i sottoinsiemi che servono (latino)
+import '@fontsource-variable/inter';
 import './styles.css';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

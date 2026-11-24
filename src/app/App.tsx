@@ -1,10 +1,9 @@
 import { lazy, Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { LevelStrip } from '../components/LevelStrip';
+import { TopBar } from '../components/TopBar';
 import { IconAtleti, IconEsercizi, IconGrafici, IconLivello, IconScheda } from '../components/icons';
-import { Avatar } from '../components/Avatar';
-import { useData, useLevel, useProfile } from '../data/hooks';
+import { useData, useProfile } from '../data/hooks';
 import { Skeleton } from '../components/ui';
 import { HomeView } from '../features/home/HomeView';
 import { LoggerProvider } from '../features/logger/Logger';
@@ -36,24 +35,6 @@ const TABS: { to: string; label: string; icon: ReactNode }[] = [
   { to: '/esercizi', label: 'Esercizi', icon: <IconEsercizi /> },
 ];
 const ATLETI_TAB = { to: '/atleti', label: 'Atleti', icon: <IconAtleti /> };
-
-/** Sezioni con il riepilogo del livello in alto (ticket 12); altrove (Home, Account, Atleti) resta il nome dell'app. */
-const STRIP_PATHS = ['/scheda', '/grafici', '/esercizi'];
-
-/**
- * Avatar dell'utente in alto a destra: è l'unico elemento d'identità della testata (audit A11) e porta ad Account,
- * dove si esce. Accanto, nelle sezioni con il riepilogo, ci sono nome e livello: insieme fanno "avatar + livello" (12).
- */
-function AccountBadge({ email }: { email: string | null }) {
-  const profile = useProfile().data;
-  const { summary } = useLevel();
-  const name = profile?.displayName;
-  return (
-    <NavLink to="/account" className={({ isActive }) => `badge${isActive ? ' on' : ''}`} aria-label="Account" title={name || email || 'Account'}>
-      <Avatar name={name || email} avatar={summary.avatar} elite={summary.zone === 'elite'} small body={profile?.avatarBody} />
-    </NavLink>
-  );
-}
 
 /**
  * Codice d'invito aperto da chi non ha ancora un account: la mail di conferma riporta alla home,
@@ -105,20 +86,15 @@ export function App() {
 
   return (
     <div className="wrap">
-      {/* intestazione corta: le sezioni sono nella barra in basso, l'account nel cerchio a destra */}
+      {/* testata comune (ticket 33): nome e livello portano ad Account, il cerchio "Totale" a Livello; le sezioni sono
+          nella barra in basso. Mentre la sessione si apre, e nel cambio password, resta il nome dell'app. */}
       <header className="top">
-        {session.status === 'ready' && !recovery && STRIP_PATHS.includes(location.pathname) ? (
-          <LevelStrip />
+        {session.status === 'ready' && !recovery ? (
+          <TopBar email={session.email} end={<Offline userId={session.userId} part="pill" />} />
         ) : (
           <Link className="brand" to="/">
             Scheda Calisthenics
           </Link>
-        )}
-        {session.status === 'ready' && !recovery && (
-          <span className="top-end">
-            <Offline userId={session.userId} part="pill" />
-            <AccountBadge email={session.email} />
-          </span>
         )}
       </header>
       <UpdateBanner />

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type HTMLAttributes, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from 'react';
 import { TYPE_LABEL, type ExerciseType } from '../data/types';
 
 /**
@@ -565,5 +565,124 @@ export function EmptyWeeks() {
         )),
       )}
     </svg>
+  );
+}
+
+/* ---------- Ticket 33: componenti dello stile oro ---------- */
+
+/** Scheda antracite (`.card`). `star` = la protagonista della pagina, con il riflesso dorato. */
+export function Card({ star, className, children, ...rest }: { star?: boolean; className?: string; children: ReactNode } & HTMLAttributes<HTMLElement>) {
+  return (
+    <section className={`card${star ? ' star' : ''}${className ? ` ${className}` : ''}`} {...rest}>
+      {children}
+    </section>
+  );
+}
+
+/** Campo di ricerca con la lente a sinistra. L'etichetta resta per gli screen reader anche quando non si vede. */
+export function SearchField({ label, hideLabel, ...input }: { label: string; hideLabel?: boolean } & InputHTMLAttributes<HTMLInputElement>) {
+  const id = useId();
+  return (
+    <div className="fld search">
+      <label className={hideLabel ? 'sr-only' : 'fld-l'} htmlFor={id}>
+        {label}
+      </label>
+      <input id={id} type="search" autoComplete="off" enterKeyHint="search" {...input} />
+    </div>
+  );
+}
+
+export type MenuItem = { label: string; onSelect: () => void; danger?: boolean; disabled?: boolean };
+
+/**
+ * Menu "⋯" (ticket 33, servirà dal 35): pulsante da 44 px che apre un elenco di azioni. Accessibile come un menu ARIA:
+ * frecce su e giù, Home e Fine per muoversi, Invio o Spazio per scegliere, Esc o un tocco fuori per chiudere; alla
+ * chiusura il fuoco torna sul pulsante.
+ */
+export function MoreMenu({ label, items, align = 'end' }: { label: string; items: MenuItem[]; align?: 'start' | 'end' }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const btn = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const enabled = () => Array.from(list.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []);
+
+  const close = (refocus = true) => {
+    setOpen(false);
+    if (refocus) btn.current?.focus();
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    enabled()[0]?.focus();
+    const outside = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!list.current?.contains(t) && !btn.current?.contains(t)) close(false);
+    };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [open]);
+
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const all = enabled();
+    const i = all.indexOf(document.activeElement as HTMLButtonElement);
+    const go = (n: number) => {
+      e.preventDefault();
+      all[(n + all.length) % all.length]?.focus();
+    };
+    if (e.key === 'ArrowDown') go(i + 1);
+    else if (e.key === 'ArrowUp') go(i - 1);
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(all.length - 1);
+    else if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+    } else if (e.key === 'Tab') close(false);
+  };
+
+  return (
+    <div className="menu">
+      <button
+        ref={btn}
+        type="button"
+        className="menu-btn"
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? id : undefined}
+        onClick={() => (open ? close() : setOpen(true))}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown' && !open) {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <circle cx="5" cy="12" r="1.9" />
+          <circle cx="12" cy="12" r="1.9" />
+          <circle cx="19" cy="12" r="1.9" />
+        </svg>
+      </button>
+      {open && (
+        <div ref={list} id={id} role="menu" aria-label={label} className={`menu-list ${align}`} onKeyDown={onKey}>
+          {items.map((it) => (
+            <button
+              key={it.label}
+              type="button"
+              role="menuitem"
+              tabIndex={-1}
+              disabled={it.disabled}
+              className={it.danger ? 'danger' : undefined}
+              onClick={() => {
+                close();
+                it.onSelect();
+              }}
+            >
+              {it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
