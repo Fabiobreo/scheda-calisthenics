@@ -48,5 +48,5 @@ programma", giorno scelto con gli esercizi, `SetBlocks`, striscia colorata del t
 
 ## Domande aperte
 
-1. Senza colori, il **tipo** deciso dal trainer (01) resta visibile all'atleta come testo nello schema, o sparisce
-   anche quello? Proposta: resta come testo. (Fabio)
+Nessuna. Deciso da Fabio il 25 novembre 2026: senza colori, il **tipo** deciso dal trainer (01) resta visibile
+all'atleta **come testo** nello schema.
