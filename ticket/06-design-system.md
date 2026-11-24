@@ -7,6 +7,16 @@
 - **Dipende da**: 05 per sapere cosa va mostrato (livelli, elite). **Sblocca**: 07, 10, 11, 12, 14.
 - **Stima**: L (lavoro del designer) + M (sviluppo)
 
+> **Superato nei colori e nei caratteri dal [33](33-stile-oro.md)** (24 novembre 2026): oro al posto di ciano e ambra,
+> Inter al posto di Barlow, foto della palestra al posto delle linee topografiche. Restano validi i principi (solo tema
+> scuro, nessun colore fuori dai token, contrasto AA, `prefers-reduced-motion`).
+>
+> Tavolozza attuale: `--gold` #d6a84e (valori, icone attive, linee dei grafici), `--gold-hi` #f2d58c (cima dei
+> gradienti, record, ELITE), `--gold-deep` #9c712c (bronzo: fondo dei gradienti e bordi, mai testo), `--gold-dim`
+> #bca37a (testi secondari importanti); neutri `--bg` #0b0b0d, `--surface` #161618, `--surface2` #1f1f23, `--line`
+> #2b2b30, `--fg` #f1ece2, `--muted` #a29c90; stati `--ok`, `--danger`; tipi `--forza`, `--volume`, `--tecnico` in
+> tinte spente.
+
 ## Contesto
 
 Oggi ([styles.css](../src/styles.css)): fondo quasi nero, superfici grigie, un solo accento blu, Barlow / Barlow
