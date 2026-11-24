@@ -149,7 +149,7 @@ impostazione, con stile, sfondo e caratteri di Home e Livello e **al massimo 3�
 | 34 | [Pagina Livello](34-pagina-livello.md) | 2 | Frontend + UI designer | L | fatto il 24/11 sul ramo `claude/ticket-34-pagina-livello-7545a0` (non unito): tutta l'app sul motore v2, motore vecchio e avatar a 20 stadi cancellati; provata nel browser solo con dati finti perché al database locale manca la `0015`; da far approvare a Michael |
 | 35 | [Pagina Esercizi e catalogo](35-pagina-esercizi.md) | 2 | Frontend + backend | M | da fare |
 | 36 | [Pagina Grafici](36-pagina-grafici.md) | 2 | Frontend + data-viz | M | da fare |
-| 37 | [Pagina Scheda](37-pagina-scheda.md) | 2 | Frontend | M | da fare |
+| 37 | [Pagina Scheda](37-pagina-scheda.md) | 2 | Frontend | M | fatto il 25/11 sul ramo `claude/ticket-37-pagina-scheda-491885` (non unito): solo programma e giorno, un segno dorato per giorno, "Inizia allenamento" in cima a oggi e tolto da Livello; la vista del trainer tiene i colori del tipo; azioni provate nel browser con dati in memoria (niente scritto su Supabase); da far approvare a Michael |
 | 38 | [Punteggi sul server, profilo pubblico, classifiche](38-classifiche.md) | 3 | Backend + PO (privacy) | L | da fare |
 | 39 | [Home: amici, novità, condivisione](39-home-amici.md) | 3 | Full-stack + UX | XL | da fare |
 
