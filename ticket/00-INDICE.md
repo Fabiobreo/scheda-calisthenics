@@ -130,3 +130,63 @@ L'audit misura accessibilità, velocità e completezza, non quanto l'app trasmet
 | V04 | Stati vuoti con disegno e azione anche in Atleti, schede modello e Grafici filtrati (H1 +2) | [24](24-carattere-v04-v06.md) | fatto 10/11 |
 | V05 | Un dato disegnato in Atleti, Esercizi e scheda modello (H3 +1) | [24](24-carattere-v04-v06.md) | fatto 10/11 |
 | V06 | Meno testo in prima schermata in Atleti e Grafici, spiegazioni dietro "?" (H2 +1) | [24](24-carattere-v04-v06.md) | fatto 10/11 |
+
+---
+
+# Backlog — Correzioni di Michael (22–24 novembre 2026)
+
+Fonte: `Correzioni punteggi.pdf` (nuovo calcolo dei punteggi, sostituisce quello attuale), `GraficaPDF_261122_225152.pdf`
+(modifiche pagina per pagina), i 5 mockup (Home, Livello, Scheda, Grafici, Esercizi), la foto di sfondo e i messaggi.
+Regola di stile data da Michael: **Home e Livello sono il riferimento**; le altre tre pagine dei mockup valgono solo come
+impostazione, con stile, sfondo e caratteri di Home e Livello e **al massimo 3–4 ori**.
+
+| # | Ticket | Fase | Figura principale | Stima | Stato |
+|---|--------|------|-------------------|-------|-------|
+| 30 | [Specifica dei punteggi v2](30-specifica-punteggi-v2.md) | 1 | Product owner + coach | S (bloccante) | confermata da Michael il 24/11 |
+| 31 | [Motore dei punteggi v2](31-motore-punteggi-v2.md) | 1 | TypeScript (logica + test) | M | da fare |
+| 32 | [Dati dei livelli v2: peso nel record, conversione](32-dati-livelli-v2.md) | 1 | Backend | M | da fare |
+| 33 | [Stile nuovo: oro, foto, testata, barra](33-stile-oro.md) | 1 (in parallelo) | UI designer + frontend | L | da fare |
+| 34 | [Pagina Livello](34-pagina-livello.md) | 2 | Frontend + UI designer | L | da fare |
+| 35 | [Pagina Esercizi e catalogo](35-pagina-esercizi.md) | 2 | Frontend + backend | M | da fare |
+| 36 | [Pagina Grafici](36-pagina-grafici.md) | 2 | Frontend + data-viz | M | da fare |
+| 37 | [Pagina Scheda](37-pagina-scheda.md) | 2 | Frontend | M | da fare |
+| 38 | [Punteggi sul server, profilo pubblico, classifiche](38-classifiche.md) | 3 | Backend + PO (privacy) | L | da fare |
+| 39 | [Home: amici, novità, condivisione](39-home-amici.md) | 3 | Full-stack + UX | XL | da fare |
+
+### Ordine e rilasci
+
+1. **Fase 1 — fondamenta** (due filoni in parallelo): 30 → 31 → 32 (punteggi) e 33 (stile). Il 33 da solo è già
+   rilasciabile: l'app cambia aspetto senza cambiare funzioni.
+2. **Fase 2 — pagine**: 35, 36, 37 dipendono solo dal 33 e sono indipendenti tra loro (toccano file diversi, tranne
+   `styles.css` e `ui.tsx`: si uniscono uno alla volta). Il 34 aspetta anche 31 e 32 e va rilasciato **insieme** alla
+   migration del 32 (punteggi vecchi e nuovi non convivono).
+3. **Fase 3 — Home social**: 38 → 39. La voce "Home" compare nella barra solo alla fine del 39; fino ad allora la prima
+   pagina resta Livello.
+
+### Risposte di Michael (24 novembre 2026)
+
+Ha risposto a tutte le domande: le decisioni sono riportate in ogni ticket. In breve: interpretazioni dei punteggi
+confermate, peso **solo dentro i record che lo usano** (via peso del profilo e storico), verifiche dei calcoli fatte da
+lui, carattere Inter, foto di sfondo sua (generata con AI), **un busto solo** per ora, 5 voci di catalogo tolte senza
+sostituti, esercizi a tempo con **Tenuta media** e **Tenuta totale**, Home con ambiti amici / provincia / regione /
+nazione / mondo, luogo chiesto alla registrazione, profili pubblici o privati **come su Instagram**, nome dell'utente
+in chiaro.
+
+### Cosa serve ancora
+
+- Da Michael: il **file del busto dorato** con fondo trasparente (34).
+- Da Fabio: profilo pubblico o privato alla registrazione e informativa privacy (38, bloccanti per la fase 3); ingresso
+  ad Account dal nome in testata (33); tipo dell'esercizio come testo in Scheda (37).
+
+### Funzioni che spariscono (richieste dai PDF, da sapere prima di iniziare)
+
+- Livello: scheda "Oggi", settimane di fila, % del programma, peso del profilo e suo storico (ovunque), avatar a 20 stadi e scelta
+  della figura, zona ELITE 101–200.
+- Scheda: "+ Fuori programma", legenda e colori Forza/Volume/Tecnico per l'atleta, % della settimana, "Record
+  personali" con "+ Tentativo" e "Progressione record".
+- Grafici: "Tutti gli esercizi", "Ripetizioni per tipo", confronto "±X%", metriche "Miglior tenuta" e "Peso" per gli
+  esercizi a tempo (al loro posto "Tenuta media" e "Tenuta totale").
+- Esercizi: pittogrammi, barre delle 8 settimane, 5 voci di catalogo.
+
+L'audit ([AUDIT.md](../audit/AUDIT.md)) va rifatto a fine fase 2: C1 ("Oggi" in cima alla Home), H3 (dati disegnati) e le
+voci sul carattere visivo cambiano per scelta di prodotto, non per regressione.
