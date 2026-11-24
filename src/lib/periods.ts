@@ -1,5 +1,5 @@
 import { addDays, daysBetween, mondayOf, parseDate, shortDate, toDateStr } from './dates';
-import type { Metric, Point, TypeTotals } from './stats';
+import { recordPoint, type Metric, type Point } from './stats';
 
 /** Periodi dei Grafici. */
 export type Period = '4w' | '3m' | '6m' | '1y' | 'all';
@@ -15,15 +15,6 @@ export const PERIODS: { v: Period; l: string }[] = [
 export const DEFAULT_PERIOD: Period = '3m';
 export const isPeriod = (s: unknown): s is Period => PERIODS.some((p) => p.v === s);
 
-/** Il periodo nel testo: "media a sessione, ultimi 3 mesi". */
-export const PERIOD_NAME: Record<Period, string> = {
-  '4w': 'ultime 4 settimane',
-  '3m': 'ultimi 3 mesi',
-  '6m': 'ultimi 6 mesi',
-  '1y': 'ultimo anno',
-  all: 'da sempre',
-};
-
 type Fixed = Exclude<Period, 'all'>;
 
 /** "Nessuna registrazione negli ultimi 3 mesi." */
@@ -34,19 +25,11 @@ export const IN_PERIOD: Record<Fixed, string> = {
   '1y': "nell'ultimo anno",
 };
 
-/** Il confronto col periodo prima: "+12% rispetto ai 3 mesi prima" o "nessuna sessione nei 3 mesi prima". */
-export const PREVIOUS: Record<Fixed, { vs: string; none: string }> = {
-  '4w': { vs: 'rispetto alle 4 settimane prima', none: 'nessuna sessione nelle 4 settimane prima' },
-  '3m': { vs: 'rispetto ai 3 mesi prima', none: 'nessuna sessione nei 3 mesi prima' },
-  '6m': { vs: 'rispetto ai 6 mesi prima', none: 'nessuna sessione nei 6 mesi prima' },
-  '1y': { vs: "rispetto all'anno prima", none: "nessuna sessione nell'anno prima" },
-};
-
 /** Come si raggruppano i punti: uno per sessione (giorno), per settimana o per mese. */
 export type Grain = 'day' | 'week' | 'month';
 
-/** Metriche che nel gruppo prendono il massimo; le altre la media per sessione. */
-export const isMaxMetric = (m: Metric) => m === 'peso' || m === 'tenuta';
+/** Metriche che nel gruppo prendono il massimo (il peso); le altre la media per sessione. */
+export const isMaxMetric = (m: Metric) => m === 'peso';
 
 /** YYYY-MM-DD spostata di `n` mesi; il 31 marzo meno un mese è il 28 (o 29) febbraio, non il 3 marzo. */
 export function addMonths(s: string, n: number): string {
@@ -64,15 +47,11 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 
 const MONTHS: Record<Exclude<Period, 'all' | '4w'>, number> = { '3m': 3, '6m': 6, '1y': 12 };
 
-/**
- * Primo giorno (incluso) del periodo che finisce oggi, e del periodo uguale subito prima (`prevFrom`, fino a
- * `from - 1`). "Tutto" non ha limiti né confronto.
- */
-export function periodRange(period: Period, today: string): { from: string; prevFrom: string } | null {
+/** Primo giorno (incluso) del periodo che finisce oggi. "Tutto" non ha limiti. */
+export function periodRange(period: Period, today: string): { from: string } | null {
   if (period === 'all') return null;
-  if (period === '4w') return { from: addDays(today, -27), prevFrom: addDays(today, -55) };
-  const n = MONTHS[period];
-  return { from: addDays(addMonths(today, -n), 1), prevFrom: addDays(addMonths(today, -2 * n), 1) };
+  if (period === '4w') return { from: addDays(today, -27) };
+  return { from: addDays(addMonths(today, -MONTHS[period]), 1) };
 }
 
 /** Raggruppamento per il periodo: per sessione fino a 3 mesi, per settimana fino a un anno, per mese oltre. */
@@ -99,8 +78,9 @@ export function bucketEnd(start: string, grain: Grain): string {
 }
 
 /**
- * Punti di una sessione (uno per giorno, come `series`) raggruppati: peso e tenuta prendono il massimo del gruppo,
- * ripetizioni, volume e secondi la media per sessione. Ogni punto dice quante sessioni contiene e dove finisce.
+ * Punti di una sessione (uno per giorno, come `series`) raggruppati: il peso prende il massimo del gruppo,
+ * ripetizioni, volume e tenute (media e totale) la media per sessione. Ogni punto dice quante sessioni contiene e
+ * dove finisce.
  */
 export function aggregate(points: Point[], grain: Grain, metric: Metric): Point[] {
   if (grain === 'day') return points.map((p) => ({ ...p, n: 1 }));
@@ -119,41 +99,6 @@ export function summarize(points: Point[], metric: Metric): number {
   if (!points.length) return 0;
   if (isMaxMetric(metric)) return Math.max(...points.map((p) => p.v));
   return points.reduce((s, p) => s + p.v, 0) / points.length;
-}
-
-/** Ripetizioni per tipo raggruppate: per ogni tipo la media per sessione del gruppo. */
-export function aggregateTypes(rows: TypeTotals[], grain: Grain): (TypeTotals & { end?: string; n: number })[] {
-  if (grain === 'day') return rows.map((r) => ({ ...r, n: 1 }));
-  const groups = new Map<string, TypeTotals[]>();
-  for (const r of rows) {
-    const k = bucketStart(r.date, grain);
-    groups.set(k, [...(groups.get(k) ?? []), r]);
-  }
-  return [...groups.entries()]
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([date, rs]) => {
-      const n = rs.length;
-      const avg = (k: 'forza' | 'volume' | 'tecnico') => round1(rs.reduce((s, r) => s + r[k], 0) / n);
-      return { date, end: bucketEnd(date, grain), n, forza: avg('forza'), volume: avg('volume'), tecnico: avg('tecnico') };
-    });
-}
-
-export interface Comparison {
-  /** Valore del periodo (massimo o media per sessione). */
-  cur: number;
-  /** Valore del periodo prima; null se allora non ci sono sessioni. */
-  prev: number | null;
-  /** Variazione in percentuale, arrotondata; null se non si può calcolare (niente prima, o prima era 0). */
-  pct: number | null;
-}
-
-/** Confronto del periodo con quello subito prima, partendo dai punti per sessione (non raggruppati). */
-export function compare(points: Point[], range: { from: string; prevFrom: string }, metric: Metric): Comparison {
-  const cur = summarize(points.filter((p) => p.date >= range.from), metric);
-  const before = points.filter((p) => p.date >= range.prevFrom && p.date < range.from);
-  const prev = before.length ? summarize(before, metric) : null;
-  const pct = prev ? Math.round(((cur - prev) / prev) * 100) : null;
-  return { cur: round1(cur), prev: prev === null ? null : round1(prev), pct };
 }
 
 /**
@@ -181,14 +126,14 @@ export function labelIndexes(count: number, max = 4): number[] {
 }
 
 /**
- * Punto del grafico da segnare come record personale (ticket 14): il più recente che vale quanto la miglior sessione di
- * sempre (`daily`, non solo il periodo). Nei gruppi vale solo per peso e tenuta, dove il punto è il massimo del gruppo;
- * una media di settimana o mese non è un record. -1 se non c'è (record fuori dal periodo, oppure tutto a zero).
+ * Punto del grafico da segnare come record: quello che contiene la sessione record di sempre (`recordPoint` su `daily`,
+ * non solo sul periodo), cioè lo stesso giorno della riga "Record" sotto il grafico. Nei gruppi vale solo per il peso,
+ * dove il punto è il massimo del gruppo; una media di settimana o mese non è un record. -1 se non c'è (record fuori
+ * dal periodo, oppure tutto a zero).
  */
 export function recordIndex(points: Point[], daily: Point[], grain: Grain, metric: Metric): number {
   if (grain !== 'day' && !isMaxMetric(metric)) return -1;
-  const best = Math.max(0, ...daily.map((p) => p.v));
-  if (best <= 0) return -1;
-  for (let i = points.length - 1; i >= 0; i--) if (points[i].v >= round1(best)) return i;
-  return -1;
+  const rec = recordPoint(daily);
+  if (!rec) return -1;
+  return points.findIndex((p) => rec.date >= p.date && rec.date <= (p.end ?? p.date));
 }

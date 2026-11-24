@@ -2,12 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   addMonths,
   aggregate,
-  aggregateTypes,
   axisLabel,
   bucketEnd,
   bucketLabel,
   bucketStart,
-  compare,
   grainFor,
   labelIndexes,
   periodRange,
@@ -29,12 +27,13 @@ describe('addMonths', () => {
 });
 
 describe('periodRange', () => {
-  it('4 settimane: 28 giorni con oggi, e i 28 prima', () => {
-    expect(periodRange('4w', '2026-11-09')).toEqual({ from: '2026-10-13', prevFrom: '2026-09-15' });
+  it('4 settimane: 28 giorni con oggi', () => {
+    expect(periodRange('4w', '2026-11-09')).toEqual({ from: '2026-10-13' });
   });
   it('mesi: dal giorno dopo la stessa data di n mesi fa', () => {
-    expect(periodRange('3m', '2026-11-09')).toEqual({ from: '2026-08-10', prevFrom: '2026-05-10' });
-    expect(periodRange('1y', '2026-11-09')).toEqual({ from: '2025-11-10', prevFrom: '2024-11-10' });
+    expect(periodRange('3m', '2026-11-09')).toEqual({ from: '2026-08-10' });
+    expect(periodRange('6m', '2026-11-09')).toEqual({ from: '2026-05-10' });
+    expect(periodRange('1y', '2026-11-09')).toEqual({ from: '2025-11-10' });
   });
   it('Tutto non ha limiti', () => {
     expect(periodRange('all', '2026-11-09')).toBeNull();
@@ -79,43 +78,16 @@ describe('aggregate', () => {
       { date: '2026-11-09', end: '2026-11-15', n: 1, v: 30 },
     ]);
   });
-  it('peso e tenuta: massimo del gruppo', () => {
+  it('peso: massimo del gruppo', () => {
     expect(aggregate(days, 'week', 'peso').map((p) => p.v)).toEqual([20, 30]);
-    expect(aggregate(days, 'month', 'tenuta')).toEqual([{ date: '2026-11-01', end: '2026-11-30', n: 4, v: 30 }]);
+    expect(aggregate(days, 'month', 'peso')).toEqual([{ date: '2026-11-01', end: '2026-11-30', n: 4, v: 30 }]);
+  });
+  it('tenuta media e tenuta totale: media per sessione del gruppo, non il massimo', () => {
+    expect(aggregate(days, 'week', 'media').map((p) => p.v)).toEqual([15, 30]);
+    expect(aggregate(days, 'month', 'secondi')).toEqual([{ date: '2026-11-01', end: '2026-11-30', n: 4, v: 18.8 }]);
   });
   it('medie arrotondate a un decimale', () => {
     expect(aggregate(pts(['2026-11-02', 10], ['2026-11-03', 10], ['2026-11-04', 11]), 'week', 'secondi')[0].v).toBe(10.3);
-  });
-});
-
-describe('aggregateTypes', () => {
-  it('media per sessione di ogni tipo', () => {
-    const rows = [
-      { date: '2026-11-02', forza: 10, volume: 0, tecnico: 3 },
-      { date: '2026-11-05', forza: 0, volume: 20, tecnico: 0 },
-    ];
-    expect(aggregateTypes(rows, 'week')).toEqual([{ date: '2026-11-02', end: '2026-11-08', n: 2, forza: 5, volume: 10, tecnico: 1.5 }]);
-  });
-});
-
-describe('compare', () => {
-  const range = { from: '2026-10-13', prevFrom: '2026-09-15' };
-  const days = pts(['2026-09-01', 99], ['2026-09-20', 10], ['2026-10-01', 20], ['2026-10-20', 18], ['2026-11-05', 24]);
-
-  it('media a sessione: periodo contro periodo prima, ignorando quello che c’è prima ancora', () => {
-    expect(compare(days, range, 'reps')).toEqual({ cur: 21, prev: 15, pct: 40 });
-  });
-  it('massimo per il peso', () => {
-    expect(compare(days, range, 'peso')).toEqual({ cur: 24, prev: 20, pct: 20 });
-  });
-  it('senza sessioni prima non c’è percentuale', () => {
-    expect(compare(pts(['2026-11-05', 24]), range, 'reps')).toEqual({ cur: 24, prev: null, pct: null });
-  });
-  it('prima a 0 (corpo libero): niente percentuale', () => {
-    expect(compare(pts(['2026-10-01', 0], ['2026-11-05', 5]), range, 'peso')).toEqual({ cur: 5, prev: 0, pct: null });
-  });
-  it('calo', () => {
-    expect(compare(pts(['2026-10-01', 20], ['2026-11-05', 15]), range, 'reps').pct).toBe(-25);
   });
 });
 
@@ -123,6 +95,12 @@ describe('summarize', () => {
   it('vuoto vale 0', () => {
     expect(summarize([], 'reps')).toBe(0);
     expect(summarize([], 'peso')).toBe(0);
+  });
+  it('massimo per il peso, media per sessione per il resto (anche le tenute)', () => {
+    const days = pts(['2026-11-02', 10], ['2026-11-04', 20]);
+    expect(summarize(days, 'peso')).toBe(20);
+    expect(summarize(days, 'media')).toBe(15);
+    expect(summarize(days, 'secondi')).toBe(15);
   });
 });
 
@@ -148,13 +126,19 @@ describe('recordIndex', () => {
   it('il record di sempre fuori dal periodo non si segna', () => {
     expect(recordIndex(inside, daily, 'day', 'peso')).toBe(-1);
   });
-  it('nel periodo: il punto più recente che lo eguaglia', () => {
-    expect(recordIndex(inside, inside, 'day', 'reps')).toBe(2);
+  it('nel periodo: la sessione che lo ha raggiunto per prima, come la riga Record', () => {
+    expect(recordIndex(inside, inside, 'day', 'reps')).toBe(1);
+    expect(recordIndex(inside, inside, 'day', 'media')).toBe(1);
   });
-  it('gruppi: sì per peso e tenuta (massimo), no per le medie', () => {
+  it('gruppi: sì per il peso (massimo), no per le medie (ripetizioni, tenute)', () => {
     const weeks = aggregate(inside, 'week', 'peso');
     expect(recordIndex(weeks, inside, 'week', 'peso')).toBe(0);
     expect(recordIndex(aggregate(inside, 'week', 'reps'), inside, 'week', 'reps')).toBe(-1);
+    expect(recordIndex(aggregate(inside, 'week', 'media'), inside, 'week', 'media')).toBe(-1);
+  });
+  it('gruppi: il punto è quello che contiene il giorno del record', () => {
+    const later = pts(['2026-11-02', 10], ['2026-11-12', 30], ['2026-11-20', 30]);
+    expect(recordIndex(aggregate(later, 'week', 'peso'), later, 'week', 'peso')).toBe(1);
   });
   it('tutto a zero (corpo libero): nessun record', () => {
     const zero = pts(['2026-11-02', 0], ['2026-11-04', 0]);

@@ -1,23 +1,23 @@
 import { DEFAULT_REST, type Entry, type ExerciseType, type Measure, type PlanItem, type Scheme, type WorkSet } from '../data/types';
 import { addDays, daysBetween, mondayOf } from './dates';
 
-export type Metric = 'peso' | 'reps' | 'volume' | 'tenuta' | 'secondi';
+export type Metric = 'peso' | 'reps' | 'volume' | 'media' | 'secondi';
 
 export const METRICS: Record<Metric, { label: string; unit: string }> = {
   peso: { label: 'Peso', unit: 'kg' },
   reps: { label: 'Rip. totali', unit: 'rip.' },
   volume: { label: 'Volume', unit: 'kg' },
-  tenuta: { label: 'Miglior tenuta', unit: 's' },
-  secondi: { label: 'Secondi totali', unit: 's' },
+  media: { label: 'Tenuta media', unit: 's' },
+  secondi: { label: 'Tenuta totale', unit: 's' },
 };
 
 /**
- * Metriche di un esercizio secondo come si misura. Stessa posizione, stesso ruolo: il miglior risultato, il totale,
- * l'ultima; così la scelta resta sensata passando da un esercizio a ripetizioni a uno a tempo.
+ * Metriche di un esercizio secondo come si misura. A tempo sono due (ticket 36): "Tenuta media", la media dei secondi
+ * delle serie della sessione, e "Tenuta totale", la loro somma.
  */
 export const METRICS_BY_MEASURE: Record<Measure, Metric[]> = {
   reps: ['peso', 'reps', 'volume'],
-  time: ['tenuta', 'secondi', 'peso'],
+  time: ['media', 'secondi'],
 };
 
 export interface Point {
@@ -34,7 +34,6 @@ export const totalReps = (sets: WorkSet[]) => sets.reduce((s, x) => s + x.reps, 
 export const volume = (sets: WorkSet[]) => sets.reduce((s, x) => s + x.weight * x.reps, 0);
 export const maxWeight = (sets: WorkSet[]) => sets.reduce((m, x) => Math.max(m, x.weight), 0);
 export const totalSeconds = (sets: WorkSet[]) => sets.reduce((s, x) => s + x.seconds, 0);
-export const maxSeconds = (sets: WorkSet[]) => sets.reduce((m, x) => Math.max(m, x.seconds), 0);
 
 /**
  * > 0 se a è una serie migliore di b: più peso, a parità di peso più ripetizioni (o più secondi, negli esercizi a
@@ -83,39 +82,42 @@ export function recordEntryIds(entries: Entry[]): Set<string> {
   return ids;
 }
 
-/** Un punto per data: peso massimo, ripetizioni totali, volume totale, tenuta più lunga o secondi totali della giornata. */
+/**
+ * Un punto per data (la sessione): peso massimo, ripetizioni totali, volume totale, secondi totali o, per la tenuta
+ * media, la media dei secondi di tutte le serie della giornata (a un decimale): 10, 8 e 6 s danno 8 s di media e 24 s
+ * di totale.
+ */
 export function series(entries: Entry[], exerciseId: string, metric: Metric): Point[] {
   const byDate = new Map<string, Point>();
+  // solo per la media: quante serie ha la giornata
+  const sets = new Map<string, number>();
   for (const e of entries) {
     if (e.exerciseId !== exerciseId) continue;
     const p = byDate.get(e.date) ?? { date: e.date, v: 0 };
     if (metric === 'peso') p.v = Math.max(p.v, maxWeight(e.sets));
     else if (metric === 'reps') p.v += totalReps(e.sets);
     else if (metric === 'volume') p.v += volume(e.sets);
-    else if (metric === 'tenuta') p.v = Math.max(p.v, maxSeconds(e.sets));
     else p.v += totalSeconds(e.sets);
     byDate.set(e.date, p);
+    sets.set(e.date, (sets.get(e.date) ?? 0) + e.sets.length);
   }
-  return [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const points = [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (metric !== 'media') return points;
+  return points.map((p) => {
+    const n = sets.get(p.date) ?? 0;
+    return { ...p, v: n ? Math.round((p.v / n) * 10) / 10 : 0 };
+  });
 }
 
-export type TypeTotals = { date: string } & Record<ExerciseType, number>;
-
 /**
- * Ripetizioni per tipo, per data (tutte le sessioni, o le ultime `limit`). Il tipo è quello della registrazione:
- * le stesse Trazioni contano in forza un giorno e in volume un altro. Gli esercizi a tempo non hanno ripetizioni:
- * non contano, e una giornata solo di tenute non compare.
+ * Sessione record di una metrica (ticket 36): il valore più alto tra i punti per sessione e il giorno in cui è stato
+ * raggiunto la prima volta (a parità resta la prima data, come per i record personali). null se non ci sono punti o
+ * sono tutti a zero (il peso di un esercizio a corpo libero).
  */
-export function repsByType(entries: Entry[], limit?: number): TypeTotals[] {
-  const byDate = new Map<string, TypeTotals>();
-  for (const e of entries) {
-    if (!totalReps(e.sets)) continue;
-    const d = byDate.get(e.date) ?? { date: e.date, forza: 0, volume: 0, tecnico: 0 };
-    d[e.type] += totalReps(e.sets);
-    byDate.set(e.date, d);
-  }
-  const rows = [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
-  return limit ? rows.slice(-limit) : rows;
+export function recordPoint(points: Point[]): Point | null {
+  let best: Point | null = null;
+  for (const p of points) if (p.v > 0 && (!best || p.v > best.v || (p.v === best.v && p.date < best.date))) best = p;
+  return best;
 }
 
 /** Ultima registrazione d'allenamento per l'esercizio (le entries arrivano dalla più recente). */

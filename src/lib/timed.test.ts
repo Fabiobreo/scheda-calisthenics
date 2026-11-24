@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Entry, PlanItem, Scheme } from '../data/types';
 import { fmtScheme, fmtSet, fmtSets } from './format';
 import { cues, heldSeconds } from './hold';
-import { METRICS_BY_MEASURE, personalBest, recordEntryIds, repsByType, series, suggestScheme, withMeasure } from './stats';
+import { METRICS, METRICS_BY_MEASURE, personalBest, recordEntryIds, series, suggestScheme, withMeasure } from './stats';
 
 let n = 0;
 const entry = (p: Partial<Entry> & Pick<Entry, 'exerciseId' | 'date' | 'sets'>): Entry => ({
@@ -39,14 +39,14 @@ describe('record delle tenute', () => {
 describe('grafici delle tenute', () => {
   const es = [planche([[0, 8], [0, 8], [0, 6]], '2026-11-02'), planche([[0, 10], [2.5, 5]], '2026-11-09'), planche([[0, 12]], '2026-11-09')];
 
-  it('miglior tenuta = la serie più lunga della giornata', () => {
-    expect(series(es, 'planche', 'tenuta')).toEqual([
-      { date: '2026-11-02', v: 8 },
-      { date: '2026-11-09', v: 12 },
+  it('tenuta media = media dei secondi delle serie della giornata', () => {
+    expect(series(es, 'planche', 'media')).toEqual([
+      { date: '2026-11-02', v: 7.3 },
+      { date: '2026-11-09', v: 9 },
     ]);
   });
 
-  it('secondi totali = somma delle serie della giornata', () => {
+  it('tenuta totale = somma dei secondi delle serie della giornata', () => {
     expect(series(es, 'planche', 'secondi').map((p) => p.v)).toEqual([22, 27]);
   });
 
@@ -55,14 +55,10 @@ describe('grafici delle tenute', () => {
     expect(series(es, 'planche', 'reps').map((p) => p.v)).toEqual([0, 0]);
   });
 
-  it('le metriche si corrispondono per posizione: miglior risultato, totale, altra', () => {
+  it('a tempo le metriche sono due: Tenuta media e Tenuta totale', () => {
     expect(METRICS_BY_MEASURE.reps).toEqual(['peso', 'reps', 'volume']);
-    expect(METRICS_BY_MEASURE.time).toEqual(['tenuta', 'secondi', 'peso']);
-  });
-
-  it('le tenute non entrano nelle ripetizioni per tipo', () => {
-    const dip = entry({ exerciseId: 'dip', date: '2026-11-02', type: 'forza', sets: [{ weight: 10, reps: 5, seconds: 0 }] });
-    expect(repsByType([...es, dip])).toEqual([{ date: '2026-11-02', forza: 5, volume: 0, tecnico: 0 }]);
+    expect(METRICS_BY_MEASURE.time).toEqual(['media', 'secondi']);
+    expect(METRICS_BY_MEASURE.time.map((m) => METRICS[m].label)).toEqual(['Tenuta media', 'Tenuta totale']);
   });
 });
 
