@@ -360,7 +360,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
           />
         ) : !adding ? (
           <div className="row">
-            <button className="btn" onClick={() => (picker.ref() ? setAdding(true) : toast("Scrivi il nome dell'esercizio"))}>
+            <button className="btn" onClick={() => (picker.ref() ? setAdding(true) : toast(picker.missing))}>
               Aggiungi
             </button>
             <button className="btn ghost" onClick={() => setPanel('multi')}>
@@ -383,7 +383,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
             saveLabel="Aggiungi"
             onSave={(scheme, note) => {
               const ref = picker.ref();
-              if (!ref) return toast("Scrivi il nome dell'esercizio");
+              if (!ref) return toast(picker.missing);
               if (dayItems.some((i) => sameRef(i, ref))) return toast('Questo esercizio è già nel giorno');
               const sortOrder = dayItems.reduce((m, i) => Math.max(m, i.sortOrder), 0) + 1;
               addItems.mutate([{ programId: id, week: shownWeek, weekday: day, ...ref, sortOrder, scheme, note }]);

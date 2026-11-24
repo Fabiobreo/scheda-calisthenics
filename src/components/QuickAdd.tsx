@@ -76,7 +76,7 @@ export function MultiAdd({
 
   return (
     <div className="form multi-add span-all mt-8">
-      <Field label="Cerca" type="search" placeholder="Nome, gruppo o sinonimo…" value={query} autoComplete="off" autoFocus onChange={(e) => setQuery(e.target.value)} />
+      <Field label="Cerca" type="search" placeholder="Nome, gruppo o sinonimo…" value={query} autoComplete="off" onChange={(e) => setQuery(e.target.value)} />
       <div className="ma-list" role="group" aria-label="Esercizi da aggiungere">
         {shown.map((c, i) => (
           <div key={c.id}>

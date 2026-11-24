@@ -1,7 +1,7 @@
 -- Catalogo esercizi comune: contenuto coerente, sola lettura per gli utenti, collegamento con gli esercizi dell'utente.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(25);
 
 -- Ogni nome o sinonimo porta a una sola voce: altrimenti l'abbinamento per nome sarebbe ambiguo.
 select is(
@@ -17,10 +17,10 @@ select is(
   (select count(*)::int from public.catalog_exercises, unnest(aliases) a where a <> lower(btrim(a))),
   0, 'i sinonimi sono in minuscolo e senza spazi esterni');
 
--- Contenuto del catalogo (0010).
+-- Contenuto del catalogo (0010, meno le cinque voci tolte dalla 0016).
 select is(
   (select string_agg(category || ' ' || n, ', ' order by category) from (select category, count(*) n from public.catalog_exercises group by category) x),
-  'core 7, gambe 8, skill 25, spinta 8, tirata 11', 'voci per categoria');
+  'core 7, gambe 8, skill 20, spinta 8, tirata 11', 'voci per categoria');
 select is(
   (select string_agg(name, ', ' order by sort_order) from public.catalog_exercises where category = 'tirata'),
   'Trazioni prone, Trazioni supine, Trazioni presa neutra, Muscle up, Muscle up agli anelli, OAP, OAP assistito, Row agli anelli, Australian pull up, Rematore, Lat machine',
@@ -34,8 +34,17 @@ select is(
    where id = any ('{trazioni-arciere,trazioni-scapolari,piegamenti-diamante,piegamenti-declinati,piegamenti-arciere,dip-sbarra,v-sit,front-lever,planche}')),
   0, 'le voci tolte non ci sono più');
 select is(
+  (select count(*)::int from public.catalog_exercises
+   where id = any ('{wide-planche,planche-push-up,planche-press,front-lever-pull-up,front-lever-touch}')),
+  0, 'le cinque voci tolte dalla 0016 non ci sono più');
+select is(
+  (select count(*)::int from public.catalog_exercises
+   where lower(name) = any ('{wide planche,planche push up,planche press,front lever pull up,front lever touch}')
+      or aliases && '{wide planche,planche push up,planche push-up,planche press,front lever pull up,front lever pull-up,front lever touch}'),
+  0, 'e i loro nomi non portano a nessuna voce: restano liberi per gli esercizi personalizzati');
+select is(
   (select string_agg(name, ', ' order by sort_order) from public.catalog_exercises where category = 'skill' and name like '%planche' and measure = 'time'),
-  'Tuck planche, Advanced tuck planche, One leg planche, Straddle planche, Half lay planche, Full planche, Wide planche',
+  'Tuck planche, Advanced tuck planche, One leg planche, Straddle planche, Half lay planche, Full planche',
   'le progressioni della planche sono voci a tempo');
 select is((select measure from public.catalog_exercises where id = 'trazioni'), 'reps', 'gli esercizi a ripetizioni restano tali');
 
@@ -79,6 +88,18 @@ select is((select name from public.exercises where catalog_id = 'squat'), 'Squat
 select throws_ok(
   $$ insert into public.exercises (catalog_id, name, type) values ('inesistente', 'Inesistente', 'forza') $$,
   '23503', null, 'solo voci che esistono nel catalogo');
+
+-- Le voci tolte dalla 0016: non si scelgono più dal catalogo, ma il nome si usa per un esercizio personalizzato
+-- (è quello che diventano gli esercizi di chi le aveva).
+select throws_ok(
+  $$ insert into public.exercises (catalog_id, name, type) values ('planche-press', 'Planche press', 'forza') $$,
+  '23503', null, 'una voce tolta non si sceglie più dal catalogo');
+select lives_ok(
+  $$ insert into public.exercises (name, type, measure) values ('Front lever touch', 'forza', 'time') $$,
+  'il nome di una voce tolta va bene per un esercizio personalizzato');
+select is(
+  (select coalesce(catalog_id, 'personalizzato') || ', ' || measure from public.exercises where name = 'Front lever touch'),
+  'personalizzato, time', 'che resta personalizzato, con la misura scelta');
 
 select * from finish();
 rollback;
