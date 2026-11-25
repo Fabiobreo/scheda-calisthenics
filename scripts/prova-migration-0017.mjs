@@ -80,6 +80,13 @@ assert.equal(await one(`select count(*)::int from public.level_scores`), 0, 'nes
 assert.equal(await one(`select count(*)::int from public.provinces`), 107);
 console.log('0017 applicata: profili esistenti privati e senza luogo, record invariati, 107 province');
 
+// DOPO=1: applica anche le migration successive (la 0018 riscrive ranking() per i blocchi), così i test e il
+// confronto delle 180 classifiche qui sotto girano sulla funzione com'è alla fine.
+if (process.env.DOPO) {
+  for (const f of migrations.filter((f) => f > '0017_rankings.sql')) await apply(f);
+  console.log('applicate anche le migration dopo la 0017');
+}
+
 // --- pgTAP ridotto -----------------------------------------------------------------------------------------------
 await db.exec(`
   create table public._tap (n serial, ok boolean, msg text);
