@@ -151,7 +151,7 @@ impostazione, con stile, sfondo e caratteri di Home e Livello e **al massimo 3�
 | 36 | [Pagina Grafici](36-pagina-grafici.md) | 2 | Frontend + data-viz | M | fatto il 25/11, unito su main: un grafico, riga del record, ultime 5 sessioni col foglio della sessione, "Tenuta media" e "Tenuta totale"; fissa a 390×844, a 360×640 scorre (bersagli da 44 px); provata nel browser solo con dati finti; da far approvare a Michael |
 | 37 | [Pagina Scheda](37-pagina-scheda.md) | 2 | Frontend | M | fatto il 25/11, unito su main: solo programma e giorno, un segno dorato per giorno, "Inizia allenamento" in cima a oggi e tolto da Livello; la vista del trainer tiene i colori del tipo; azioni provate nel browser con dati in memoria (niente scritto su Supabase); da far approvare a Michael |
 | 38 | [Punteggi sul server, profilo pubblico, classifiche](38-classifiche.md) | 3 | Backend + PO (privacy) | L | fatto il 25/11, unito su main: migration `0017` (luogo e visibilità del profilo, punti sul server, `follows`, `ranking`) provata su PGlite, **non** su Supabase; luogo alla registrazione, scheda in Account, pagina Classifiche, informativa; provato nel browser solo con un finto Supabase; **profili pubblici spenti finché manca l'email dell'informativa** (`VITE_PRIVACY_EMAIL`); da far vedere a Fabio e Michael |
-| 39 | [Home: amici, novità, condivisione](39-home-amici.md) | 3 | Full-stack + UX | XL | da fare |
+| 39 | [Home: amici, novità, condivisione](39-home-amici.md) | 3 | Full-stack + UX | XL | fatto il 25/11 sul ramo `claude/ticket-39-home-amici-f59875`, non ancora unito: migration `0018` (seguire, cerca persone, link, novità, allenamenti condivisi, blocchi) provata su PGlite, **non** su Supabase; Home sulla rotta `/` e prima voce della barra, pagina Persone, condivisione di record e allenamenti; provato nel browser solo con un finto Supabase; **ricerca per nome spenta finché manca l'email dell'informativa**; il mockup Home non è nel repository; da far vedere a Fabio e Michael |
 
 ### Ordine e rilasci
 
@@ -161,7 +161,8 @@ impostazione, con stile, sfondo e caratteri di Home e Livello e **al massimo 3�
    `styles.css` e `ui.tsx`: si uniscono uno alla volta). Il 34 aspetta anche 31 e 32 e va rilasciato **insieme** alla
    migration del 32 (punteggi vecchi e nuovi non convivono).
 3. **Fase 3 — Home social**: 38 → 39. La voce "Home" compare nella barra solo alla fine del 39; fino ad allora la prima
-   pagina resta Livello.
+   pagina resta Livello. Le migration `0015`–`0018` vanno rilasciate insieme all'app, dopo averle provate su un
+   Supabase vero (`supabase db reset && supabase test db`, dove c'è Docker).
 
 ### Risposte di Michael (24 novembre 2026)
 
@@ -175,7 +176,7 @@ in chiaro.
 ### Cosa serve ancora
 
 - ~~Da Michael: il file del busto dorato con fondo trasparente (34).~~ Ritagliato dal mockup il 24/11 (`public/avatar/`); l'originale di Michael, se arriva, lo sostituisce.
-- Da Fabio: l'email di contatto per l'informativa privacy (38 e A05, bloccante per il rilascio): va messa in `VITE_PRIVACY_EMAIL`, fino ad allora nessun profilo può diventare pubblico. Da decidere anche i minori (38) e rileggere il testo dell'informativa. Decisi il 25/11: profilo privato alla registrazione, titolare del trattamento Fabio Brea (38); tipo dell'esercizio come testo in Scheda (37).
+- Da Fabio: l'email di contatto per l'informativa privacy (38 e A05, bloccante per il rilascio): va messa in `VITE_PRIVACY_EMAIL`, fino ad allora nessun profilo può diventare pubblico. Da decidere anche i minori (38: con la ricerca e le richieste del 39 pesa di più), come guardare le segnalazioni (39) e rileggere il testo dell'informativa. Deciso il 25/11: "Amici" = chi seguo io (39). Decisi il 25/11: profilo privato alla registrazione, titolare del trattamento Fabio Brea (38); tipo dell'esercizio come testo in Scheda (37).
 
 ### Funzioni che spariscono (richieste dai PDF, da sapere prima di iniziare)
 

@@ -1,10 +1,74 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useScope } from '../../app/session';
+import { useToast } from '../../app/toast';
 import { CardHead } from '../../components/ui';
-import type { StepId, Steps } from './firstSteps';
+import { useData, useLevel, useLinks, useProfile } from '../../data/hooks';
+import { todayStr } from '../../lib/dates';
+import { dismissKey, firstSteps, type StepId, type Steps } from './firstSteps';
+
+const readDismissed = (key: string) => {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+};
 
 /**
- * "Per iniziare" (ticket 28, audit C6): la checklist del primo accesso nella pagina Livello. Ogni passo ha il suo pulsante, la spunta
+ * Primo accesso guidato (ticket 28), dal ticket 39 in cima alla Home: i passi dai dati che ci sono già, "Più tardi"
+ * in `localStorage` per utente. Mai per un account in modalità trainer: la checklist è per chi si allena. Non
+ * disegna niente finché non ha tutti i dati (niente card che compare e scompare) e quando i passi sono fatti.
+ * `onRecord`: il pulsante del primo record (porta a Livello, dove si inserisce).
+ */
+export function FirstStepsGuide({ onRecord }: { onRecord: () => void }) {
+  const { userId } = useScope();
+  const level = useLevel();
+  const profile = useProfile();
+  const data = useData();
+  const links = useLinks();
+  const toast = useToast();
+  const key = dismissKey(userId);
+  const [dismissed, setDismissed] = useState(() => readDismissed(key));
+  const today = todayStr();
+  const steps = firstSteps({
+    records: level.records.length,
+    trainings: data.done.filter((e) => e.kind === 'training').length,
+    linked: !!links.data?.some((l) => l.athleteId === userId),
+    plannedToday: data.plan.some((p) => p.date === today),
+  });
+  const ready = !level.isLoading && profile.isSuccess && links.isSuccess && !data.isLoading;
+  const visible = ready && !profile.data?.isTrainer && !dismissed && !steps.complete;
+
+  // tutti i passi fatti a card aperta: lo si dice
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (visible) wasOpen.current = true;
+    else if (wasOpen.current && steps.complete) {
+      wasOpen.current = false;
+      toast('Primi passi fatti! Da qui conta ogni allenamento');
+    }
+  }, [visible, steps.complete, toast]);
+
+  if (!visible) return null;
+  return (
+    <FirstSteps
+      steps={steps}
+      onRecord={onRecord}
+      onDismiss={() => {
+        setDismissed(true);
+        try {
+          localStorage.setItem(key, '1');
+        } catch {
+          /* storage bloccato: resta nascosta finché la pagina è aperta */
+        }
+      }}
+    />
+  );
+}
+
+/**
+ * "Per iniziare" (ticket 28, audit C6): la checklist del primo accesso. Ogni passo ha il suo pulsante, la spunta
  * rimbalza quando un passo si compie, i blocchetti in alto dicono a che punto sei. Sparisce da sola a passi fatti;
  * "Più tardi" la nasconde su questo dispositivo.
  */
@@ -19,7 +83,7 @@ export function FirstSteps({ steps, onRecord, onDismiss }: { steps: Steps; onRec
   const action = (id: StepId) => {
     switch (id) {
       case 'record':
-        return <button type="button" className="btn small ghost" onClick={onRecord} aria-label="Aggiungi il primo record">Aggiungi</button>;
+        return <button type="button" className="btn small ghost" onClick={onRecord} aria-label="Vai a Livello per il primo record">Livello</button>;
       case 'allenamento':
         return <Link className="btn small ghost" to="/scheda" aria-label="Vai alla Scheda">Scheda</Link>;
     }

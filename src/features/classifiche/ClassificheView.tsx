@@ -1,35 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { PlaceForm } from '../../components/PlaceFields';
-import { PageTitle, Seg, Skeleton } from '../../components/ui';
-import { useLevel, useProfile, useRanking, useRankingOverview } from '../../data/hooks';
+import { Seg, Skeleton } from '../../components/ui';
+import { useLevel, useRanking, useRankingOverview } from '../../data/hooks';
 import { RANKING_SCOPES, type Profile, type RankingMetric, type RankingScope } from '../../data/types';
 import { fmtInt, METRICS, metricName, rowLevel, scopeKind, scopePlace, scopeTitle, tileLabel, tileText, unavailableText, withGaps } from './rankingView';
 
 /**
  * Classifiche (ticket 38): le pastiglie della metrica (Generale e le 5 categorie) e i 5 riquadri Amici, Provincia,
  * Regione, Nazione, Mondo con posizione e partecipanti; toccando un riquadro si apre la classifica con le prime 3
- * righe e i vicini. Per ora è una pagina a sé, raggiunta da Account: il ticket 39 porta questo blocco dentro la Home.
+ * righe e i vicini. Dal ticket 39 non è più una pagina a sé: `RankingBoard` e `RankingSheet` stanno nella Home.
  */
-export function ClassificheView() {
-  const profile = useProfile();
-  const [metric, setMetric] = useState<RankingMetric>('generale');
-  const [open, setOpen] = useState<RankingScope | null>(null);
-  return (
-    <>
-      <PageTitle title="Classifiche" />
-      {profile.data && !profile.data.country && (
-        <section className="card">
-          <h2>Dove ti alleni?</h2>
-          <p className="sub">Serve per le classifiche di provincia, regione e nazione. Lo scegli da un elenco: l'app non usa la posizione del telefono.</p>
-          <PlaceForm />
-        </section>
-      )}
-      <RankingBoard metric={metric} onMetric={setMetric} onOpen={setOpen} profile={profile.data} />
-      {open && <RankingSheet scope={open} metric={metric} profile={profile.data} onClose={() => setOpen(null)} />}
-    </>
-  );
-}
 
 /** Pastiglie e riquadri: il blocco "Classifica" del mockup Home. */
 export function RankingBoard({ metric, onMetric, onOpen, profile }: {
@@ -85,7 +65,7 @@ export function RankingBoard({ metric, onMetric, onOpen, profile }: {
 }
 
 /** Una classifica: dove sono, le prime 3 righe visibili e i vicini. */
-function RankingSheet({ scope, metric, profile, onClose }: { scope: RankingScope; metric: RankingMetric; profile: Profile | undefined; onClose: () => void }) {
+export function RankingSheet({ scope, metric, profile, onClose }: { scope: RankingScope; metric: RankingMetric; profile: Profile | undefined; onClose: () => void }) {
   const ranking = useRanking(scope, metric);
   const title = useRef<HTMLHeadingElement>(null);
   const closeRef = useRef(onClose);
@@ -164,7 +144,11 @@ function RankingSheet({ scope, metric, profile, onClose }: { scope: RankingScope
             Non hai ancora punti: entri in classifica col primo record.
           </p>
         )}
-        {r?.available && scope === 'amici' && r.participants <= 1 && <p className="hint mt-12">Qui compariranno le persone che segui.</p>}
+        {r?.available && scope === 'amici' && r.participants <= 1 && (
+          <p className="hint mt-12">
+            Qui compariranno le persone che segui: <Link to="/persone">cerca i tuoi amici</Link>.
+          </p>
+        )}
         {r?.available && scope !== 'amici' && (
           <p className="hint mt-12">I profili privati contano nelle posizioni ma le loro righe non si vedono.</p>
         )}

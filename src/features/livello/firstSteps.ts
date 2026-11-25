@@ -31,7 +31,7 @@ export interface Steps {
   next: StepId | null;
 }
 
-const RECORD_HINT = 'Tocca una categoria e scegli un esercizio.';
+const RECORD_HINT = 'In Livello: tocca una categoria e scegli un esercizio.';
 
 function trainingHint(i: StepsInput): string {
   if (i.plannedToday) return 'Oggi hai un allenamento in programma.';

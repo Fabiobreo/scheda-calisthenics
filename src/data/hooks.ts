@@ -7,6 +7,7 @@ import { enqueue, netDown, newId, pendingFor, queue, QUEUE_FORMAT, type QueueOp 
 import { scoreToSave } from './scoreSync';
 import { todayStr } from '../lib/dates';
 import { levelScores, levelSummary, type LevelRecord } from '../lib/levels';
+import { schemeOf, type CopyStep } from '../lib/share';
 import type {
   CatalogExercise,
   EntryInput,
@@ -22,6 +23,7 @@ import type {
   RankingScope,
   ProgramItemInput,
   Scheme,
+  SharedWorkoutInput,
 } from './types';
 
 /** Chiavi delle query (esportate per la coda offline, ticket 27). */
@@ -38,6 +40,8 @@ export const K = {
   levelRecords: ['level-records'] as QueryKey,
   levelScore: ['level-score'] as QueryKey,
   ranking: ['ranking'] as QueryKey,
+  /** tutto ciò che è social (ticket 39): persone, ricerca, novità, link "seguimi", allenamenti condivisi */
+  social: ['social'] as QueryKey,
 };
 
 /** Chiave di una query sui dati di un utente: quelli propri e quelli di un atleta non si mescolano in cache. */
@@ -114,19 +118,27 @@ export const QUEUED_MSG = 'Salvato sul telefono: lo invio appena torna la rete';
  * accoda anche con la rete, così l'ordine dei salvataggi resta quello in cui l'utente li ha fatti. `networkMode: 'always'`: senza rete TanStack Query
  * metterebbe la mutazione in pausa invece di farla fallire, e il salvataggio non arriverebbe mai alla coda.
  */
-function useQueuedMutation<A>(op: QueueOp, toArgs: (a: A) => unknown[], keys: QueryKey[], okMsg?: string) {
+function useQueuedMutation<A>(
+  op: QueueOp,
+  toArgs: (a: A) => unknown[],
+  keys: QueryKey[],
+  /** testo fisso, o ricavato da quello che il server ha risposto */
+  okMsg?: string | ((result: unknown) => string | undefined),
+  /** in caso di rifiuto mostra il messaggio del database (le funzioni del seguire spiegano cosa non va) */
+  dbMessage = false,
+) {
   const { repo, userId } = useScope();
   const qc = useQueryClient();
   const toast = useToast();
   return useMutation({
     networkMode: 'always',
-    mutationFn: async (a: A): Promise<{ queued: boolean }> => {
+    mutationFn: async (a: A): Promise<{ queued: boolean; result?: unknown }> => {
       const args = toArgs(a);
       // già offline: dritto in coda, senza aspettare (col token scaduto auth-js riproverebbe il rinnovo per 30 s)
       if (!pendingFor(userId).length && !netDown.get())
         try {
-          await (repo[op] as (...x: unknown[]) => Promise<unknown>).apply(repo, args);
-          return { queued: false };
+          const result = await (repo[op] as (...x: unknown[]) => Promise<unknown>).apply(repo, args);
+          return { queued: false, result };
         } catch (e) {
           // `sync` si scarica solo qui, al primo errore: il service worker lo ha in cache anche senza rete
           if (!(await import('./sync').then((m) => m.isRetryable(e), () => true))) throw e;
@@ -140,8 +152,11 @@ function useQueuedMutation<A>(op: QueueOp, toArgs: (a: A) => unknown[], keys: Qu
       }
       return { queued: true };
     },
-    onSuccess: (r) => (r.queued ? toast(QUEUED_MSG) : okMsg && toast(okMsg)),
-    onError: () => toast('Non riesco a salvare. Riprova.'),
+    onSuccess: (r) => {
+      const msg = r.queued ? QUEUED_MSG : typeof okMsg === 'function' ? okMsg(r.result) : okMsg;
+      if (msg) toast(msg);
+    },
+    onError: (e) => toast(dbMessage && e instanceof Error && e.message ? e.message : 'Non riesco a salvare. Riprova.'),
     onSettled: (r) => r?.queued || Promise.all(keys.map((queryKey) => qc.invalidateQueries({ queryKey }))),
   });
 }
@@ -410,3 +425,116 @@ export const useUpdateLevelRecord = (okMsg = 'Record aggiornato') =>
   useQueuedMutation('updateLevelRecord', (a: { id: string; patch: Partial<LevelRecordInput> }) => [a.id, a.patch], [K.levelRecords], okMsg);
 
 export const useDeleteLevelRecord = () => useQueuedMutation('deleteLevelRecord', (id: string) => [id], [K.levelRecords], 'Record eliminato');
+
+// ---------------------------------------------------------------------------------------------------------
+// Home social (ticket 39). Sono sempre i dati dell'utente che ha fatto l'accesso: la Home non si apre sui dati di un
+// atleta. Le novità e le persone cambiano per mano di altri: si rileggono spesso, come le classifiche.
+
+const SOCIAL_STALE = 60_000;
+
+/** Richieste ricevute, chi seguo, chi mi segue, chi ho bloccato. */
+export function usePeople() {
+  const repo = useRepo();
+  return useQuery({ queryKey: [...useKey(K.social), 'people'], queryFn: () => repo.myPeople(), staleTime: SOCIAL_STALE });
+}
+
+/** Ricerca per nome: parte da 2 caratteri. */
+export function useSearchPeople(query: string) {
+  const repo = useRepo();
+  const q = query.trim();
+  return useQuery({ queryKey: [...useKey(K.social), 'search', q.toLowerCase()], queryFn: () => repo.searchPeople(q), enabled: q.length >= 2, staleTime: SOCIAL_STALE });
+}
+
+/** Le novità di chi seguo. `limit`: quante righe (la Home ne mostra poche, "Vedi tutte" di più). */
+export function useFeed(limit: number) {
+  const repo = useRepo();
+  return useQuery({ queryKey: [...useKey(K.social), 'feed', limit], queryFn: () => repo.feed(limit), staleTime: SOCIAL_STALE });
+}
+
+/** Segna le novità come lette. Niente messaggio: è una conseguenza dell'averle aperte. */
+export function useMarkFeedRead() {
+  const repo = useRepo();
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: () => repo.markFeedRead(), onSuccess: () => qc.invalidateQueries({ queryKey: K.social }) });
+}
+
+/** Codice del link "seguimi". */
+export function useFollowCode() {
+  const repo = useRepo();
+  return useQuery({ queryKey: [...useKey(K.social), 'code'], queryFn: () => repo.getFollowCode() });
+}
+
+export const useRotateFollowCode = () => useRepoMutation((r) => r.rotateFollowCode(), [K.social], undefined, true);
+
+/** Chi c'è dietro un link "seguimi". Non si rilegge da solo: ogni codice sbagliato conta tra i tentativi falliti. */
+export function useFollowInvite(code: string | undefined) {
+  const repo = useRepo();
+  return useQuery({
+    queryKey: [...useKey(K.social), 'invite', code],
+    queryFn: () => repo.previewFollowInvite(code!),
+    enabled: !!code,
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+}
+
+// seguire cambia anche l'ambito "amici" delle classifiche
+const SOCIAL_KEYS = [K.social, K.ranking];
+
+/** "Segui": subito se il profilo è pubblico, una richiesta se è privato. Senza rete resta in coda (ticket 27). */
+export const useFollow = () =>
+  useQueuedMutation('followUser', (userId: string) => [userId], SOCIAL_KEYS, (r) => (r === 'pending' ? 'Richiesta inviata' : 'Hai iniziato a seguire'), true);
+
+export const useUnfollow = (okMsg: string) => useRepoMutation((r, id: string) => r.unfollowUser(id), SOCIAL_KEYS, okMsg, true);
+export const useAcceptFollow = () => useRepoMutation((r, id: string) => r.acceptFollow(id), SOCIAL_KEYS, 'Richiesta accettata', true);
+export const useRejectFollow = () => useRepoMutation((r, id: string) => r.rejectFollow(id), SOCIAL_KEYS, 'Richiesta rifiutata', true);
+export const useRemoveFollower = () => useRepoMutation((r, id: string) => r.removeFollower(id), SOCIAL_KEYS, 'Non ti segue più', true);
+export const useBlockUser = () => useRepoMutation((r, id: string) => r.blockUser(id), SOCIAL_KEYS, 'Persona bloccata', true);
+export const useUnblockUser = () => useRepoMutation((r, id: string) => r.unblockUser(id), SOCIAL_KEYS, 'Blocco tolto', true);
+export const useReportUser = () =>
+  useRepoMutation((r, a: { userId: string; reason: string }) => r.reportUser(a.userId, a.reason), [], 'Segnalazione inviata', true);
+
+/** "Condividi con gli amici": una copia in sola lettura dell'allenamento. Senza rete resta in coda. */
+export const useShareWorkout = () =>
+  useQueuedMutation('shareWorkout', (a: SharedWorkoutInput) => [a, newId()], [K.social], 'Allenamento condiviso con chi ti segue', true);
+
+/** Gli allenamenti che ho condiviso io. */
+export function useMySharedWorkouts() {
+  const repo = useRepo();
+  return useQuery({ queryKey: [...useKey(K.social), 'my-workouts'], queryFn: () => repo.listMySharedWorkouts(), staleTime: SOCIAL_STALE });
+}
+
+export const useDeleteSharedWorkout = () => useRepoMutation((r, id: string) => r.deleteSharedWorkout(id), [K.social], 'Allenamento non più condiviso');
+
+/** Un allenamento condiviso da una persona che seguo (o da me). */
+export function useSharedWorkout(id: string | null) {
+  const repo = useRepo();
+  return useQuery({ queryKey: [...useKey(K.social), 'workout', id], queryFn: () => repo.getSharedWorkout(id!), enabled: id !== null, staleTime: SOCIAL_STALE });
+}
+
+/**
+ * "Copia nella mia scheda": gli esercizi di un allenamento condiviso entrano nel giorno scelto. Per ognuno si usa il
+ * proprio esercizio, si ripristina quello archiviato o lo si crea (`copySteps`), poi lo si mette in programma con lo
+ * schema dell'allenamento. Una chiamata per esercizio, in fila: al primo errore si ferma e quelli già copiati
+ * restano. Restituisce quanti ne ha copiati.
+ */
+export const useCopySharedWorkout = () =>
+  useRepoMutation(
+    async (r, a: { steps: CopyStep[]; date: string }) => {
+      let n = 0;
+      for (const s of a.steps) {
+        if (s.kind === 'skip') continue;
+        let id: string;
+        if (s.kind === 'create') id = (await r.createExercise(s.input)).id;
+        else {
+          id = s.exerciseId;
+          if (s.kind === 'restore') await r.setExerciseArchived(id, false);
+        }
+        await r.addPlanItem(a.date, id, schemeOf(s.item));
+        n++;
+      }
+      return n;
+    },
+    [K.exercises, K.plan],
+  );

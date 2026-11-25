@@ -210,7 +210,7 @@ describe('modifiche ottimistiche', () => {
   const setup = () => {
     const qc = new QueryClient();
     qc.setQueryData<Entry[]>(['entries', U], [entry('old2', '2026-11-09'), entry('old1', '2026-11-01')]);
-    qc.setQueryData<LevelRecordRow[]>(['level-records', U], [{ ...record, id: 'r0', date: '2026-11-01', createdAt: '2026-11-01T10:00:00Z' }]);
+    qc.setQueryData<LevelRecordRow[]>(['level-records', U], [{ ...record, shared: true, id: 'r0', date: '2026-11-01', createdAt: '2026-11-01T10:00:00Z' }]);
     qc.setQueryData<PlanItem[]>(['plan', U], [
       { id: 'p', date: '2026-11-10', exerciseId: 'trazioni', sortOrder: 0, scheme: { type: 'volume', sets: 3, reps: 8, seconds: 0, weight: 0, rest: 90 }, assignedBy: null, note: null },
     ]);

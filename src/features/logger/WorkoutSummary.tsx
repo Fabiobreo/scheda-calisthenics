@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { ShareWorkout } from '../../components/ShareWorkout';
 import { CountUp, Ring, Sparks } from '../../components/ui';
 import type { Exercise, PlanItem } from '../../data/types';
 import { durationMin, isFinished, type WorkoutSession } from '../../lib/workout';
@@ -85,6 +86,9 @@ export function WorkoutSummary({ session, planById, exercises, onClose }: {
         )}
         {skipped.length > 0 && <p className="hint">Saltati: {skipped.join(', ')}</p>}
         {left.length > 0 && <p className="hint">Da fare: {left.join(', ')}</p>}
+
+        {/* quello che è stato fatto oggi, per chi segue l'utente (ticket 39) */}
+        <ShareWorkout date={session.date} onlyDone className="wo-share" />
 
         <button className="btn block" onClick={onClose}>
           Fatto

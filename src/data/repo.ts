@@ -7,10 +7,14 @@ import type {
   Exercise,
   ExerciseInput,
   ExerciseRef,
+  Feed,
+  FollowState,
   LevelRecordInput,
   LevelRecordRow,
   PlanChanges,
   PlanItem,
+  People,
+  PersonCard,
   Ranking,
   RankingMetric,
   RankingPlace,
@@ -21,6 +25,8 @@ import type {
   ProgramItem,
   ProgramItemInput,
   Scheme,
+  SharedWorkout,
+  SharedWorkoutInput,
 } from './types';
 
 /** Accesso ai dati di un utente. */
@@ -45,6 +51,40 @@ export interface Repo {
   ranking(scope: RankingScope, metric: RankingMetric): Promise<Ranking>;
   /** i 5 ambiti di una metrica in una chiamata, senza le righe */
   rankingOverview(metric: RankingMetric): Promise<Record<RankingScope, RankingPlace>>;
+
+  // Home social (ticket 39). Di un altro utente arrivano solo nome, livello e ciò che condivide.
+  /** persone per nome (almeno 2 caratteri, al massimo 20) */
+  searchPeople(query: string): Promise<PersonCard[]>;
+  /** richieste ricevute, chi seguo, chi mi segue, chi ho bloccato */
+  myPeople(): Promise<People>;
+  /** segue: subito se il profilo è pubblico ('accepted'), con una richiesta se è privato ('pending') */
+  followUser(userId: string): Promise<FollowState>;
+  /** smette di seguire, o ritira la richiesta */
+  unfollowUser(userId: string): Promise<void>;
+  acceptFollow(userId: string): Promise<void>;
+  rejectFollow(userId: string): Promise<void>;
+  removeFollower(userId: string): Promise<void>;
+  blockUser(userId: string): Promise<void>;
+  unblockUser(userId: string): Promise<void>;
+  reportUser(userId: string, reason: string): Promise<void>;
+  /** codice del link "seguimi"; null = non ancora generato */
+  getFollowCode(): Promise<string | null>;
+  rotateFollowCode(): Promise<string>;
+  /** chi c'è dietro un codice "seguimi"; null = codice non valido */
+  previewFollowInvite(code: string): Promise<PersonCard | null>;
+  /** novità delle persone che seguo, dalla più recente */
+  feed(limit: number): Promise<Feed>;
+  markFeedRead(): Promise<void>;
+  /** condivide un allenamento con chi mi segue; `id` scelto dal telefono per i salvataggi offline */
+  shareWorkout(input: SharedWorkoutInput, id?: string): Promise<void>;
+  /** allenamento condiviso da me o da una persona che seguo; null = non c'è più o non lo posso leggere */
+  getSharedWorkout(id: string): Promise<SharedWorkout | null>;
+  /** gli allenamenti che ho condiviso io, dal più recente (senza gli esercizi) */
+  listMySharedWorkouts(): Promise<{ id: string; name: string; date: string; createdAt: string }[]>;
+  /** toglie un mio allenamento condiviso: sparisce anche dalle novità di chi mi segue */
+  deleteSharedWorkout(id: string): Promise<void>;
+  /** chi seguo, chi mi segue, blocchi e allenamenti condivisi, per l'export dei dati */
+  exportSocial(): Promise<Record<string, unknown[]>>;
 
   /** collegamenti attivi in cui l'utente è trainer o atleta */
   listLinks(): Promise<CoachLink[]>;

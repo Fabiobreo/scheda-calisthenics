@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useToast } from '../../app/toast';
 import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
+import { ShareWorkout } from '../../components/ShareWorkout';
 import { WeekDays } from '../../components/WeekDays';
 import { CardHead, PageTitle, SearchSelect, Seg, SetBlocks } from '../../components/ui';
 import {
@@ -303,6 +304,8 @@ function Programma() {
           </button>
         </div>
       )}
+      {/* il giorno scelto, per chi segue l'utente (ticket 39): compare solo se c'è qualcosa da condividere */}
+      <ShareWorkout key={date} date={date} className="mt-16" />
       {copyOpen && (
         <CopyWeek
           plan={visible}
