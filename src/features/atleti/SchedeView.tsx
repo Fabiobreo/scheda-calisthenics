@@ -405,7 +405,7 @@ function Editor({ id, name, weeks }: { id: string; name: string; weeks: number }
 
   return (
     <>
-      <PageTitle title={name || 'Scheda modello'} />
+      <PageTitle show title={name || 'Scheda modello'} />
       {/* su schermo largo la settimana a griglia occupa tutta la larghezza (ticket 26); sotto, il giorno aperto
           a sinistra e nome e assegnazione a destra (audit A06) */}
       {wide ? (

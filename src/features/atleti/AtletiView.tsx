@@ -58,7 +58,7 @@ export function AtletiView() {
   const alone = !links.isLoading && !athletes.length;
   return (
     <>
-      <PageTitle title="Atleti" />
+      <PageTitle show title="Atleti" />
       {wide && alone ? (
         <div className="solo">
           <AthletesCard />
@@ -133,7 +133,7 @@ function AthletesCard({ selected }: { selected?: string }) {
   const end = useEndLink('Atleta scollegato');
   return (
     <section className="card">
-      <CardHead title="Atleti" help="Gli atleti che segui: programmi i loro giorni, vedi storico, note, grafici e livello. I loro dati restano loro." />
+      <CardHead title="I tuoi atleti" help="Gli atleti che segui: programmi i loro giorni, vedi storico, note, grafici e livello. I loro dati restano loro." />
       {links.isLoading ? (
         <Skeleton inline />
       ) : !athletes.length ? (
@@ -288,19 +288,18 @@ export function AtletaView() {
 
   return (
     <>
-      <PageTitle title={link.athleteName || 'Atleta'} />
+      <PageTitle
+        show
+        title={nameOf(link.athleteName)}
+        help="Programmi i suoi giorni e vedi cosa ha fatto, anche fuori programma; registrazioni, grafici e livello sono in sola lettura."
+      >
+        {/* su schermo largo l'elenco degli atleti è già a sinistra */}
+        <Link className="link small only-narrow" to="/atleti">
+          ‹ Atleti
+        </Link>
+      </PageTitle>
       <section className="card">
-        <CardHead
-          big
-          title={nameOf(link.athleteName)}
-          help="Programmi i suoi giorni e vedi cosa ha fatto, anche fuori programma; registrazioni, grafici e livello sono in sola lettura."
-        >
-          {/* su schermo largo l'elenco degli atleti è già a sinistra */}
-          <Link className="link small only-narrow" to="/atleti">
-            ‹ Atleti
-          </Link>
-        </CardHead>
-        <div className="mt-14">
+        <div>
           <Seg
             label="Sezione"
             value={tab}

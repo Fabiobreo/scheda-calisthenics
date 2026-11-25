@@ -79,10 +79,13 @@ export function LivelloView() {
         <section className="lv-hero" aria-label={`Livello complessivo: ${summary.name}, ${summary.percent}%`}>
           <Bust band={summary.band} />
           <Pentagon scale={pentagonScale(summary)} />
-          <button type="button" className="lv-info" onClick={() => setLevels(true)} aria-haspopup="dialog">
-            <span>{summary.name}</span>
-            <i aria-hidden="true">i</i>
-            <span className="sr-only">: vedi tutti i livelli</span>
+          {/* il nome del livello è già sotto il nome in testata: qui solo la "i" che apre il foglio dei livelli */}
+          <button type="button" className="lv-info" onClick={() => setLevels(true)} aria-haspopup="dialog" aria-label={`Livello ${summary.name}: vedi tutti i livelli`}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 11v5.5" />
+              <circle cx="12" cy="7.6" r=".6" fill="currentColor" />
+            </svg>
           </button>
         </section>
 

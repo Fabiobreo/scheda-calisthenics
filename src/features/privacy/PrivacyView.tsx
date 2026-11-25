@@ -11,9 +11,9 @@ export function PrivacyView({ signedIn }: { signedIn: boolean }) {
   const email = privacyEmail();
   return (
     <>
-      <PageTitle title="Privacy" />
+      <PageTitle show title="Privacy" />
       <article className="card legal">
-        <h2 className="big">Informativa sulla privacy</h2>
+        <h2>Informativa sulla privacy</h2>
         <p className="sub">Ultimo aggiornamento: {PRIVACY_UPDATED}</p>
 
         <h3>Chi tratta i dati</h3>

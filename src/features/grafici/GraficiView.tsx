@@ -87,7 +87,7 @@ export function GraficiView() {
       <>
         <PageTitle title="Grafici" />
         <div className={cls}>
-          <div className="gr-head">
+          <div className="gr-head page-h">
             <h2>Andamento</h2>
           </div>
           <div className="gr-panel gr-empty">
@@ -141,7 +141,7 @@ export function GraficiView() {
     <>
       <PageTitle title="Grafici" />
       <div className={cls}>
-        <div className="gr-head">
+        <div className="gr-head page-h">
           <CardHead title="Andamento" big help="Tocca o trascina sul grafico per leggere il valore di un punto; tocca di nuovo il punto per chiudere. Tocca una sessione per vederne le serie." />
           <p className="gr-sub">
             {ex.name} · {m.label}

@@ -2,13 +2,24 @@ import { createContext, useContext, useEffect, useId, useRef, useState, useSyncE
 import { TYPE_LABEL, type ExerciseType } from '../data/types';
 
 /**
- * Titolo della schermata (audit A02): un `h1` per gli screen reader (la testata mostra già nome dell'app o riepilogo)
- * e il titolo della scheda del browser, diverso per ogni schermata.
+ * Titolo della schermata (audit A02): l'`h1` e il titolo della scheda del browser, diverso per ogni schermata.
+ * `show`: titolo visibile in una fascia trasparente sopra la foto della palestra, alta quanto "Cerca persone" della
+ * Home, così in ogni pagina le schede partono dalla stessa altezza e la foto si vede (feedback di Michael); `help` e
+ * `children` come in `CardHead`. Senza `show` l'`h1` è solo per gli screen reader (Home, Livello e Grafici hanno già
+ * la loro fascia).
  */
-export function PageTitle({ title }: { title: string }) {
+export function PageTitle({ title, show, help, children }: { title: string; show?: boolean; help?: ReactNode; children?: ReactNode }) {
   const nested = useContext(Nested);
   usePageTitle(nested ? null : title);
-  return nested ? null : <h1 className="sr-only">{title}</h1>;
+  if (nested) return null;
+  if (!show) return <h1 className="sr-only">{title}</h1>;
+  return (
+    <div className="page-h">
+      <CardHead as="h1" title={title} help={help}>
+        {children}
+      </CardHead>
+    </div>
+  );
 }
 
 /** Una schermata mostrata dentro un'altra (Livello e Grafici dell'atleta nella vista del trainer): il titolo resta quello di fuori. */
@@ -83,13 +94,35 @@ export function Seg<T extends string>({
   onChange: (v: T) => void;
   label?: string;
 }) {
+  // quando le voci non ci stanno scorrono dentro il binario: il lato con altre voci sfuma, così nessuna resta tagliata
+  // contro il bordo (feedback di Michael su "Skill tirata")
+  const track = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = track.current;
+    if (!el) return;
+    const edges = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      el.classList.toggle('fade-l', el.scrollLeft > 2);
+      el.classList.toggle('fade-r', el.scrollLeft < max - 2);
+    };
+    edges();
+    el.addEventListener('scroll', edges, { passive: true });
+    const ro = new ResizeObserver(edges);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', edges);
+      ro.disconnect();
+    };
+  }, []);
   return (
     <div className="seg" role="group" aria-label={label}>
-      {options.map((o) => (
-        <button key={o.v} type="button" className={o.v === value ? 'on' : ''} aria-pressed={o.v === value} onClick={() => onChange(o.v)}>
-          {o.l}
-        </button>
-      ))}
+      <div className="seg-in" ref={track}>
+        {options.map((o) => (
+          <button key={o.v} type="button" className={o.v === value ? 'on' : ''} aria-pressed={o.v === value} onClick={() => onChange(o.v)}>
+            {o.l}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -389,14 +422,14 @@ export function SearchSelect<T extends string>({ label, value, options, onChange
  * Testata di una scheda (ticket 21): titolo piccolo, azioni a destra e, se c'è, la spiegazione dietro una "?" invece
  * di righe sempre visibili. `big`: titolo grande, per la scheda protagonista della pagina.
  */
-export function CardHead({ title, help, big, children }: { title: string; help?: ReactNode; big?: boolean; children?: ReactNode }) {
+export function CardHead({ title, help, big, as: H = 'h2', children }: { title: string; help?: ReactNode; big?: boolean; as?: 'h1' | 'h2'; children?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
     <>
       <div className="card-h">
         <span className="card-t">
-          <h2 className={big ? 'big' : undefined}>{title}</h2>
+          <H className={big ? 'big' : undefined}>{title}</H>
           {help && (
             <button type="button" className="help" aria-expanded={open} aria-controls={id} aria-label={open ? `Nascondi la spiegazione di ${title}` : `Cos'è ${title}`} onClick={() => setOpen(!open)}>
               <span aria-hidden="true">?</span>

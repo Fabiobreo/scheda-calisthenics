@@ -4,7 +4,7 @@ import { EntryItem } from '../../components/EntryItem';
 import { SchemeForm } from '../../components/SchemeForm';
 import { ShareWorkout } from '../../components/ShareWorkout';
 import { WeekDays } from '../../components/WeekDays';
-import { CardHead, PageTitle, SearchSelect, Seg, SetBlocks } from '../../components/ui';
+import { PageTitle, SearchSelect, Seg, SetBlocks } from '../../components/ui';
 import {
   useAddCatalogToPlan,
   useAddPlanItem,
@@ -34,7 +34,11 @@ import { useLogger, useWorkout } from '../logger/Logger';
 export function SchedaView() {
   return (
     <>
-      <PageTitle title="Scheda" />
+      <PageTitle
+        show
+        title="Programma"
+        help="Scegli gli esercizi di ogni giorno con serie, ripetizioni (o secondi), peso e recupero. Prepara una settimana e copiala in quelle dopo. Sotto ogni giorno un segno: pieno se hai fatto tutto, vuoto se resta qualcosa."
+      />
       <Programma />
     </>
   );
@@ -133,8 +137,6 @@ function Programma() {
 
   return (
     <section className="card sch">
-      <CardHead big title="Programma" help="Scegli gli esercizi di ogni giorno con serie, ripetizioni (o secondi), peso e recupero. Prepara una settimana e copiala in quelle dopo. Sotto ogni giorno un segno: pieno se hai fatto tutto, vuoto se resta qualcosa." />
-
       <WeekDays
         monday={monday}
         day={day}

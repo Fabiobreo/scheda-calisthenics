@@ -18,7 +18,7 @@ const CONFIRM_WORD = 'ELIMINA';
 export function AccountView({ inviteCode }: { inviteCode?: string }) {
   return (
     <>
-      <PageTitle title={inviteCode ? 'Invito del trainer' : 'Account'} />
+      <PageTitle show title={inviteCode ? 'Invito del trainer' : 'Account'} />
       {/* arrivando da un invito la cosa da fare è collegarsi: va in cima */}
       {inviteCode && <MyTrainerCard inviteCode={inviteCode} />}
       {/* su schermo largo le schede vanno su due colonne (audit A06) */}
@@ -57,7 +57,7 @@ function ProfileCard() {
   return (
     <section className="card">
       <div className="card-h">
-        <h2>Account</h2>
+        <h2>Profilo</h2>
         <button className="btn small ghost" onClick={() => supabase.auth.signOut()}>
           Esci
         </button>

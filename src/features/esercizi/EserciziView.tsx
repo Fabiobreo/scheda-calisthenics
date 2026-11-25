@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
 import { CategoryRow } from '../../components/ExIcon';
-import { Card, CardHead, EmptyState, MoreMenu, PageTitle } from '../../components/ui';
+import { Card, EmptyState, MoreMenu, PageTitle } from '../../components/ui';
 import { useArchiveExercise, useCatalog, useData, useDeleteExercise, useTrainerLock } from '../../data/hooks';
 import type { Exercise } from '../../data/types';
 import { todayStr } from '../../lib/dates';
@@ -42,16 +42,16 @@ export function EserciziView() {
 
   return (
     <>
-      <PageTitle title="Esercizi" />
+      <PageTitle
+        show
+        title="Esercizi"
+        help="Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi nel programma, giorno per giorno."
+      >
+        <button className="btn small" onClick={() => setOpen({ kind: 'add' })}>
+          + Aggiungi
+        </button>
+      </PageTitle>
       <Card>
-        <CardHead
-          title="Esercizi"
-          help="Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi nel programma, giorno per giorno."
-        >
-          <button className="btn small" onClick={() => setOpen({ kind: 'add' })}>
-            + Aggiungi
-          </button>
-        </CardHead>
 
         {!active.length && (
           <EmptyState

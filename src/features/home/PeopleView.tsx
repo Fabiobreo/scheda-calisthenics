@@ -38,7 +38,7 @@ export function PeopleView({ inviteCode }: { inviteCode?: string }) {
   const p = people.data;
   return (
     <>
-      <PageTitle title="Persone" />
+      <PageTitle show title="Persone" />
       {inviteCode && <InviteCard code={inviteCode} onReport={setReport} />}
       <SearchCard onReport={setReport} />
       {p && p.requests.length > 0 && <Requests people={p.requests} onReport={setReport} />}
@@ -166,7 +166,7 @@ function SearchCard({ onReport }: { onReport: (p: PersonCard) => void }) {
   const ready = term.length >= 2;
   return (
     <section className="card" aria-labelledby="pp-search">
-      <h2 id="pp-search" className="big">
+      <h2 id="pp-search">
         Cerca persone
       </h2>
       {enabled ? (
