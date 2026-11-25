@@ -150,7 +150,7 @@ impostazione, con stile, sfondo e caratteri di Home e Livello e **al massimo 3�
 | 35 | [Pagina Esercizi e catalogo](35-pagina-esercizi.md) | 2 | Frontend + backend | M | fatto il 25/11, unito su main: righe pulite, menu "⋯", foglio del catalogo senza tastiera, migration `0016` (5 voci tolte) provata su PGlite, **non** su Supabase; pagina provata nel browser solo con dati finti; da far approvare a Michael |
 | 36 | [Pagina Grafici](36-pagina-grafici.md) | 2 | Frontend + data-viz | M | fatto il 25/11, unito su main: un grafico, riga del record, ultime 5 sessioni col foglio della sessione, "Tenuta media" e "Tenuta totale"; fissa a 390×844, a 360×640 scorre (bersagli da 44 px); provata nel browser solo con dati finti; da far approvare a Michael |
 | 37 | [Pagina Scheda](37-pagina-scheda.md) | 2 | Frontend | M | fatto il 25/11, unito su main: solo programma e giorno, un segno dorato per giorno, "Inizia allenamento" in cima a oggi e tolto da Livello; la vista del trainer tiene i colori del tipo; azioni provate nel browser con dati in memoria (niente scritto su Supabase); da far approvare a Michael |
-| 38 | [Punteggi sul server, profilo pubblico, classifiche](38-classifiche.md) | 3 | Backend + PO (privacy) | L | da fare |
+| 38 | [Punteggi sul server, profilo pubblico, classifiche](38-classifiche.md) | 3 | Backend + PO (privacy) | L | fatto il 25/11, non unito: migration `0017` (luogo e visibilità del profilo, punti sul server, `follows`, `ranking`) provata su PGlite, **non** su Supabase; luogo alla registrazione, scheda in Account, pagina Classifiche, informativa; provato nel browser solo con un finto Supabase; **profili pubblici spenti finché manca l'email dell'informativa** (`VITE_PRIVACY_EMAIL`); da far vedere a Fabio e Michael |
 | 39 | [Home: amici, novità, condivisione](39-home-amici.md) | 3 | Full-stack + UX | XL | da fare |
 
 ### Ordine e rilasci
@@ -175,7 +175,7 @@ in chiaro.
 ### Cosa serve ancora
 
 - ~~Da Michael: il file del busto dorato con fondo trasparente (34).~~ Ritagliato dal mockup il 24/11 (`public/avatar/`); l'originale di Michael, se arriva, lo sostituisce.
-- Da Fabio: l'email di contatto per l'informativa privacy (38 e A05, bloccante per il rilascio). Decisi il 25/11: profilo privato alla registrazione, titolare del trattamento Fabio Brea (38); tipo dell'esercizio come testo in Scheda (37).
+- Da Fabio: l'email di contatto per l'informativa privacy (38 e A05, bloccante per il rilascio): va messa in `VITE_PRIVACY_EMAIL`, fino ad allora nessun profilo può diventare pubblico. Da decidere anche i minori (38) e rileggere il testo dell'informativa. Decisi il 25/11: profilo privato alla registrazione, titolare del trattamento Fabio Brea (38); tipo dell'esercizio come testo in Scheda (37).
 
 ### Funzioni che spariscono (richieste dai PDF, da sapere prima di iniziare)
 
