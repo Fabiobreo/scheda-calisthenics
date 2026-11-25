@@ -224,8 +224,8 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .weeks .check-row:first-child { border-top: 0; }
 .weeks .check-row .hint { margin-left: auto; }
 .plan { margin-top: 6px; }
-/* registrato nel giorno fuori dal programma; sessioni sotto il grafico */
-.extra, .sessions { margin-top: 18px; padding-top: 6px; border-top: 1px solid var(--line); }
+/* registrato nel giorno fuori dal programma */
+.extra { margin-top: 18px; padding-top: 6px; border-top: 1px solid var(--line); }
 /* giorno senza programma: niente riga di separazione in cima */
 .plan:empty + .extra { margin-top: 6px; padding-top: 0; border-top: 0; }
 .h-sub { margin: 8px 0 0; font-family: var(--f-body); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
@@ -239,50 +239,93 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .addrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 12px; }
 
 /* grafici */
-.chart { margin-top: 14px; width: 100%; }
-.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
-/* stile del pentagono (ticket 14): griglia tratteggiata, area sfumata, linea con bagliore, record in ambra */
+/* il grafico riempie il suo contenitore (charts.tsx lo disegna in px veri): l'altezza la decide la pagina.
+   Tutto in oro (ticket 36): griglia tratteggiata, area sfumata, linea con bagliore, record in oro chiaro; assi e date
+   in --muted (6,6:1 su --surface), 12 px. */
+.g-box { position: absolute; inset: 0; }
+.g-box svg { display: block; overflow: visible; }
 .g-grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
 .g-base { stroke: var(--line-strong); stroke-width: 1; }
 .g-fill-top { stop-color: var(--gold); stop-opacity: .32; }
 .g-fill-bottom { stop-color: var(--gold); stop-opacity: 0; }
 .g-line { stroke: var(--gold); fill: none; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
-.mini .g-line { stroke-width: 2; }
 .g-glow { stroke: var(--gold); fill: none; stroke-width: 7; opacity: .4; stroke-linejoin: round; }
 .g-dot { fill: var(--gold); stroke: var(--surface); stroke-width: 2; }
-.mini .g-dot { stroke-width: 0; }
 .g-dot.rec { fill: var(--gold-hi); }
 .g-halo { fill: var(--gold); opacity: .22; }
 .g-halo.rec { fill: var(--gold-hi); opacity: .3; }
-.g-rec-t { fill: var(--gold-hi); font-family: var(--f-body); font-size: 12px; font-weight: 700; letter-spacing: .06em; }
+.g-rec-t { fill: var(--gold-hi); font-family: var(--f-body); font-size: 11px; font-weight: 700; letter-spacing: .06em; }
 .g-tip rect { fill: var(--surface2); stroke: var(--line-strong); }
-.g-tip text { fill: var(--fg); font-family: var(--f-body); font-size: 12px; font-weight: 600; }
-.g-tip text.s { fill: var(--muted); font-weight: 500; font-size: 12px; }
-.g-bar { stroke: var(--surface); stroke-width: 1; }
-.g-bar.forza { fill: var(--forza); } .g-bar.volume { fill: var(--volume); } .g-bar.tecnico { fill: var(--tecnico); }
-/* il grafico è in unità del viewBox (340 di larghezza): 13 diventa circa 12 px su un telefono */
-.g-txt { fill: var(--muted); font-family: var(--f-body); font-size: 13px; }
+.g-tip text { font-family: var(--f-body); font-size: 12px; font-weight: 500; fill: var(--muted); }
+.g-tip text.v { fill: var(--gold-hi); font-weight: 700; }
+.g-txt { fill: var(--muted); font-family: var(--f-body); font-size: 12px; font-variant-numeric: tabular-nums; }
 /* trascinare in orizzontale legge i valori, in verticale la pagina scorre */
 .g-big { touch-action: pan-y; }
 .pt { fill: transparent; cursor: crosshair; }
-.card .period .seg button { padding: 10px 2px; }
-.g-sel { stroke: var(--fg); stroke-width: 1; opacity: .5; }
-.cmp { margin-top: 4px; color: var(--muted); font-size: 15px; }
-.cmp .up { color: var(--ok); font-weight: 600; }
-.cmp .down { color: var(--danger); font-weight: 600; }
-.mini .cap { color: var(--muted); font-size: 12px; margin-top: -4px; }
-.readout { margin-top: 10px; font-weight: 600; min-height: 1.4em; }
-.readout span { color: var(--muted); font-weight: 400; }
-.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
-.legend span { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; color: var(--muted); }
-.minis { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 14px; }
-.mini { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-tile); padding: 12px; text-align: left; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.mini.on { border-color: var(--gold); box-shadow: var(--glow); }
-.mini b { font-weight: 600; font-size: 15px; line-height: 1.2; overflow-wrap: anywhere; }
-.mini .v { font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: -.02em; line-height: 1; color: var(--gold); }
-.mini .v small { font-size: 14px; color: var(--muted); font-weight: 600; }
-.mini svg { width: 100%; height: auto; display: block; }
-.mini .none { color: var(--muted); font-size: 14px; min-height: 52px; display: flex; align-items: center; }
+.g-sel { stroke: var(--gold-dim); stroke-width: 1; opacity: .6; }
+
+/* Pagina Grafici (ticket 36). Sta in una schermata: titolo, periodo, metrica, esercizio, grafico con la riga del
+   record, ultime 5 sessioni, barra. La pagina è alta almeno quanto lo schermo (108 px = spazio sopra 18 + testata 82 +
+   stacco 6 + 2 di margine, più la barra in basso) e il grafico prende lo spazio che resta. Le righe da toccare restano
+   di 44 px, quindi il resto non si può stringere: con 5 sessioni il grafico arriva al minimo di 140 px intorno agli
+   825 px di altezza; sotto, la pagina scorre invece di tagliare. Bianco solo per titolo e date: i valori sono in oro,
+   il resto in --muted. */
+.gr {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  min-height: calc(100dvh - 108px - var(--tabbar) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+/* come in Livello: niente spazio in fondo per il timer di recupero, farebbe scorrere la schermata fissa. Torna se il timer c'è. */
+body:has(.gr:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px)); }
+.gr-head { min-width: 0; }
+.gr-head h2 { font-size: 22px; line-height: 1.1; color: var(--fg); }
+.gr-sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gr .seg { padding: 1px; flex: none; }
+.gr .seg button { flex: 1 1 0; padding: 9px 2px; font-size: 14.5px; }
+.gr select { min-height: 44px; padding-block: 9px; color: var(--gold-hi); font-weight: 600; }
+.gr select option, .gr select optgroup { color: var(--fg); font-weight: 400; }
+.gr-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; min-width: 0; box-shadow: inset 0 1px 0 rgb(255 255 255 / .04); }
+.gr-chart { flex: 1 1 auto; display: flex; flex-direction: column; max-height: 480px; }
+.gr-plot { position: relative; flex: 1 1 140px; min-height: 140px; }
+.gr-empty { flex: 1 1 auto; display: grid; place-items: center; padding: 0 14px 14px; }
+/* riga del record: coppa, data, valore */
+.gr-rec { flex: none; margin: 0; display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; border-top: 1px solid var(--line); font-size: 15px; }
+.gr-cup { flex: none; color: var(--gold-hi); }
+.gr-rec-l { color: var(--gold-dim); font-weight: 600; }
+.gr-date { color: var(--fg); font-weight: 600; }
+.gr-val { margin-left: auto; font-family: var(--f-display); font-size: 17px; font-weight: 700; letter-spacing: -.01em; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gr-rec .gr-val { color: var(--gold-hi); }
+.gr-none { color: var(--muted); }
+.gr-tag { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--gold-hi); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold-hi) 45%, transparent); }
+/* ultime sessioni: una riga da 44 px a sessione, apre il foglio con le serie */
+.gr-last { flex: none; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.gr-h { padding-left: 4px; font-family: var(--f-body); font-size: 13px; line-height: 16px; font-weight: 600; letter-spacing: 0; color: var(--gold-dim); }
+.gr-rows { list-style: none; margin: 0; padding: 0; overflow: hidden; }
+.gr-rows li + li { box-shadow: inset 0 1px 0 var(--line); }
+.gr-row { width: 100%; height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 14px; background: none; border: 0; text-align: left; font-size: 15px; }
+.gr-row:focus-visible { outline-offset: -2px; border-radius: 12px; }
+.gr-chev { color: var(--muted); font-size: 20px; line-height: 1; }
+@media (hover: hover) { .gr-row:hover .gr-date { color: var(--gold); } }
+/* nella vista del trainer la pagina sta dentro un'altra: altezze fisse */
+.gr.nested { min-height: 0; }
+.gr.nested .gr-plot { flex: none; height: 240px; }
+@media (min-width: 1024px) {
+  /* schermo largo: una colonna centrata, grafico di altezza fissa */
+  .gr { min-height: 0; gap: 10px; padding-bottom: 24px; }
+  .gr:not(.nested) { width: 100%; max-width: 640px; margin-inline: auto; }
+  .gr-plot, .gr.nested .gr-plot { flex: none; height: 320px; }
+}
+/* foglio della sessione: serie una per riga, tipo, nota, "Modifica" */
+.gr-sheet h2:focus { outline: none; }
+.gr-sheet h2::first-letter { text-transform: uppercase; }
+.gr-sheet-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+.gr-sheet-sub b { color: var(--gold); font-weight: 700; }
+.gr-entry { margin-top: 14px; border-top: 1px solid var(--line); }
+.gr-sets { list-style: none; margin: 0; padding: 0; }
+.gr-sets li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.gr-sets span { color: var(--muted); font-size: 15px; }
+.gr-sets b { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }
+.gr-note { margin: 10px 0 0; color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
+.gr-edit { width: 100%; margin-top: 14px; }
 
 /* registro */
 .entry { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start; }

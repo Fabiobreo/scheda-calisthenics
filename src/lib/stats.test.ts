@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Entry, PlanItem } from '../data/types';
-import { lastRecordStep, weeklyCounts, niceScale, personalBest, recordEntryIds, repsByType, series, suggestedRest, suggestScheme, suggestType } from './stats';
+import { lastRecordStep, weeklyCounts, niceScale, personalBest, recordEntryIds, recordPoint, series, suggestedRest, suggestScheme, suggestType } from './stats';
 import { fmtSets } from './format';
 import { addDays, mondayOf, weekLabel } from './dates';
 import { copyWeek } from './plan';
@@ -68,21 +68,34 @@ describe('series', () => {
   });
 });
 
-describe('repsByType', () => {
-  it('raggruppa per data e per il tipo della registrazione', () => {
-    const es = [
-      dip([[0, 10]], '2026-11-02'),
-      entry({ exerciseId: 'mu', date: '2026-11-02', type: 'tecnico', sets: [{ weight: 0, reps: 3, seconds: 0 }] }),
-    ];
-    expect(repsByType(es)).toEqual([{ date: '2026-11-02', forza: 0, volume: 10, tecnico: 3 }]);
+describe('tenute: media e totale della sessione', () => {
+  const hold = (secs: number[], date: string) => entry({ exerciseId: 'plank', date, sets: secs.map((seconds) => ({ weight: 0, reps: 0, seconds })) });
+
+  it('3 serie da 10, 8 e 6 s: media 8 s, totale 24 s', () => {
+    const es = [hold([10, 8, 6], '2026-11-02')];
+    expect(series(es, 'plank', 'media')).toEqual([{ date: '2026-11-02', v: 8 }]);
+    expect(series(es, 'plank', 'secondi')).toEqual([{ date: '2026-11-02', v: 24 }]);
   });
 
-  it('lo stesso esercizio conta in forza un giorno e in volume un altro', () => {
-    const es = [dip([[20, 5]], '2026-11-02', { type: 'forza' }), dip([[0, 15]], '2026-11-05', { type: 'volume' })];
-    expect(repsByType(es)).toEqual([
-      { date: '2026-11-02', forza: 5, volume: 0, tecnico: 0 },
-      { date: '2026-11-05', forza: 0, volume: 15, tecnico: 0 },
+  it('la media è su tutte le serie della giornata, anche di più registrazioni, a un decimale', () => {
+    const es = [hold([10, 10], '2026-11-02'), hold([5], '2026-11-02'), hold([7, 8, 8], '2026-11-04')];
+    expect(series(es, 'plank', 'media')).toEqual([
+      { date: '2026-11-02', v: 8.3 },
+      { date: '2026-11-04', v: 7.7 },
     ]);
+    expect(series(es, 'plank', 'secondi').map((p) => p.v)).toEqual([25, 23]);
+  });
+});
+
+describe('recordPoint', () => {
+  const pts = (...xs: [string, number][]) => xs.map(([date, v]) => ({ date, v }));
+
+  it('il valore più alto, nel giorno in cui è stato raggiunto la prima volta', () => {
+    expect(recordPoint(pts(['2026-11-02', 10], ['2026-11-04', 20], ['2026-11-06', 20], ['2026-11-10', 15]))).toEqual({ date: '2026-11-04', v: 20 });
+  });
+  it('niente record senza sessioni o con tutto a zero (corpo libero)', () => {
+    expect(recordPoint([])).toBeNull();
+    expect(recordPoint(pts(['2026-11-02', 0], ['2026-11-04', 0]))).toBeNull();
   });
 });
 

@@ -1,44 +1,35 @@
 import { useState } from 'react';
-import { useScope } from '../../app/session';
-import { EntryItem } from '../../components/EntryItem';
-import { LineChart, TypeChart } from '../../components/charts';
-import { CardHead, EmptyState, PageTitle, Seg, Select, useNested } from '../../components/ui';
 import { Link } from 'react-router-dom';
+import { useScope } from '../../app/session';
+import { LineChart } from '../../components/charts';
+import { CardHead, EmptyState, PageTitle, Seg, Select, useNested } from '../../components/ui';
 import { useData } from '../../data/hooks';
-import { EXERCISE_TYPES, TYPE_LABEL, type Measure } from '../../data/types';
-import { todayStr } from '../../lib/dates';
-import { fmt, plural } from '../../lib/format';
+import { shortDate, todayStr } from '../../lib/dates';
+import { fmt } from '../../lib/format';
 import {
   aggregate,
-  aggregateTypes,
   axisLabel,
   bucketLabel,
-  compare,
   DEFAULT_PERIOD,
   grainFor,
+  IN_PERIOD,
   isMaxMetric,
   isPeriod,
-  PERIOD_NAME,
   periodRange,
   PERIODS,
-  IN_PERIOD,
-  PREVIOUS,
   recordIndex,
-  summarize,
   type Grain,
   type Period,
 } from '../../lib/periods';
-import { METRICS, METRICS_BY_MEASURE, recordEntryIds, repsByType, series, type Metric, type Point } from '../../lib/stats';
+import { METRICS, METRICS_BY_MEASURE, recordPoint, series, type Point } from '../../lib/stats';
 import { useLogger } from '../logger/Logger';
+import { SessionSheet } from './SessionSheet';
 
-/** Sessioni mostrate sotto il grafico, e quante in più a ogni "Mostra altre". */
+/** Sessioni mostrate sotto il grafico. */
 const SESSIONS = 5;
 const PERIOD_KEY = 'grafici-periodo';
 
-const GRAIN_LABEL: Record<Grain, string> = { day: 'per sessione', week: 'per settimana', month: 'per mese' };
-
-/** Metrica nella posizione `slot` per un esercizio che si misura in `m` (0 = miglior risultato, 1 = totale, 2 = l'altra). */
-const metricOf = (m: Measure, slot: number) => METRICS_BY_MEASURE[m][slot];
+const GRAIN_LABEL: Record<Exclude<Grain, 'day'>, string> = { week: 'per settimana', month: 'per mese' };
 
 function loadPeriod(): Period {
   try {
@@ -49,30 +40,36 @@ function loadPeriod(): Period {
   }
 }
 
-/** "media a sessione" o "massimo", secondo la metrica. */
-const howLabel = (metric: Metric) => (isMaxMetric(metric) ? 'massimo' : 'media a sessione');
+/** Coppa del record. Decorativa: accanto c'è scritto "Record". */
+const Cup = () => (
+  <svg className="gr-cup" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+    <path d="M7 6H4.5a2.5 2.5 0 0 0 2.9 3.6M17 6h2.5a2.5 2.5 0 0 1-2.9 3.6M12 14v4M8.5 20h7M9.5 18h5" />
+  </svg>
+);
 
+/**
+ * Pagina Grafici (ticket 36): un solo grafico. Dall'alto: titolo "Andamento" con esercizio e metrica, periodo,
+ * metrica, esercizio, grafico, riga del record, ultime 5 sessioni. Sul telefono sta in una schermata: il grafico
+ * prende lo spazio che resta (vedi `.gr` in styles.css).
+ */
 export function GraficiView() {
   const nested = useNested();
   const { exercises, done: entries } = useData();
-  // la posizione della metrica, non la metrica: passando da un esercizio a ripetizioni a uno a tempo resta il ruolo
+  // la posizione della metrica, non la metrica: passando da un esercizio a ripetizioni a uno a tempo resta la scelta
   const [slot, setSlot] = useState(0);
   const [period, setPeriodState] = useState<Period>(loadPeriod);
   const [picked, setPicked] = useState<string | null>(null);
+  // punto col fumetto aperto sul grafico
   const [selected, setSelected] = useState<Point | null>(null);
-  const [limit, setLimit] = useState(SESSIONS);
+  // giorno della sessione aperta nel foglio
+  const [openDate, setOpenDate] = useState<string | null>(null);
   const openLogger = useLogger();
   // un atleta visto dal trainer: le sessioni si leggono soltanto
   const { readOnly } = useScope();
-  const pick = (id: string) => {
-    setPicked(id);
-    setSelected(null);
-    setLimit(SESSIONS);
-  };
   const setPeriod = (p: Period) => {
     setPeriodState(p);
     setSelected(null);
-    setLimit(SESSIONS);
     try {
       localStorage.setItem(PERIOD_KEY, p);
     } catch {
@@ -83,262 +80,198 @@ export function GraficiView() {
   // archiviati inclusi solo se hanno dati da mostrare
   const withData = new Set(entries.map((e) => e.exerciseId));
   const shown = exercises.filter((e) => !e.archivedAt || withData.has(e.id));
+  const cls = `gr${nested ? ' nested' : ''}`;
 
   if (!shown.length)
     return (
       <>
         <PageTitle title="Grafici" />
-        <section className="card">
-          <h2>Andamento</h2>
-          {/* stato vuoto con un disegno e cosa fare (ticket 21) */}
-          <EmptyState
-            title={readOnly ? 'Ancora niente da mostrare' : 'Qui vedrai i tuoi progressi'}
-            actions={
-              !readOnly && (
-                <>
-                  <Link className="btn" to="/scheda">
-                    Prepara la settimana
-                  </Link>
-                  <Link className="btn ghost" to="/esercizi">
-                    Scegli gli esercizi
-                  </Link>
-                </>
-              )
-            }
-          >
-            {readOnly
-              ? 'Quando registra il primo allenamento compaiono qui la curva, i record e la ripartizione per tipo.'
-              : 'Dopo il primo allenamento registrato compaiono la curva, i record e la ripartizione per tipo.'}
-          </EmptyState>
-        </section>
+        <div className={cls}>
+          <div className="gr-head">
+            <h2>Andamento</h2>
+          </div>
+          <div className="gr-panel gr-empty">
+            <EmptyState
+              title={readOnly ? 'Ancora niente da mostrare' : 'Qui vedrai i tuoi progressi'}
+              actions={
+                !readOnly && (
+                  <>
+                    <Link className="btn" to="/scheda">
+                      Prepara la settimana
+                    </Link>
+                    <Link className="btn ghost" to="/esercizi">
+                      Scegli gli esercizi
+                    </Link>
+                  </>
+                )
+              }
+            >
+              {readOnly
+                ? 'Quando registra il primo allenamento compaiono qui la curva, il record e le ultime sessioni.'
+                : 'Dopo il primo allenamento registrato compaiono la curva, il record e le ultime sessioni.'}
+            </EmptyState>
+          </div>
+        </div>
       </>
     );
 
-  const range = periodRange(period, todayStr());
-  const inPeriod = (d: string) => !range || d >= range.from;
-  const periodEntries = entries.filter((e) => inPeriod(e.date));
-
-  /** Punti di un esercizio nel periodo: per sessione e raggruppati. */
-  const chartOf = (exerciseId: string, metric: Metric) => {
-    const daily = series(entries, exerciseId, metric);
-    const inside = daily.filter((p) => inPeriod(p.date));
-    const grain = grainFor(period, inside.map((p) => p.date));
-    const points = aggregate(inside, grain, metric);
-    return { daily, inside, grain, points, record: recordIndex(points, daily, grain, metric) };
-  };
-
   const ex = shown.find((e) => e.id === picked) ?? shown.find((e) => withData.has(e.id)) ?? shown[0];
-  const metric = metricOf(ex.measure, slot);
+  const metrics = METRICS_BY_MEASURE[ex.measure];
+  // a tempo le metriche sono due: la terza posizione ricade sull'ultima
+  const at = Math.min(slot, metrics.length - 1);
+  const metric = metrics[at];
   const m = METRICS[metric];
-  const { daily, inside, grain, points: pts, record } = chartOf(ex.id, metric);
-  const cmp = range && inside.length ? compare(daily, range, metric) : null;
-  const anyTimed = shown.some((x) => x.measure === 'time');
-  const anyReps = shown.some((x) => x.measure === 'reps');
-  const readout = selected && pts.find((p) => p.date === selected.date && p.end === selected.end) ? selected : null;
-  const rows = repsByType(periodEntries);
-  const typeGrain = grainFor(period, rows.map((r) => r.date));
-  const types = aggregateTypes(rows, typeGrain);
-  // le sessioni dell'esercizio nel periodo, dalla più recente; toccando un punto restano quelle del punto
-  const sessions = periodEntries.filter(
-    (e) => e.exerciseId === ex.id && (!readout || (e.date >= readout.date && e.date <= (readout.end ?? readout.date))),
-  );
-  const prIds = recordEntryIds(entries);
-  const everData = daily.length > 0;
+  const value = (v: number) => `${fmt(v)} ${m.unit}`;
+
+  const range = periodRange(period, todayStr());
+  // un punto per sessione (giorno), di sempre e nel periodo; poi raggruppati per il grafico
+  const daily = series(entries, ex.id, metric);
+  const inside = daily.filter((p) => !range || p.date >= range.from);
+  const grain = grainFor(period, inside.map((p) => p.date));
+  const pts = aggregate(inside, grain, metric);
+  // record di sempre della metrica scelta: stesso giorno nella riga, sul grafico e nell'elenco
+  const record = recordPoint(daily);
+  const tip = selected && pts.find((p) => p.date === selected.date && p.end === selected.end) ? selected : null;
+  // le ultime sessioni del periodo, dalla più recente
+  const sessions = inside.slice(-SESSIONS).reverse();
+  const open = openDate ? daily.find((p) => p.date === openDate) : undefined;
+  const openEntries = open ? entries.filter((e) => e.exerciseId === ex.id && e.date === open.date).reverse() : [];
 
   return (
     <>
       <PageTitle title="Grafici" />
-      {/* su schermo largo: andamento a sinistra, ripartizione per tipo ed elenco degli esercizi a destra (audit A06) */}
-      <div className={nested ? 'flat' : 'cols'}>
-      <div className={nested ? 'flat' : 'col'}>
-      <section className="card">
-        <CardHead title="Andamento" help="Tocca o trascina sul grafico per vedere il valore di un punto e le sue sessioni; «tutto il periodo» torna alla vista intera." />
-        <p className="sub">
-          {ex.name} · {m.label.toLowerCase()} {GRAIN_LABEL[grain]}
-          {grain !== 'day' && `, ${howLabel(metric)}`}
-        </p>
-        <div className="period mt-14">
-          <Seg label="Periodo" value={period} options={PERIODS} onChange={setPeriod} />
+      <div className={cls}>
+        <div className="gr-head">
+          <CardHead title="Andamento" big help="Tocca o trascina sul grafico per leggere il valore di un punto; tocca di nuovo il punto per chiudere. Tocca una sessione per vederne le serie." />
+          <p className="gr-sub">
+            {ex.name} · {m.label}
+            {grain !== 'day' && `, ${isMaxMetric(metric) ? 'massimo' : 'media'} ${GRAIN_LABEL[grain]}`}
+          </p>
         </div>
-        <div className="mt-10">
-          <Seg
-            label="Metrica"
-            value={String(slot)}
-            options={METRICS_BY_MEASURE[ex.measure].map((k, i) => ({ v: String(i), l: METRICS[k].label }))}
-            onChange={(v) => (setSlot(Number(v)), setSelected(null))}
-          />
-        </div>
-        <div className="mt-14">
-          <Select label="Esercizio" value={ex.id} options={shown.map((e) => ({ v: e.id, l: e.name }))} onChange={pick} />
-        </div>
-        {!pts.length ? (
-          everData && period !== 'all' ? (
-            <EmptyState
-              small
-              title="Niente in questo periodo"
-              actions={
-                <button className="btn ghost" onClick={() => setPeriod('all')}>
-                  Vedi tutto
-                </button>
-              }
-            >
-              Nessuna registrazione {IN_PERIOD[period]}.
-            </EmptyState>
-          ) : (
-            <EmptyState
-              small
-              title="Ancora nessun dato"
-              actions={
-                !readOnly && (
-                  <Link className="btn ghost" to="/scheda">
-                    Vai alla Scheda
-                  </Link>
-                )
-              }
-            >
-              Nessuna registrazione per questo esercizio{readOnly ? '.' : ': registralo dalla Scheda e qui comparirà la linea.'}
-            </EmptyState>
-          )
-        ) : (
-          <>
-            <div className="chart">
+        <Seg label="Periodo" value={period} options={PERIODS} onChange={setPeriod} />
+        <Seg
+          label="Metrica"
+          value={String(at)}
+          options={metrics.map((k, i) => ({ v: String(i), l: METRICS[k].label }))}
+          onChange={(v) => {
+            setSlot(Number(v));
+            setSelected(null);
+          }}
+        />
+        <Select
+          label="Esercizio"
+          hideLabel
+          value={ex.id}
+          options={shown.map((e) => ({ v: e.id, l: e.name }))}
+          onChange={(id) => {
+            setPicked(id);
+            setSelected(null);
+          }}
+        />
+
+        <div className="gr-panel gr-chart">
+          {pts.length ? (
+            <div className="gr-plot">
               <LineChart
                 points={pts}
-                onSelect={setSelected}
-                selected={readout?.date}
+                // toccare il punto già scelto chiude il fumetto
+                onSelect={(p) => setSelected(tip && tip.date === p.date ? null : p)}
+                selected={tip?.date}
                 label={(d) => axisLabel(d, grain)}
-                record={record}
-                format={(p) => `${fmt(p.v)} ${m.unit}`}
+                tipLabel={(d) => bucketLabel(d, grain)}
+                record={recordIndex(pts, daily, grain, metric)}
+                format={(p) => value(p.v)}
               />
             </div>
-            <p className="readout" aria-live="polite">
-              {readout ? (
+          ) : daily.length && period !== 'all' ? (
+            <div className="gr-empty">
+              <EmptyState
+                small
+                title="Niente in questo periodo"
+                actions={
+                  <button className="btn ghost" onClick={() => setPeriod('all')}>
+                    Vedi tutto
+                  </button>
+                }
+              >
+                Nessuna sessione {IN_PERIOD[period]}.
+              </EmptyState>
+            </div>
+          ) : (
+            <div className="gr-empty">
+              <EmptyState
+                small
+                title="Ancora nessuna sessione"
+                actions={
+                  !readOnly && (
+                    <Link className="btn ghost" to="/scheda">
+                      Vai alla Scheda
+                    </Link>
+                  )
+                }
+              >
+                {readOnly ? 'Nessuna registrazione per questo esercizio.' : 'Registra questo esercizio dalla Scheda e qui comparirà la linea.'}
+              </EmptyState>
+            </div>
+          )}
+          {/* record di sempre, anche quando cade fuori dal periodo scelto */}
+          {daily.length > 0 && (
+            <p className="gr-rec">
+              <Cup />
+              <span className="gr-rec-l">Record</span>
+              {record ? (
                 <>
-                  {fmt(readout.v)} {m.unit}{' '}
-                  <span>
-                    · {bucketLabel(readout.date, grain)}
-                    {grain !== 'day' && readout.n && `, ${isMaxMetric(metric) ? 'massimo' : 'media'} di ${plural(readout.n, 'sessione', 'sessioni')}`} ·{' '}
-                    <button className="link small" onClick={() => setSelected(null)}>
-                      tutto il periodo
-                    </button>
-                  </span>
+                  <span className="gr-date">{shortDate(record.date)}</span>
+                  <b className="gr-val">{value(record.v)}</b>
                 </>
               ) : (
-                <>
-                  {fmt(Math.round(summarize(inside, metric) * 10) / 10)} {m.unit}{' '}
-                  <span>
-                    · {howLabel(metric)}, {PERIOD_NAME[period]}
-                  </span>
-                </>
+                <span className="gr-none">ancora nessuno</span>
               )}
             </p>
-            {!readout && (
-              <p className="cmp">
-                {plural(inside.length, 'sessione', 'sessioni')}
-                {cmp && period !== 'all' && <Change cmp={cmp} text={PREVIOUS[period]} />}
-              </p>
-            )}
-            <div className="sessions">
-              <h3 className="h-sub">{readout ? `Sessioni: ${bucketLabel(readout.date, grain)}` : 'Sessioni'}</h3>
-              {sessions.slice(0, readout ? undefined : limit).map((e) => (
-                <EntryItem key={e.id} entry={e} record={prIds.has(e.id)} showDate onOpen={readOnly ? undefined : () => openLogger({ entry: e })} />
-              ))}
-              {!readout && sessions.length > limit && (
-                <div className="row mt-12">
-                  <button className="btn small ghost" onClick={() => setLimit(limit + SESSIONS * 4)}>
-                    Mostra altre ({sessions.length - limit})
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </section>
-      </div>
-
-      <div className={nested ? 'flat' : 'col'}>
-      <section className="card">
-        <CardHead
-          title="Ripetizioni per tipo"
-          help={`Quanto lavoro fai in forza, volume e tecnica, ${typeGrain === 'day' ? 'per sessione' : `${GRAIN_LABEL[typeGrain]} (media a sessione)`}, ${PERIOD_NAME[period]}.${anyTimed ? ' Le tenute a tempo non hanno ripetizioni e qui non contano.' : ''}`}
-        />
-        <div className="legend">
-          {EXERCISE_TYPES.map((t) => (
-            <span key={t}>
-              <i className={`dot ${t}`} />
-              {TYPE_LABEL[t]}
-            </span>
-          ))}
-        </div>
-        <div className="chart">
-          {types.length ? (
-            <TypeChart data={types} label={(d) => axisLabel(d, typeGrain)} />
-          ) : (
-            <EmptyState small title={period === 'all' ? 'Ancora nessuna ripetizione' : 'Niente in questo periodo'}>
-              {period === 'all' ? 'Registra un allenamento per vedere il lavoro per tipo.' : 'Nessuna ripetizione registrata in questo periodo.'}
-            </EmptyState>
           )}
         </div>
-      </section>
 
-      <section className="card">
-        <h2>Tutti gli esercizi</h2>
-        <p className="sub">
-          {anyReps && anyTimed
-            ? `${METRICS[metricOf('reps', slot)].label} di ogni esercizio, ${METRICS[metricOf('time', slot)].label.toLowerCase()} per quelli a tempo`
-            : `${METRICS[metricOf(anyTimed ? 'time' : 'reps', slot)].label} di ogni esercizio`}
-          , {PERIOD_NAME[period]}. Tocca una scheda per aprirla in grande.
-        </p>
-        <div className="minis">
-          {shown.map((x) => {
-            const xm = metricOf(x.measure, slot);
-            const c = chartOf(x.id, xm);
-            return (
-              <button
-                key={x.id}
-                className={`mini${x.id === ex.id ? ' on' : ''}`}
-                onClick={() => {
-                  pick(x.id);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              >
-                <b>{x.name}</b>
-                {c.points.length ? (
-                  <>
-                    <div className="v">
-                      {fmt(Math.round(summarize(c.inside, xm) * 10) / 10)} <small>{METRICS[xm].unit}</small>
-                    </div>
-                    <div className="cap">{howLabel(xm)}</div>
-                    <LineChart points={c.points} mini record={c.record} />
-                  </>
-                ) : (
-                  <div className="none">{c.daily.length ? 'Nessun dato nel periodo' : 'Nessun dato'}</div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+        {sessions.length > 0 && (
+          <section className="gr-last" aria-labelledby="gr-last-t">
+            <h3 id="gr-last-t" className="gr-h">
+              Ultime {SESSIONS} sessioni
+            </h3>
+            <ul className="gr-panel gr-rows">
+              {sessions.map((p) => (
+                <li key={p.date}>
+                  <button type="button" className="gr-row" onClick={() => setOpenDate(p.date)} aria-label={`${shortDate(p.date)}${record?.date === p.date ? ', record' : ''}: ${value(p.v)}. Apri la sessione`}>
+                    <span className="gr-date">{shortDate(p.date)}</span>
+                    {record?.date === p.date && <span className="gr-tag">Record</span>}
+                    <b className="gr-val">{value(p.v)}</b>
+                    <span className="gr-chev" aria-hidden="true">
+                      ›
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
-      </div>
-    </>
-  );
-}
-
-/** " · +12% rispetto ai 3 mesi prima", oppure che prima non c'erano sessioni da confrontare. */
-function Change({ cmp, text }: { cmp: { prev: number | null; pct: number | null }; text: { vs: string; none: string } }) {
-  if (cmp.prev === null) return <> · {text.none}</>;
-  // prima c'erano sessioni ma il valore era 0 (es. peso a corpo libero): una percentuale non avrebbe senso
-  if (cmp.pct === null) return null;
-  const cls = cmp.pct > 0 ? 'up' : cmp.pct < 0 ? 'down' : undefined;
-  return (
-    <>
-      {' · '}
-      <b className={cls}>
-        {cmp.pct > 0 ? '+' : cmp.pct < 0 ? '−' : '±'}
-        {Math.abs(cmp.pct)}%
-      </b>{' '}
-      {text.vs}
+      {open && openEntries.length > 0 && (
+        <SessionSheet
+          name={ex.name}
+          date={open.date}
+          entries={openEntries}
+          value={`${m.label} ${value(open.v)}`}
+          record={record?.date === open.date}
+          onClose={() => setOpenDate(null)}
+          onEdit={
+            readOnly
+              ? undefined
+              : (e) => {
+                  // il registratore è un altro foglio: questo si chiude
+                  setOpenDate(null);
+                  openLogger({ entry: e });
+                }
+          }
+        />
+      )}
     </>
   );
 }
