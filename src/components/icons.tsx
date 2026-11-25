@@ -5,6 +5,23 @@ const Svg = ({ children }: { children: React.ReactNode }) => (
   </svg>
 );
 
+/** Home: casa */
+export const IconHome = () => (
+  <Svg>
+    <path d="M3.5 11 12 3.8l8.5 7.2" />
+    <path d="M5.5 9.6V20h13V9.6" />
+    <path d="M9.8 20v-5.6h4.4V20" />
+  </Svg>
+);
+
+/** Cerca: lente */
+export const IconSearch = () => (
+  <Svg>
+    <circle cx="10.8" cy="10.8" r="6.3" />
+    <path d="m15.6 15.6 4.9 4.9" />
+  </Svg>
+);
+
 /** Scheda: calendario */
 export const IconScheda = () => (
   <Svg>

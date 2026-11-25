@@ -12,7 +12,7 @@ export const PLACE_ERRORS = { country: 'Scegli la nazione.', province: 'Scegli l
 
 /**
  * Nazione e, in Italia, provincia: due menu, niente posizione del telefono (ticket 38). Usati alla registrazione, in
- * Account e nella pagina delle classifiche. `error`: il campo che manca, da `placeError`.
+ * Account e nella Home. `error`: il campo che manca, da `placeError`.
  */
 export function PlaceFields({ value, onChange, error, disabled }: {
   value: PlaceValue;
@@ -49,7 +49,7 @@ export function PlaceFields({ value, onChange, error, disabled }: {
   );
 }
 
-/** Il luogo del profilo, con "Salva": in Account e, per chi non l'ha ancora indicato, nella pagina delle classifiche. */
+/** Il luogo del profilo, con "Salva": in Account e, per chi non l'ha ancora indicato, in cima alla Home (ticket 39). */
 export function PlaceForm({ saveLabel = 'Salva' }: { saveLabel?: string }) {
   const profile = useProfile();
   const update = useUpdateProfile('Luogo salvato');

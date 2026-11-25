@@ -11,6 +11,8 @@ export interface Profile {
   region: string | null;
   /** true (valore di partenza) = nelle classifiche il nome lo vede solo chi segue l'utente */
   isPrivate: boolean;
+  /** true (valore di partenza) = un record che migliora il punteggio diventa una novità per chi mi segue (ticket 39) */
+  shareRecords: boolean;
 }
 
 /** Ciò che l'utente può cambiare del profilo: la regione la decide la provincia. */
@@ -219,7 +221,92 @@ export interface LevelRecordRow {
   /** YYYY-MM-DD */
   date: string;
   note: string | null;
+  /** false = "non condividere": questo record non va tra le novità degli amici (ticket 39) */
+  shared: boolean;
   createdAt: string;
 }
 
-export type LevelRecordInput = Omit<LevelRecordRow, 'id' | 'createdAt'>;
+/** Senza `shared` il record è condivisibile (lo decide poi l'interruttore del profilo). */
+export type LevelRecordInput = Omit<LevelRecordRow, 'id' | 'createdAt' | 'shared'> & { shared?: boolean };
+
+// ---------------------------------------------------------------------------------------------------------
+// Home social (ticket 39): seguire, persone, novità, allenamenti condivisi
+
+/** Io verso una persona, o lei verso di me: niente, richiesta in attesa, accettata. */
+export type FollowState = 'none' | 'pending' | 'accepted';
+
+/**
+ * Quello che si può vedere di una persona: nome e livello (la fascia, non i punti) sempre; il luogo solo se il suo
+ * profilo è pubblico o se la seguo. Record e peso corporeo non arrivano mai.
+ */
+export interface PersonCard {
+  userId: string;
+  name: string | null;
+  /** fascia del livello complessivo: 0 = Base … 5 = Leggenda */
+  band: number;
+  isPrivate: boolean;
+  /** io verso di lei */
+  relation: FollowState;
+  /** lei verso di me */
+  followsMe: FollowState;
+  country: string | null;
+  province: string | null;
+  region: string | null;
+}
+
+export interface People {
+  /** richieste di seguirmi da accettare o rifiutare */
+  requests: PersonCard[];
+  /** chi seguo, comprese le richieste che ho mandato e sono in attesa */
+  following: PersonCard[];
+  /** chi mi segue */
+  followers: PersonCard[];
+  blocked: { userId: string; name: string | null }[];
+}
+
+export type FeedKind = 'record' | 'workout' | 'overtake';
+
+/** Una novità di una persona che seguo. Il contenuto di `payload` dipende dal tipo: lo leggono le funzioni di `socialView`. */
+export interface FeedEvent {
+  id: string;
+  kind: FeedKind;
+  actorId: string;
+  actorName: string | null;
+  payload: Record<string, unknown>;
+  /** allenamento condiviso da aprire (solo `workout`) */
+  workoutId: string | null;
+  createdAt: string;
+  unread: boolean;
+}
+
+export interface Feed {
+  /** quante novità sono arrivate dopo l'ultima lettura (tutte, non solo quelle in `events`) */
+  unread: number;
+  events: FeedEvent[];
+}
+
+/** Un esercizio di un allenamento condiviso: copia in sola lettura di nome, serie e valori. */
+export interface SharedItem {
+  name: string;
+  /** voce del catalogo, se l'esercizio ne aveva una: chi copia ritrova lo stesso esercizio */
+  catalogId: string | null;
+  measure: Measure;
+  type: ExerciseType;
+  /** secondi di recupero */
+  rest: number;
+  sets: WorkSet[];
+}
+
+export interface SharedWorkoutInput {
+  /** nome dato dall'utente ("Push day") */
+  name: string;
+  /** YYYY-MM-DD: il giorno dell'allenamento */
+  date: string;
+  items: SharedItem[];
+}
+
+export interface SharedWorkout extends SharedWorkoutInput {
+  id: string;
+  userId: string;
+  createdAt: string;
+}

@@ -4,12 +4,10 @@ import { Bust } from '../../components/Bust';
 import { Pentagon } from '../../components/Pentagon';
 import { IconFondSpinta, IconFondTirata, IconHandbalance, IconSkillSpinta, IconSkillTirata } from '../../components/icons';
 import { PageTitle, Skeleton, Sparks, useNested } from '../../components/ui';
-import { useData, useLevel, useLinks, useProfile, type LevelRow } from '../../data/hooks';
-import { shortDate, todayStr } from '../../lib/dates';
+import { useLevel, type LevelRow } from '../../data/hooks';
+import { shortDate } from '../../lib/dates';
 import { whenIdle } from '../../lib/idle';
 import type { CategoryId, CategoryScore, ChainId, ChainScore } from '../../lib/levels';
-import { dismissKey, firstSteps } from './firstSteps';
-import { FirstSteps } from './FirstStepsCard';
 import { CARDS, categoryName, chainLevelText, chainName, chainPercent, missingBodyweight, pentagonScale, recordText } from './levelView';
 
 // Il foglio del record si apre a un tocco: si scarica dopo il primo disegno della pagina (audit A4)
@@ -33,22 +31,11 @@ const ICON: Record<CategoryId, ReactNode> = {
 export function LivelloView() {
   const level = useLevel();
   const nested = useNested();
-  const { readOnly, userId } = useScope();
+  const { readOnly } = useScope();
   const [open, setOpen] = useState<CategoryId | null>(null);
   const [sheet, setSheet] = useState<ChainId | null>(null);
   const [party, setParty] = useState<string[]>([]);
-  const guide = useGuide(level.isLoading ? null : level, readOnly, userId);
   useEffect(() => whenIdle(() => void loadRecordSheet()), []);
-
-  // tutti i passi fatti adesso, a card aperta: si festeggia
-  const wasOpen = useRef(false);
-  useEffect(() => {
-    if (guide.visible) wasOpen.current = true;
-    else if (wasOpen.current && guide.steps.complete) {
-      wasOpen.current = false;
-      setParty(['Primi passi fatti!', 'Da qui conta ogni allenamento']);
-    }
-  }, [guide.visible, guide.steps.complete]);
 
   // la celebrazione resta qualche secondo, poi se ne va da sola
   useEffect(() => {
@@ -85,7 +72,6 @@ export function LivelloView() {
       <PageTitle title="Livello" />
       {level.error && <div className="banner">Non riesco a leggere livello e record. Controlla la connessione e riprova.</div>}
       <div className={nested ? 'lv nested' : 'lv'}>
-        {guide.visible && <FirstSteps steps={guide.steps} onRecord={() => toggle(CARDS[0])} onDismiss={guide.dismiss} />}
         {readOnly && records.length === 0 && <p className="coach-note">Non ha ancora inserito record: li inserisce dalla sua pagina Livello.</p>}
 
         <section className="lv-hero" aria-label={`Livello complessivo: ${summary.name}, ${summary.percent}%`}>
@@ -122,48 +108,6 @@ export function LivelloView() {
 }
 
 const smooth = (): ScrollBehavior => (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
-
-const readDismissed = (key: string) => {
-  try {
-    return localStorage.getItem(key) === '1';
-  } catch {
-    return false;
-  }
-};
-
-/**
- * Primo accesso guidato (ticket 28): i passi dai dati che ci sono già, "Più tardi" in `localStorage` per utente.
- * Mai nella vista del trainer né sulla pagina di un account in modalità trainer.
- */
-function useGuide(level: { records: unknown[] } | null, readOnly: boolean, userId: string) {
-  const profile = useProfile();
-  const data = useData();
-  const links = useLinks();
-  const key = dismissKey(userId);
-  const [dismissed, setDismissed] = useState(() => readDismissed(key));
-  const today = todayStr();
-  const steps = firstSteps({
-    records: level?.records.length ?? 0,
-    trainings: data.done.filter((e) => e.kind === 'training').length,
-    linked: !!links.data?.some((l) => l.athleteId === userId),
-    plannedToday: data.plan.some((p) => p.date === today),
-  });
-  // si aspetta di avere tutto: niente checklist che compare e scompare mentre i dati arrivano
-  const ready = !!level && profile.isSuccess && links.isSuccess && !data.isLoading;
-  return {
-    steps,
-    // il trainer ha il suo lavoro: la checklist è per chi si allena
-    visible: !readOnly && ready && !profile.data?.isTrainer && !dismissed && !steps.complete,
-    dismiss: () => {
-      setDismissed(true);
-      try {
-        localStorage.setItem(key, '1');
-      } catch {
-        /* storage bloccato: resta nascosta finché la pagina è aperta */
-      }
-    },
-  };
-}
 
 /** Scheda di una categoria: nome, livello, % dentro il livello, barra dorata con la stessa %. Si apre sulle catene. */
 function Category({

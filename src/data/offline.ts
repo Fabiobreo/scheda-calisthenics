@@ -4,14 +4,19 @@
  * cache e la cache persistita sono in `sync.ts`, che si scarica dopo (il service worker lo tiene in cache).
  */
 
-/** Salvataggi che, senza rete, finiscono in coda (scelta dell'utente: allenamenti e record). */
+/**
+ * Salvataggi che, senza rete, finiscono in coda (scelta dell'utente: allenamenti e record). Dal ticket 39 anche le
+ * richieste di seguire qualcuno e gli allenamenti condivisi.
+ */
 export type QueueOp =
   | 'createEntry'
   | 'updateEntry'
   | 'deleteEntry'
   | 'createLevelRecord'
   | 'updateLevelRecord'
-  | 'deleteLevelRecord';
+  | 'deleteLevelRecord'
+  | 'followUser'
+  | 'shareWorkout';
 
 export interface QueueItem {
   /** id del salvataggio in coda (non quello della riga) */

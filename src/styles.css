@@ -1037,3 +1037,68 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1) bright
 .legal p, .legal ul { margin: 0 0 8px; max-width: 68ch; }
 .legal ul { padding-left: 20px; }
 .legal li { margin-bottom: 6px; }
+
+/* ---------- Home, novità e persone (ticket 39) ---------- */
+/* "Cerca persone": una riga che sembra un campo di ricerca e porta alla pagina Persone */
+.home-find {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 999px; text-decoration: none;
+  background: color-mix(in srgb, var(--surface) 86%, transparent); border: 1px solid var(--line-strong); color: var(--muted); font-weight: 500;
+}
+.home-find svg { flex: none; color: var(--gold); }
+.home-find span { flex: 1; min-width: 0; }
+@media (hover: hover) { .home-find:hover { border-color: var(--gold-deep); color: var(--fg); } }
+/* contatore: non lette, richieste */
+.badge {
+  flex: none; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 8px; border-radius: 999px; display: inline-grid; place-items: center;
+  background: var(--gold); color: var(--on-gold); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1;
+}
+.home-req { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--fg); border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
+.home-req-t { flex: 1; min-width: 0; font-weight: 600; }
+.home-req-go { flex: none; color: var(--gold); font-weight: 600; font-size: 15px; }
+/* tondo con l'iniziale */
+.nv-av {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 17px; color: var(--gold-hi);
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--gold) 26%, var(--surface2)), var(--bg)); border: 1px solid var(--gold-deep);
+}
+.nv-list, .pp-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.nv-row, .pp-row { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 0; border-top: 1px solid var(--line); }
+.nv-list li:first-child, .pp-list li:first-child { border-top: 0; }
+.nv-txt, .pp-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.nv-txt > span { font-size: 15px; color: var(--muted); overflow-wrap: anywhere; }
+.nv-txt b { color: var(--fg); font-weight: 600; }
+.nv-txt small, .pp-who small { font-size: 13px; color: var(--gold-dim); }
+/* non letta: un punto dorato accanto a "quando" */
+.nv-row.new .nv-txt small::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--halo); vertical-align: 1px; }
+.nv-row .btn { flex: none; min-height: 44px; min-width: 104px; }
+.nv .empty-state { padding-top: 8px; }
+.sheet h2[tabindex]:focus { outline: none; }
+.sheet-sub { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+/* record di un amico */
+.nv-rec-v { margin: 16px 0 0; font-family: var(--f-display); font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; color: var(--gold-hi); }
+.nv-rec-d { margin: 14px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nv-rec-d div { padding: 10px 12px; border-radius: var(--r-tile); background: var(--surface2); border: 1px solid var(--line); }
+.nv-rec-d dt { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.nv-rec-d dd { margin: 2px 0 0; font-weight: 600; }
+/* allenamento condiviso */
+.nv-wo-list { list-style: none; margin: 14px 0 0; padding: 0; }
+.nv-wo-list li { display: flex; flex-direction: column; gap: 1px; padding: 10px 0; border-top: 1px solid var(--line); }
+.nv-wo-list li:first-child { border-top: 0; }
+.nv-wo-list b { font-weight: 600; }
+.nv-wo-list span { font-size: 15px; color: var(--gold-dim); font-variant-numeric: tabular-nums; }
+.nv-wo-copy { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+/* persone */
+.pp-who b { font-weight: 600; overflow-wrap: anywhere; }
+.pp-act { flex: none; display: flex; align-items: center; gap: 6px; }
+.pp-act .btn { min-height: 44px; white-space: nowrap; }
+.pp-link { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); font-size: 15px; color: var(--gold-hi); overflow-wrap: anywhere; user-select: all; }
+.pp-back { margin: 0; }
+/* una richiesta ha due bottoni e il menu: sul telefono vanno sotto il nome */
+@media (max-width: 520px) {
+  .pp-row.req { flex-wrap: wrap; }
+  .pp-row.req .pp-who { flex-basis: calc(100% - 52px); }
+  .pp-row.req .pp-act { margin-left: 52px; }
+}
+/* condividi un allenamento */
+.share-form { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.wo-share { margin: 4px 0 12px; }
+.share-done { margin-top: 12px; color: var(--gold-dim); }

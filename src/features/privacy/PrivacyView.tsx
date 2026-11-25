@@ -37,16 +37,24 @@ export function PrivacyView({ signedIn }: { signedIn: boolean }) {
           <li>Esercizi, allenamenti registrati, programma e note.</li>
           <li>Record di livello, col peso corporeo dove la formula del punteggio lo richiede.</li>
           <li>I punteggi del livello calcolati dai tuoi record.</li>
-          <li>Il collegamento con un trainer e chi segui, se li usi.</li>
+          <li>Il collegamento con un trainer, se lo usi.</li>
+          <li>Chi segui, chi ti segue, le richieste, le persone che blocchi o segnali.</li>
+          <li>Gli allenamenti che scegli di condividere e le novità che nascono dai record che condividi.</li>
         </ul>
 
         <h3>A cosa servono</h3>
-        <p>A far funzionare l'app: tenere il registro degli allenamenti, calcolare il livello, mostrare le classifiche e, se lo vuoi, farti seguire da un trainer. Nessuna pubblicità, nessuna profilazione, nessun dato ceduto o venduto.</p>
+        <p>A far funzionare l'app: tenere il registro degli allenamenti, calcolare il livello, mostrare le classifiche, farti trovare e seguire dagli amici e, se lo vuoi, farti seguire da un trainer. Nessuna pubblicità, nessuna profilazione, nessun dato ceduto o venduto.</p>
 
         <h3>Chi vede cosa</h3>
         <ul>
           <li>
-            <b>Solo tu</b>: email, allenamenti, programma, record e peso corporeo.
+            <b>Solo tu</b>: email, allenamenti, programma, note, peso corporeo e i record che non condividi.
+          </li>
+          <li>
+            <b>Chiunque usi l'app</b>, cercandoti per nome o aprendo il tuo link: il tuo nome e il tuo livello (Base, Intermedio… non i punti). Se il profilo è pubblico anche il luogo.
+          </li>
+          <li>
+            <b>Le persone che ti seguono</b> (se il profilo è privato le accetti tu, una per una): nome, punti e luogo, i record che condividi (esercizio, valore, data: mai il peso corporeo), gli allenamenti che condividi e il fatto che le hai superate in classifica. I record si condividono da soli quando migliorano il punteggio: lo spegni da Account, o record per record.
           </li>
           <li>
             <b>Il trainer che colleghi</b>, finché resta collegato: nome, luogo, allenamenti, programma, record e peso dentro i record. Lo scolleghi quando vuoi da Account.
@@ -58,11 +66,13 @@ export function PrivacyView({ signedIn }: { signedIn: boolean }) {
             <b>Classifiche, profilo pubblico</b> (lo scegli tu da Account): gli altri utenti dell'app vedono il tuo nome e i tuoi punti nelle classifiche del mondo, della tua nazione, regione e provincia.
           </li>
         </ul>
-        <p>Record e peso corporeo non compaiono mai nelle classifiche.</p>
+        <p>
+          Record e peso corporeo non compaiono mai nelle classifiche. Puoi smettere di essere seguito da qualcuno, bloccarlo o segnalarlo dalla pagina Persone: una segnalazione la legge solo il titolare.
+        </p>
 
         <h3>Dove stanno e per quanto</h3>
         <p>
-          I dati sono salvati nel database dell'app presso Supabase; l'app è pubblicata tramite Vercel. Restano finché esiste l'account. Con <b>Elimina account</b> si cancella tutto subito, compresa la tua riga nelle classifiche. Una copia degli ultimi dati resta sul tuo dispositivo per usare l'app senza rete: si cancella uscendo dall'account.
+          I dati sono salvati nel database dell'app presso Supabase; l'app è pubblicata tramite Vercel. Restano finché esiste l'account. Con <b>Elimina account</b> si cancella tutto subito, compresi la tua riga nelle classifiche, chi segui, le tue novità e gli allenamenti condivisi. Una copia degli ultimi dati resta sul tuo dispositivo per usare l'app senza rete: si cancella uscendo dall'account.
         </p>
 
         <h3>I tuoi diritti</h3>

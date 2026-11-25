@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ConfirmButton, Field, Select } from '../../components/ui';
-import { useCreateLevelRecord, useDeleteLevelRecord, useUpdateLevelRecord, type LevelRow } from '../../data/hooks';
+import { useCreateLevelRecord, useDeleteLevelRecord, useProfile, useUpdateLevelRecord, type LevelRow } from '../../data/hooks';
 import { shortDate, todayStr } from '../../lib/dates';
 import { numInput, parseNum } from '../../lib/format';
 import { availableEntries, levelSummary, validateRecord, type ChainId, type LevelRecord, type LevelSummary } from '../../lib/levels';
@@ -34,6 +34,8 @@ const bwText = (records: readonly Row[]) => {
  * - I controlli sono quelli del motore (`validateRecord`): fuori dai limiti c'è un messaggio e non si salva niente.
  * - Lo storico resta visibile e correggibile, anche per le voci già complete; a catena tutta completa non c'è il
  *   modulo, solo "Catena completata" e lo storico.
+ * - "Non condividere con gli amici" (ticket 39): il record non diventa una novità per chi segue l'utente. Compare solo
+ *   se la condivisione dei record è accesa in Account.
  */
 export function RecordSheet({
   chainId,
@@ -65,6 +67,8 @@ export function RecordSheet({
   const [bwErr, setBwErr] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [dateErr, setDateErr] = useState<string | null>(null);
+  const [noShare, setNoShare] = useState(false);
+  const sharing = useProfile().data?.shareRecords ?? false;
   const create = useCreateLevelRecord();
   const update = useUpdateLevelRecord();
   const del = useDeleteLevelRecord();
@@ -104,6 +108,7 @@ export function RecordSheet({
     setValue(numInput(r.value));
     setDate(r.date);
     if (r.bodyweightKg !== null) setBw(numInput(r.bodyweightKg));
+    setNoShare(!r.shared);
     clearErrors();
     // il modulo sta sopra lo storico: lo si riporta in vista
     requestAnimationFrame(() => title.current?.scrollIntoView({ block: 'start' }));
@@ -115,6 +120,7 @@ export function RecordSheet({
     setValue('');
     setDate(todayStr());
     setBw(bwText(records));
+    setNoShare(false);
     clearErrors();
   };
 
@@ -137,8 +143,8 @@ export function RecordSheet({
       onCelebrate(celebrations(summary, after));
       onClose();
     };
-    if (editing) update.mutate({ id: editing.id, patch: { stage: opt.entryId, value: rec.value, bodyweightKg, date } }, { onSuccess: done });
-    else create.mutate({ subId: chainId, stage: opt.entryId, value: rec.value, bodyweightKg, date, note: null }, { onSuccess: done });
+    if (editing) update.mutate({ id: editing.id, patch: { stage: opt.entryId, value: rec.value, bodyweightKg, date, shared: !noShare } }, { onSuccess: done });
+    else create.mutate({ subId: chainId, stage: opt.entryId, value: rec.value, bodyweightKg, date, note: null, shared: !noShare }, { onSuccess: done });
   };
 
   const levelText = chainLevelText(score);
@@ -215,6 +221,12 @@ export function RecordSheet({
                 setDateErr(null);
               }}
             />
+            {sharing && (
+              <label className="check-row">
+                <input type="checkbox" checked={noShare} onChange={(e) => setNoShare(e.target.checked)} />
+                Non condividere con gli amici
+              </label>
+            )}
             <div className="row">
               <button className="btn" disabled={busy} aria-busy={busy || undefined}>
                 {editing ? 'Salva modifica' : 'Salva record'}

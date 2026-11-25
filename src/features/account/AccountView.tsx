@@ -70,7 +70,7 @@ function ProfileCard() {
           maxLength={60}
           autoComplete="name"
           disabled={profile.isLoading}
-          hint="Quello che vedono il tuo trainer, i tuoi atleti e chi ti trova nelle classifiche."
+          hint="Quello che vedono il tuo trainer, i tuoi atleti, chi ti cerca per nome e chi ti trova nelle classifiche."
           onChange={(e) => setName(e.target.value)}
         />
         <div className="row">
@@ -86,11 +86,13 @@ function ProfileCard() {
 /**
  * Luogo e visibilità nelle classifiche (ticket 38). Il profilo nasce privato; si diventa pubblici solo da qui, con una
  * conferma che dice che cosa diventa visibile, e solo se c'è un nome e l'informativa sulla privacy è completa
- * (`publicProfilesEnabled`). Tornare privati è sempre possibile, senza conferma.
+ * (`publicProfilesEnabled`). Tornare privati è sempre possibile, senza conferma. Dal ticket 39 anche l'interruttore
+ * "Condividi i nuovi record con gli amici" (acceso di partenza: lo vedono solo le persone che seguono l'utente).
  */
 function RankingCard() {
   const profile = useProfile();
   const update = useUpdateProfile('Visibilità salvata');
+  const share = useUpdateProfile('Condivisione dei record salvata');
   const [confirm, setConfirm] = useState(false);
   const p = profile.data;
   const isPublic = p ? !p.isPrivate : false;
@@ -106,9 +108,9 @@ function RankingCard() {
   return (
     <section className="card">
       <div className="card-h">
-        <h2>Luogo e classifiche</h2>
-        <Link className="btn small ghost" to="/classifiche">
-          Classifiche
+        <h2>Luogo, classifiche e amici</h2>
+        <Link className="btn small ghost" to="/persone">
+          Persone
         </Link>
       </div>
       <p className="sub">Dove ti alleni decide in quali classifiche entri. Lo scegli da un elenco: l'app non usa la posizione del telefono.</p>
@@ -119,14 +121,14 @@ function RankingCard() {
       </label>
       <p className="hint mt-8">
         {isPublic
-          ? 'Chi usa l’app vede il tuo nome e i tuoi punti nelle classifiche. Record e peso corporeo restano solo tuoi.'
-          : 'Ora sei privato: nelle classifiche il tuo nome lo vede solo chi ti segue; per gli altri sei una posizione senza nome.'}
+          ? 'Chi usa l’app vede il tuo nome e i tuoi punti nelle classifiche, e può seguirti senza chiedere. Peso corporeo e record che non condividi restano solo tuoi.'
+          : 'Ora sei privato: nelle classifiche il tuo nome lo vede solo chi ti segue, e per seguirti serve una richiesta che accetti tu. Per gli altri sei una posizione senza nome.'}
       </p>
       {blocked && <p className="hint mt-8">{blocked}</p>}
       {confirm && (
         <div className="notice mt-12" role="alertdialog" aria-label="Conferma profilo pubblico">
           <p>
-            Rendendo pubblico il profilo, <b>{p?.displayName}</b> e i tuoi punti saranno visibili a chiunque usi l'app nelle classifiche del mondo e del tuo luogo. Puoi tornare privato quando vuoi.
+            Rendendo pubblico il profilo, <b>{p?.displayName}</b> e i tuoi punti saranno visibili a chiunque usi l'app nelle classifiche del mondo e del tuo luogo, chiunque potrà seguirti subito e le richieste in attesa saranno accettate. Puoi tornare privato quando vuoi: chi ti segue già resta.
           </p>
           <div className="row mt-10">
             <button
@@ -143,6 +145,15 @@ function RankingCard() {
           </div>
         </div>
       )}
+      <label className="check-row mt-16">
+        <input type="checkbox" checked={p?.shareRecords ?? true} disabled={!p || share.isPending} onChange={() => p && share.mutate({ shareRecords: !p.shareRecords })} />
+        Condividi i nuovi record con gli amici
+      </label>
+      <p className="hint mt-8">
+        {(p?.shareRecords ?? true)
+          ? 'Quando un record migliora il tuo punteggio, chi ti segue lo trova tra le novità: esercizio e valore, mai il tuo peso corporeo. Salvando un record puoi scegliere di non condividerlo.'
+          : 'I tuoi nuovi record non compaiono tra le novità di chi ti segue.'}
+      </p>
       <p className="hint mt-12">
         <Link to="/privacy">Informativa sulla privacy</Link>
       </p>
@@ -330,9 +341,12 @@ function ExportCard() {
     setBusy(true);
     let coaching: Record<string, unknown[]>;
     let levels: Record<string, unknown[]>;
+    let social: Record<string, unknown[]>;
     try {
-      const [c, levelRecords] = await Promise.all([repo.exportCoaching(), repo.listLevelRecords()]);
+      const [c, levelRecords, s] = await Promise.all([repo.exportCoaching(), repo.listLevelRecords(), repo.exportSocial()]);
       coaching = c;
+      // chi segui e chi ti segue, i blocchi, gli allenamenti che hai condiviso (ticket 39)
+      social = s;
       // record di livello, ognuno col suo peso corporeo dove serve (ticket 32); il livello si ricalcola dai record
       levels = { levelRecords };
     } catch {
@@ -351,6 +365,7 @@ function ExportCard() {
       // schede (come trainer), assegnazioni e collegamenti, anche quelli chiusi
       ...levels,
       ...coaching,
+      ...social,
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
@@ -365,7 +380,7 @@ function ExportCard() {
       <h2>I tuoi dati</h2>
       <p className="sub">
         Scarica tutto in un file JSON: {plural(exercises.length, 'esercizio', 'esercizi')}, {plural(entries.length, 'registrazione', 'registrazioni')},{' '}
-        {plural(plan.length, 'esercizio', 'esercizi')} in programma e record di livello, più schede e collegamenti con i trainer.
+        {plural(plan.length, 'esercizio', 'esercizi')} in programma e record di livello, più schede, collegamenti con i trainer, chi segui e gli allenamenti condivisi.
       </p>
       <div className="row mt-14">
         <button className="btn small ghost" disabled={busy} onClick={download}>
@@ -384,7 +399,7 @@ function DeleteCard() {
   return (
     <section className="card">
       <h2>Elimina account</h2>
-      <p className="sub">Cancella l'account con esercizi, registrazioni, programma e record. Non si può annullare: se vuoi tenere i dati, esportali prima.</p>
+      <p className="sub">Cancella l'account con esercizi, registrazioni, programma, record, chi segui e quello che hai condiviso. Non si può annullare: se vuoi tenere i dati, esportali prima.</p>
       {!open ? (
         <div className="row mt-14">
           <button className="btn small ghost" onClick={() => setOpen(true)}>

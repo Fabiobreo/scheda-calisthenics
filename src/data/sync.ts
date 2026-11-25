@@ -4,7 +4,7 @@ import { CACHE_KEY, dequeue, isStale, pendingFor, type QueueItem, type QueueOp }
 import type { Repo } from './repo';
 import { shortDate } from '../lib/dates';
 import { chainRule } from '../lib/levels';
-import type { Entry, EntryInput, Exercise, LevelRecordInput, LevelRecordRow, PlanItem } from './types';
+import type { Entry, EntryInput, Exercise, LevelRecordInput, LevelRecordRow, PlanItem, SharedWorkoutInput } from './types';
 
 /**
  * Offline (ticket 27), la parte che si scarica dopo il primo disegno: invio della coda, modifiche ottimistiche alla
@@ -19,6 +19,8 @@ export const OP_KEYS: Record<QueueOp, QueryKey> = {
   createLevelRecord: K.levelRecords,
   updateLevelRecord: K.levelRecords,
   deleteLevelRecord: K.levelRecords,
+  followUser: K.social,
+  shareWorkout: K.social,
 };
 
 /**
@@ -136,6 +138,10 @@ export function describe(qc: QueryClient, item: QueueItem): string {
       const sub = recordSub(args[0] as string);
       return sub ? `Record tolto · ${subName(sub)}` : 'Record eliminato';
     }
+    case 'followUser':
+      return 'Richiesta di seguire una persona';
+    case 'shareWorkout':
+      return `Allenamento condiviso · ${(args[0] as SharedWorkoutInput).name}`;
   }
 }
 
@@ -178,7 +184,7 @@ export function applyOptimistic(qc: QueryClient, item: QueueItem) {
     }
     case 'createLevelRecord': {
       const [input, id] = args as [LevelRecordInput, string];
-      const row: LevelRecordRow = { ...input, id, createdAt: now };
+      const row: LevelRecordRow = { ...input, shared: input.shared ?? true, id, createdAt: now };
       return patchList<LevelRecordRow>(qc, ['level-records', userId], (rows) => byDate([...rows.filter((r) => r.id !== id), row]));
     }
     case 'updateLevelRecord': {
@@ -189,6 +195,10 @@ export function applyOptimistic(qc: QueryClient, item: QueueItem) {
       const [id] = args as [string];
       return patchList<LevelRecordRow>(qc, ['level-records', userId], (rows) => rows.filter((r) => r.id !== id));
     }
+    // seguire e condividere non cambiano i dati propri che si vedono offline: restano "in attesa" nella pastiglia
+    case 'followUser':
+    case 'shareWorkout':
+      return;
   }
 }
 

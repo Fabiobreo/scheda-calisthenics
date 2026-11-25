@@ -8,10 +8,14 @@ import type {
   EntryInput,
   Exercise,
   ExerciseInput,
+  Feed,
+  FollowState,
   LevelRecordInput,
   LevelRecordRow,
   PlanItem,
   PlanItemInput,
+  People,
+  PersonCard,
   Profile,
   ProfilePatch,
   Ranking,
@@ -21,6 +25,8 @@ import type {
   ProgramItem,
   ProgramItemInput,
   Scheme,
+  SharedItem,
+  SharedWorkout,
   WorkSet,
 } from './types';
 
@@ -259,10 +265,11 @@ interface LevelRow {
   bodyweight_kg: number | string | null;
   date: string;
   note: string | null;
+  shared: boolean;
   created_at: string;
 }
 
-const LEVEL_COLS = 'id, sub_id, stage, value, bodyweight_kg, date, note, created_at';
+const LEVEL_COLS = 'id, sub_id, stage, value, bodyweight_kg, date, note, shared, created_at';
 
 const toLevelRecord = (r: LevelRow): LevelRecordRow => ({
   id: r.id,
@@ -272,6 +279,7 @@ const toLevelRecord = (r: LevelRow): LevelRecordRow => ({
   bodyweightKg: r.bodyweight_kg === null ? null : Number(r.bodyweight_kg),
   date: r.date,
   note: r.note,
+  shared: r.shared,
   createdAt: r.created_at,
 });
 
@@ -283,7 +291,40 @@ function levelPatch(p: Partial<LevelRecordInput>) {
   if (p.bodyweightKg !== undefined) row.bodyweight_kg = p.bodyweightKg;
   if (p.date !== undefined) row.date = p.date;
   if (p.note !== undefined) row.note = p.note;
+  if (p.shared !== undefined) row.shared = p.shared;
   return row;
+}
+
+/**
+ * Esercizi di un allenamento condiviso: il database controlla solo che sia un elenco, quindi qui si legge con
+ * prudenza (sono dati scritti da un altro utente) e quello che non ha un nome e almeno una serie si scarta.
+ */
+export function toSharedItems(raw: unknown): SharedItem[] {
+  if (!Array.isArray(raw)) return [];
+  const num = (v: unknown, max: number) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.min(n, max) : 0;
+  };
+  return raw.flatMap((x): SharedItem[] => {
+    const o = (x ?? {}) as Record<string, unknown>;
+    const name = typeof o.name === 'string' ? o.name.trim().slice(0, 80) : '';
+    const sets = (Array.isArray(o.sets) ? o.sets : []).slice(0, 30).map((s) => {
+      const r = (s ?? {}) as Record<string, unknown>;
+      const seconds = Math.round(num(r.seconds, 3600));
+      return { weight: num(r.weight, 1000), reps: seconds ? 0 : Math.round(num(r.reps, 1000)), seconds };
+    });
+    if (!name || !sets.length) return [];
+    return [
+      {
+        name,
+        catalogId: typeof o.catalogId === 'string' ? o.catalogId : null,
+        measure: o.measure === 'time' ? 'time' : 'reps',
+        type: o.type === 'volume' || o.type === 'tecnico' ? o.type : 'forza',
+        rest: Math.round(num(o.rest, 3600)),
+        sets,
+      },
+    ];
+  });
 }
 
 /**
@@ -297,7 +338,7 @@ function must(res: { data: unknown; error: { message: string; code?: string } | 
 
 type Table = 'exercises' | 'entries' | 'plan_items' | 'level_records';
 
-const PROFILE_COLS = 'display_name, is_trainer, country, province, region, is_private';
+const PROFILE_COLS = 'display_name, is_trainer, country, province, region, is_private, share_records';
 
 interface ProfileRow {
   display_name: string | null;
@@ -306,6 +347,7 @@ interface ProfileRow {
   province: string | null;
   region: string | null;
   is_private: boolean;
+  share_records: boolean;
 }
 
 interface ScoreRow {
@@ -338,6 +380,7 @@ export function createSupabaseRepo(sb: Db, userId: string): Repo {
         province: row.province,
         region: row.region,
         isPrivate: row.is_private,
+        shareRecords: row.share_records,
       } satisfies Profile;
     },
     async updateProfile(patch: ProfilePatch) {
@@ -348,6 +391,7 @@ export function createSupabaseRepo(sb: Db, userId: string): Repo {
       // fuori dall'Italia la provincia non esiste (la svuota comunque il database)
       if (patch.province !== undefined) row.province = patch.province;
       if (patch.isPrivate !== undefined) row.is_private = patch.isPrivate;
+      if (patch.shareRecords !== undefined) row.share_records = patch.shareRecords;
       must(await sb.from('profiles').update(row).eq('id', userId));
     },
 
@@ -395,6 +439,89 @@ export function createSupabaseRepo(sb: Db, userId: string): Repo {
     },
     async deleteLevelRecord(id) {
       must(await remove('level_records').eq('id', id));
+    },
+
+    async searchPeople(query) {
+      return must(await sb.rpc('search_people', { p_query: query })) as PersonCard[];
+    },
+    async myPeople() {
+      return must(await sb.rpc('my_people')) as People;
+    },
+    async followUser(id) {
+      return must(await sb.rpc('follow_user', { p_user: id })) as FollowState;
+    },
+    async unfollowUser(id) {
+      must(await sb.rpc('unfollow_user', { p_user: id }));
+    },
+    async acceptFollow(id) {
+      must(await sb.rpc('accept_follow', { p_follower: id }));
+    },
+    async rejectFollow(id) {
+      must(await sb.rpc('reject_follow', { p_follower: id }));
+    },
+    async removeFollower(id) {
+      must(await sb.rpc('remove_follower', { p_follower: id }));
+    },
+    async blockUser(id) {
+      must(await sb.rpc('block_user', { p_user: id }));
+    },
+    async unblockUser(id) {
+      must(await sb.rpc('unblock_user', { p_user: id }));
+    },
+    async reportUser(id, reason) {
+      must(await sb.rpc('report_user', { p_user: id, p_reason: reason }));
+    },
+    async getFollowCode() {
+      const rows = must(await sb.from('follow_invites').select('code').eq('user_id', userId)) as { code: string }[];
+      return rows[0]?.code ?? null;
+    },
+    async rotateFollowCode() {
+      return must(await sb.rpc('rotate_follow_code')) as string;
+    },
+    async previewFollowInvite(code) {
+      return (must(await sb.rpc('preview_follow_invite', { invite_code: code })) as PersonCard | null) ?? null;
+    },
+    async feed(limit) {
+      return must(await sb.rpc('feed', { p_limit: limit })) as Feed;
+    },
+    async markFeedRead() {
+      must(await sb.rpc('feed_mark_read'));
+    },
+    async shareWorkout(input, id) {
+      must(await sb.from('shared_workouts').insert({ ...(id && { id }), user_id: userId, name: input.name, date: input.date, items: input.items }));
+    },
+    async getSharedWorkout(id) {
+      const rows = must(await sb.from('shared_workouts').select('id, user_id, name, date, items, created_at').eq('id', id)) as {
+        id: string;
+        user_id: string;
+        name: string;
+        date: string;
+        items: unknown;
+        created_at: string;
+      }[];
+      const r = rows[0];
+      return r ? ({ id: r.id, userId: r.user_id, name: r.name, date: r.date, items: toSharedItems(r.items), createdAt: r.created_at } satisfies SharedWorkout) : null;
+    },
+    async listMySharedWorkouts() {
+      const rows = must(await sb.from('shared_workouts').select('id, name, date, created_at').eq('user_id', userId).order('created_at', { ascending: false })) as {
+        id: string;
+        name: string;
+        date: string;
+        created_at: string;
+      }[];
+      return rows.map((r) => ({ id: r.id, name: r.name, date: r.date, createdAt: r.created_at }));
+    },
+    async deleteSharedWorkout(id) {
+      must(await sb.from('shared_workouts').delete().eq('user_id', userId).eq('id', id));
+    },
+    async exportSocial() {
+      // solo le righe dell'utente: chi segue e chi lo segue, i suoi blocchi, i suoi allenamenti condivisi
+      const [follows, blocks, workouts] = await Promise.all([
+        sb.from('follows').select('*').order('created_at'),
+        sb.from('blocks').select('*').order('created_at'),
+        sb.from('shared_workouts').select('*').eq('user_id', userId).order('created_at'),
+      ]);
+      return { follows: must(follows) as unknown[], blocks: must(blocks) as unknown[], sharedWorkouts: must(workouts) as unknown[] };
     },
 
     async listLinks() {
