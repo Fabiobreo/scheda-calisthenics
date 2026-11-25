@@ -8,8 +8,6 @@ import { useData, useLevel, useLinks, useProfile, type LevelRow } from '../../da
 import { shortDate, todayStr } from '../../lib/dates';
 import { whenIdle } from '../../lib/idle';
 import type { CategoryId, CategoryScore, ChainId, ChainScore } from '../../lib/levels';
-import { current, position, totalItems } from '../../lib/workout';
-import { useWorkout } from '../logger/Logger';
 import { dismissKey, firstSteps } from './firstSteps';
 import { FirstSteps } from './FirstStepsCard';
 import { CARDS, categoryName, chainLevelText, chainName, chainPercent, missingBodyweight, pentagonScale, recordText } from './levelView';
@@ -95,8 +93,6 @@ export function LivelloView() {
           <Pentagon scale={pentagonScale(summary)} />
         </section>
 
-        {!readOnly && <StartWorkout />}
-
         <section className="lv-cats" aria-label="Categorie" onKeyDown={onKeys}>
           {cats.map((c) => (
             <Category key={c.categoryId} cat={c} open={open === c.categoryId} onToggle={() => toggle(c.categoryId)} onPick={setSheet} records={records} readOnly={readOnly} />
@@ -167,40 +163,6 @@ function useGuide(level: { records: unknown[] } | null, readOnly: boolean, userI
       }
     },
   };
-}
-
-/**
- * "Inizia allenamento" (modalità sessione, ticket 25). Stava nella scheda "Oggi", che da questa pagina è stata tolta:
- * il suo posto sarà la Scheda (ticket 37). Finché il 37 non c'è resta qui, in una riga sola e soltanto quando oggi c'è
- * qualcosa da fare, perché altrimenti la sessione non si potrebbe più avviare da nessuna parte.
- */
-function StartWorkout() {
-  const { exercises, entries, plan } = useData();
-  const workout = useWorkout();
-  const today = todayStr();
-  const known = new Set(exercises.map((e) => e.id));
-  const items = plan.filter((p) => p.date === today && known.has(p.exerciseId));
-  const left = items.filter((p) => !entries.some((e) => e.exerciseId === p.exerciseId && e.kind === 'training' && e.date === today)).length;
-  const live = workout.session && !workout.session.ended && current(workout.session) ? workout.session : null;
-  if (!live && left === 0) return null;
-  return (
-    <div className="lv-go">
-      {live ? (
-        <>
-          <button type="button" className="btn small" onClick={workout.resume}>
-            Continua allenamento {position(live)}/{totalItems(live)}
-          </button>
-          <button type="button" className="btn small ghost" onClick={workout.end}>
-            Termina
-          </button>
-        </>
-      ) : (
-        <button type="button" className="btn small ghost" onClick={workout.start}>
-          <span aria-hidden="true">▶&nbsp;</span>Inizia allenamento
-        </button>
-      )}
-    </div>
-  );
 }
 
 /** Scheda di una categoria: nome, livello, % dentro il livello, barra dorata con la stessa %. Si apre sulle catene. */

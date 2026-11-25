@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Entry, PlanItem } from '../data/types';
-import { adherence, adherenceText, athleteAlerts, lastTrainingDate, summarizeStatuses, weekStatuses, weekStreak, dayMarks } from './adherence';
+import { adherence, adherenceText, athleteAlerts, lastTrainingDate, summarizeStatuses, weekStatuses, weekStreak, dayMarks, daySign } from './adherence';
 
 // lunedì 2 novembre 2026 … domenica 8; oggi = giovedì 5
 const MON = '2026-11-02';
@@ -171,5 +171,14 @@ describe('dayMarks', () => {
     expect(dayMarks(plan, es, st, MON).map((m) => m.state)).toEqual(['done', 'missed', 'done']);
     expect(dayMarks(plan, es, st, '2026-11-03')).toEqual([{ type: 'forza', state: 'done' }]);
     expect(dayMarks(plan, es, st, '2026-11-06')).toEqual([]);
+  });
+});
+
+describe('daySign', () => {
+  it('pieno solo se tutto è fatto, vuoto se resta qualcosa, niente nei giorni senza esercizi', () => {
+    expect(daySign([])).toBeNull();
+    expect(daySign([{ state: 'done' }, { state: 'done' }])).toBe('done');
+    expect(daySign([{ state: 'done' }, { state: 'pending' }])).toBe('todo');
+    expect(daySign([{ state: 'missed' }])).toBe('todo');
   });
 });

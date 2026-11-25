@@ -187,14 +187,6 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .form { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
 
-/* record */
-.rlist { margin-top: 14px; }
-.rrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 13px 0; border-top: 1px solid var(--line); align-items: baseline; }
-.rname { font-family: var(--f-display); font-weight: 700; font-size: 19px; letter-spacing: -.015em; }
-.rval { font-family: var(--f-display); font-weight: 700; font-size: 26px; letter-spacing: -.02em; line-height: 1; text-align: right; font-variant-numeric: tabular-nums; color: var(--gold); }
-.rval small { font-size: 16px; font-weight: 600; color: var(--muted); }
-.rval.none { color: var(--muted); }
-.rmeta { grid-column: 1 / -1; color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 /* record: oro chiaro */
 .pr { color: var(--gold-hi); font-weight: 600; }
 
@@ -237,6 +229,30 @@ input[type='checkbox'] { width: 22px; height: 22px; min-height: 0; accent-color:
 .pact.col { flex-direction: column; align-items: stretch; }
 .x { background: transparent; border: 1px solid var(--line); border-radius: 10px; width: 44px; height: 44px; color: var(--muted); font-size: 20px; line-height: 1; flex: none; }
 .addrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 12px; }
+/* Pagina Scheda dell'atleta (ticket 37): solo programma e giorno, senza i colori del tipo. Sotto ogni giorno un solo
+   segno dorato (pieno = fatto, vuoto = da fare); oggi si riconosce dal nome del giorno in oro. */
+.day > .sign { display: block; width: 8px; height: 8px; margin: 5px auto 1px; border-radius: 50%; border: 1.5px solid var(--gold); }
+.day > .sign.done { background: var(--gold); box-shadow: 0 0 6px var(--halo); }
+.day > .sign.none { visibility: hidden; }
+.sch .day.today > span:first-child { color: var(--gold); }
+.sch .day.today > span:first-child::after { content: none; }
+/* "Inizia allenamento" (ticket 25): in cima al giorno di oggi, la prossima azione */
+.sch-go { display: flex; gap: 8px; margin-top: 12px; }
+.sch-go .btn { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; }
+.sch-go .btn + .btn { flex: none; }
+/* ogni esercizio del giorno è una scheda; i blocchetti delle serie in oro */
+.sch .plan { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.sch .pitem { display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-tile); background: var(--surface2); }
+.phead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.phead .pname { min-width: 0; padding-top: 9px; overflow-wrap: anywhere; }
+.sch .pitem .blocks { margin-top: 0; }
+.sch .pitem .form { margin-top: 8px; }
+.sch .pitem .blocks { --c: var(--gold); }
+.sch .pitem .x { background: var(--surface); }
+.sch .plan .empty-state { padding-top: 10px; }
+/* registrazioni fuori programma già salvate: il tipo resta scritto, senza il quadratino colorato */
+.sch .chip .dot { display: none; }
+@media (min-width: 1024px) { .sch { width: 100%; max-width: 760px; align-self: center; } }
 
 /* grafici */
 /* il grafico riempie il suo contenitore (charts.tsx lo disegna in px veri): l'altezza la decide la pagina.
@@ -482,16 +498,14 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
    che resta: 192 px = spazio sopra (18) + testata (82) + stacco (6) + barra in basso (84) + 2 di margine. Sotto i
    640 px di altezza il blocco in alto si ferma a 150 px e la pagina scorre invece di tagliare. */
 .lv {
-  --lv-card: clamp(50px, 7.8dvh, 72px); --lv-gap: clamp(6px, 1dvh, 10px); --lv-extra: 0px;
+  --lv-card: clamp(50px, 7.8dvh, 72px); --lv-gap: clamp(6px, 1dvh, 10px);
   display: flex; flex-direction: column; gap: var(--lv-gap); min-width: 0;
 }
-/* la riga "Inizia allenamento", quando c'è, toglie spazio al blocco in alto e non alle schede */
-.lv:has(.lv-go) { --lv-extra: calc(44px + var(--lv-gap)); }
 /* in questa pagina niente spazio in fondo per il timer di recupero: farebbe scorrere la schermata fissa. Torna se il timer c'è. */
 body:has(.lv:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px)); }
 .lv-hero {
   display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); grid-template-rows: minmax(0, 1fr); align-items: stretch; gap: 4px; min-height: 0;
-  height: max(150px, calc(100dvh - 192px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 5 * var(--lv-card) - 5 * var(--lv-gap) - var(--lv-extra)));
+  height: max(150px, calc(100dvh - 192px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 5 * var(--lv-card) - 5 * var(--lv-gap)));
 }
 /* nella vista del trainer la pagina sta dentro un'altra: altezze fisse */
 .lv.nested { --lv-card: 60px; --lv-gap: 10px; }
@@ -534,11 +548,6 @@ body:has(.lv:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
 .penta-dot { fill: var(--gold-hi); stroke: var(--bg); stroke-width: 1.2; }
 .penta-label { fill: var(--fg); font-family: var(--f-body); font-size: 12.5px; font-weight: 700; letter-spacing: .03em; }
 .penta-val { fill: var(--gold); font-variant-numeric: tabular-nums; letter-spacing: 0; }
-
-/* "Inizia allenamento": una riga discreta, finché non passa in Scheda (ticket 37) */
-.lv-go { display: flex; gap: 8px; height: 44px; }
-.lv-go .btn { flex: 1 1 auto; min-height: 44px; padding-block: 0; font-variant-numeric: tabular-nums; }
-.lv-go .btn + .btn { flex: none; }
 
 /* schede categoria: nome, livello, % in oro, freccia, barra dorata; l'intestazione è il pulsante della tendina.
    --lv-card è l'altezza della scheda chiusa, bordo compreso: il pulsante è 2 px più basso. */
@@ -773,11 +782,6 @@ body:has(.timer) .cat-list { padding-bottom: calc(var(--tabbar) + 110px + env(sa
 .dots-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .dots-legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
 
-/* record con il progresso; quello di questa settimana in ambra */
-.rgain { display: block; margin-top: 3px; font-family: var(--f-body); font-size: 13px; font-weight: 700; color: var(--ok); text-align: right; }
-.rrow.new .rval { color: var(--gold-hi); text-shadow: 0 0 12px var(--halo-elite); }
-.rrow.new .rgain { color: var(--gold-hi); }
-
 /* stati vuoti */
 .empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 20px 8px 8px; }
 .empty-state h3 { font-size: 22px; }
@@ -796,7 +800,6 @@ body:has(.timer) .cat-list { padding-bottom: calc(var(--tabbar) + 110px + env(sa
 .exi { display: inline-block; flex: none; width: 24px; height: 24px; margin-right: 8px; vertical-align: -5px; fill: none; stroke: var(--gold); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .exi circle { fill: var(--gold); stroke: none; }
 .exi-custom { stroke-width: 1.5; stroke: var(--muted); }
-.rname .exi { width: 26px; height: 26px; vertical-align: -4px; }
 .empty-icons { display: flex; gap: 14px; justify-content: center; padding: 6px 0 4px; }
 .empty-icons .exi { width: 40px; height: 40px; margin: 0; stroke-width: 1.4; opacity: .85; }
 .empty-icons .exi:nth-child(odd) { stroke: var(--muted); }
@@ -804,7 +807,6 @@ body:has(.timer) .cat-list { padding-bottom: calc(var(--tabbar) + 110px + env(sa
 .empty-state.sm { padding: 14px 4px 6px; gap: 6px; }
 .empty-state.sm h3 { font-size: 19px; }
 .empty-state.sm .empty-icons .exi { width: 30px; height: 30px; }
-.empty-ico { font-size: 34px; line-height: 1; color: var(--gold-hi); text-shadow: 0 0 14px var(--halo-elite); }
 
 /* ingresso delle pagine: il contenuto sale e compare, a cascata */
 main > :not(.sheet-back):not(.cols), .cols > :not(.col), .cols > .col > * { animation: page-in .38s cubic-bezier(.2, .8, .2, 1) both; }
@@ -839,10 +841,7 @@ main > :nth-child(n + 5), .cols > .col > :nth-child(n + 5) { animation-delay: .2
 @keyframes ring-beat { 0% { transform: none; } 50% { transform: scale(1.12); } 100% { transform: none; } }
 
 
-/* record di questa settimana: lampeggia in ambra, tre volte */
-.rrow.new .rval { animation: rec-flash 1.1s ease-in-out 3; }
-@keyframes rec-flash { 0%, 100% { text-shadow: 0 0 12px var(--halo-elite); } 50% { text-shadow: 0 0 26px var(--gold-hi), 0 0 6px var(--gold-hi); transform: scale(1.04); } }
-.rrow.new .rval { transform-origin: right center; }
+/* record nuovo: la pastiglia pulsa due volte */
 .chip.pr { animation: rec-chip 1.1s ease-in-out 2; }
 @keyframes rec-chip { 50% { box-shadow: inset 0 0 0 1px var(--gold-hi), 0 0 14px var(--halo-elite); } }
 
