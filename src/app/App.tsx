@@ -3,7 +3,7 @@ import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, usePa
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { TopBar } from '../components/TopBar';
 import { IconAtleti, IconEsercizi, IconGrafici, IconLivello, IconScheda } from '../components/icons';
-import { useData, useProfile } from '../data/hooks';
+import { useData, useProfile, useScoreSync } from '../data/hooks';
 import { Skeleton } from '../components/ui';
 import { LivelloView } from '../features/livello/LivelloView';
 import { LoggerProvider } from '../features/logger/Logger';
@@ -27,6 +27,9 @@ const EserciziView = lazy(() => import('../features/esercizi/EserciziView').then
 const OfflinePill = lazy(() => import('./offline').then((m) => ({ default: m.OfflinePill })));
 const SyncAgent = lazy(() => import('./offline').then((m) => ({ default: m.SyncAgent })));
 const GraficiView = lazy(() => import('../features/grafici/GraficiView').then((m) => ({ default: m.GraficiView })));
+// classifiche e informativa (ticket 38): si aprono da Account, non dalla barra
+const ClassificheView = lazy(() => import('../features/classifiche/ClassificheView').then((m) => ({ default: m.ClassificheView })));
+const PrivacyView = lazy(() => import('../features/privacy/PrivacyView').then((m) => ({ default: m.PrivacyView })));
 
 const TABS: { to: string; label: string; icon: ReactNode }[] = [
   { to: '/livello', label: 'Livello', icon: <IconLivello /> },
@@ -78,9 +81,8 @@ export function App() {
     return (
       <div className="wrap">
         <UpdateBanner />
-        <Suspense fallback={null}>
-          <AuthScreen invite={invite?.toUpperCase()} />
-        </Suspense>
+        {/* l'informativa si legge anche prima di registrarsi */}
+        <Suspense fallback={null}>{location.pathname === '/privacy' ? <PrivacyView signedIn={false} /> : <AuthScreen invite={invite?.toUpperCase()} />}</Suspense>
       </div>
     );
 
@@ -107,6 +109,7 @@ export function App() {
         ) : (
           <LoggerProvider>
             <Offline userId={session.userId} part="agent" />
+            <ScoreSync />
             <Main />
           </LoggerProvider>
         ))}
@@ -167,6 +170,8 @@ function Main() {
               <Route path="/registro" element={<Navigate to="/scheda" replace />} />
               <Route path="/esercizi" element={<EserciziView />} />
               <Route path="/account" element={<AccountView />} />
+              <Route path="/classifiche" element={<ClassificheView />} />
+              <Route path="/privacy" element={<PrivacyView signedIn />} />
               <Route path="/invito/:code" element={<InviteRoute />} />
               <Route path="/atleti" element={<AtletiView />} />
               <Route path="/atleti/:athleteId" element={<AtletaPage />} />
@@ -178,6 +183,12 @@ function Main() {
       </main>
     </>
   );
+}
+
+/** Punti sul server per le classifiche (ticket 38): seguono i record dell'utente. Non disegna niente. */
+function ScoreSync() {
+  useScoreSync();
+  return null;
 }
 
 /**

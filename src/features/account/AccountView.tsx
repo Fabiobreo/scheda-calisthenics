@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useRepo, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
+import { PlaceForm } from '../../components/PlaceFields';
 import { Field, PageTitle, PasswordField } from '../../components/ui';
 import { useData, useDeleteAccount, useProfile, useUpdateProfile } from '../../data/hooks';
 import { todayStr } from '../../lib/dates';
+import { publicProfilesEnabled } from '../../lib/privacy';
 import { supabase } from '../../lib/supabase';
 import { plural } from '../../lib/format';
 import { authMessage } from '../auth/errors';
@@ -21,6 +24,7 @@ export function AccountView({ inviteCode }: { inviteCode?: string }) {
       {/* su schermo largo le schede vanno su due colonne (audit A06) */}
       <div className="masonry">
         <ProfileCard />
+        <RankingCard />
         {!inviteCode && <MyTrainerCard />}
         <TrainerModeCard />
         <SecurityCard />
@@ -45,6 +49,8 @@ function ProfileCard() {
   const save = () => {
     const displayName = value.trim();
     if (displayName.length > 60) return toast('Nome troppo lungo');
+    // un profilo pubblico compare col nome nelle classifiche: non può restare senza (ticket 38)
+    if (!displayName && profile.data && !profile.data.isPrivate) return toast('Un profilo pubblico ha bisogno del nome: prima torna privato');
     update.mutate({ displayName: displayName || null }, { onSuccess: () => setName(null) });
   };
 
@@ -64,7 +70,7 @@ function ProfileCard() {
           maxLength={60}
           autoComplete="name"
           disabled={profile.isLoading}
-          hint="Quello che vedrà il tuo trainer, o i tuoi atleti."
+          hint="Quello che vedono il tuo trainer, i tuoi atleti e chi ti trova nelle classifiche."
           onChange={(e) => setName(e.target.value)}
         />
         <div className="row">
@@ -73,6 +79,73 @@ function ProfileCard() {
           </button>
         </div>
       </div>
+    </section>
+  );
+}
+
+/**
+ * Luogo e visibilità nelle classifiche (ticket 38). Il profilo nasce privato; si diventa pubblici solo da qui, con una
+ * conferma che dice che cosa diventa visibile, e solo se c'è un nome e l'informativa sulla privacy è completa
+ * (`publicProfilesEnabled`). Tornare privati è sempre possibile, senza conferma.
+ */
+function RankingCard() {
+  const profile = useProfile();
+  const update = useUpdateProfile('Visibilità salvata');
+  const [confirm, setConfirm] = useState(false);
+  const p = profile.data;
+  const isPublic = p ? !p.isPrivate : false;
+  const enabled = publicProfilesEnabled();
+  const blocked = !p ? null : isPublic ? null : !enabled ? 'I profili pubblici si potranno attivare quando l’informativa sulla privacy sarà completa.' : !p.displayName ? 'Per diventare pubblico scegli prima il tuo nome, qui sopra.' : null;
+
+  const toggle = () => {
+    if (!p) return;
+    if (isPublic) update.mutate({ isPrivate: true });
+    else setConfirm(true);
+  };
+
+  return (
+    <section className="card">
+      <div className="card-h">
+        <h2>Luogo e classifiche</h2>
+        <Link className="btn small ghost" to="/classifiche">
+          Classifiche
+        </Link>
+      </div>
+      <p className="sub">Dove ti alleni decide in quali classifiche entri. Lo scegli da un elenco: l'app non usa la posizione del telefono.</p>
+      <PlaceForm />
+      <label className="check-row mt-16">
+        <input type="checkbox" checked={isPublic} disabled={!p || update.isPending || (!isPublic && blocked !== null)} onChange={toggle} />
+        Profilo pubblico
+      </label>
+      <p className="hint mt-8">
+        {isPublic
+          ? 'Chi usa l’app vede il tuo nome e i tuoi punti nelle classifiche. Record e peso corporeo restano solo tuoi.'
+          : 'Ora sei privato: nelle classifiche il tuo nome lo vede solo chi ti segue; per gli altri sei una posizione senza nome.'}
+      </p>
+      {blocked && <p className="hint mt-8">{blocked}</p>}
+      {confirm && (
+        <div className="notice mt-12" role="alertdialog" aria-label="Conferma profilo pubblico">
+          <p>
+            Rendendo pubblico il profilo, <b>{p?.displayName}</b> e i tuoi punti saranno visibili a chiunque usi l'app nelle classifiche del mondo e del tuo luogo. Puoi tornare privato quando vuoi.
+          </p>
+          <div className="row mt-10">
+            <button
+              type="button"
+              className="btn small"
+              disabled={update.isPending}
+              onClick={() => update.mutate({ isPrivate: false }, { onSettled: () => setConfirm(false) })}
+            >
+              Rendi pubblico
+            </button>
+            <button type="button" className="btn small ghost" onClick={() => setConfirm(false)}>
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
+      <p className="hint mt-12">
+        <Link to="/privacy">Informativa sulla privacy</Link>
+      </p>
     </section>
   );
 }
@@ -233,6 +306,9 @@ function AboutCard() {
       <p className="sub">
         Scheda Calisthenics · versione {__APP_VERSION__}
         {__APP_COMMIT__ && ` (${__APP_COMMIT__})`}
+      </p>
+      <p className="sub">
+        <Link to="/privacy">Informativa sulla privacy</Link>
       </p>
       {support && (
         <p className="sub">

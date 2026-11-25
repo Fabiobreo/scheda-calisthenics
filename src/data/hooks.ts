@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { useRepo, useScope } from '../app/session';
 import { useToast } from '../app/toast';
 import type { Repo } from './repo';
-import { enqueue, netDown, newId, pendingFor, QUEUE_FORMAT, type QueueOp } from './offline';
+import { enqueue, netDown, newId, pendingFor, queue, QUEUE_FORMAT, type QueueOp } from './offline';
+import { scoreToSave } from './scoreSync';
 import { todayStr } from '../lib/dates';
-import { levelSummary, type LevelRecord } from '../lib/levels';
+import { levelScores, levelSummary, type LevelRecord } from '../lib/levels';
 import type {
   CatalogExercise,
   EntryInput,
@@ -15,8 +16,10 @@ import type {
   LevelRecordInput,
   LevelRecordRow,
   PlanChanges,
-  Profile,
+  ProfilePatch,
   PlanItem,
+  RankingMetric,
+  RankingScope,
   ProgramItemInput,
   Scheme,
 } from './types';
@@ -33,6 +36,8 @@ export const K = {
   programs: ['programs'] as QueryKey,
   programItems: ['program-items'] as QueryKey,
   levelRecords: ['level-records'] as QueryKey,
+  levelScore: ['level-score'] as QueryKey,
+  ranking: ['ranking'] as QueryKey,
 };
 
 /** Chiave di una query sui dati di un utente: quelli propri e quelli di un atleta non si mescolano in cache. */
@@ -141,8 +146,9 @@ function useQueuedMutation<A>(op: QueueOp, toArgs: (a: A) => unknown[], keys: Qu
   });
 }
 
+// luogo e visibilità cambiano le classifiche: si rileggono insieme al profilo
 export const useUpdateProfile = (okMsg = 'Profilo salvato') =>
-  useRepoMutation((r, a: Partial<Profile>) => r.updateProfile(a), [K.profile], okMsg);
+  useRepoMutation((r, a: ProfilePatch) => r.updateProfile(a), [K.profile, K.ranking], okMsg);
 
 export function useLinks() {
   const repo = useRepo();
@@ -327,10 +333,74 @@ export type LevelRow = LevelRecordRow & LevelRecord;
 export function useLevel() {
   const lr = useLevelRecords();
   const computed = useMemo(() => {
-    const records: LevelRow[] = (lr.data ?? []).map((r) => ({ ...r, chainId: r.subId, entry: r.stage }));
+    const records = toLevelRecords(lr.data ?? []);
     return { summary: levelSummary(records), records };
   }, [lr.data]);
   return { ...computed, isLoading: lr.isLoading, error: lr.data ? null : lr.error };
+}
+
+const toLevelRecords = (rows: LevelRecordRow[]): LevelRow[] => rows.map((r) => ({ ...r, chainId: r.subId, entry: r.stage }));
+
+/**
+ * Tiene allineati i punti sul server (`level_scores`, ticket 38) al livello calcolato dai record: dopo un record
+ * nuovo, corretto o eliminato, dopo l'invio dei salvataggi fatti offline, e all'avvio se i punti salvati sono di
+ * regole più vecchie. Scrive solo quando record e punti salvati sono appena stati letti dal server, c'è rete e non c'è
+ * niente in coda: i punti non devono mai arrivare prima dei record da cui nascono. Da montare una volta sola, sui dati
+ * dell'utente (non su quelli di un atleta visto dal trainer).
+ */
+export function useScoreSync() {
+  const { repo, userId, readOnly } = useScope();
+  const qc = useQueryClient();
+  const records = useLevelRecords();
+  const saved = useQuery({ queryKey: useKey(K.levelScore), queryFn: () => repo.getLevelScore(), enabled: !readOnly });
+  const down = useSyncExternalStore(netDown.subscribe, netDown.get);
+  const pending = pendingFor(userId, useSyncExternalStore(queue.subscribe, queue.get)).length > 0;
+  /** ultimi punti che si è provato a scrivere: se il server li rifiuta non si riprova a ogni disegno */
+  const tried = useRef<string | null>(null);
+  const fresh = (q: { status: string; fetchStatus: string }) => q.status === 'success' && q.fetchStatus === 'idle';
+  const ready = !readOnly && !down && !pending && fresh(records) && fresh(saved);
+  // tornata la rete si può riprovare
+  useEffect(() => {
+    if (down) tried.current = null;
+  }, [down]);
+  useEffect(() => {
+    if (!ready) return;
+    const next = scoreToSave(levelScores(levelSummary(toLevelRecords(records.data ?? []))), saved.data ?? null);
+    if (!next) return;
+    const sig = `${userId}:${JSON.stringify(next)}`;
+    if (tried.current === sig) return;
+    tried.current = sig;
+    repo.saveLevelScore(next).then(
+      () => {
+        qc.setQueryData([...K.levelScore, userId], next);
+        void qc.invalidateQueries({ queryKey: K.ranking });
+      },
+      () => {
+        /* senza rete o rifiutato: si riprova al prossimo cambiamento dei record o al ritorno della rete */
+      },
+    );
+  }, [ready, records.data, saved.data, repo, userId, qc]);
+}
+
+// Classifiche (ticket 38): cambiano quando qualcun altro migliora, quindi si rileggono spesso ma non a ogni tocco.
+
+const RANKING_STALE = 60_000;
+
+/** I 5 riquadri (Amici, Provincia, Regione, Nazione, Mondo) di una metrica: posizione e partecipanti. */
+export function useRankingOverview(metric: RankingMetric) {
+  const repo = useRepo();
+  return useQuery({ queryKey: [...useKey(K.ranking), 'overview', metric], queryFn: () => repo.rankingOverview(metric), staleTime: RANKING_STALE });
+}
+
+/** Una classifica con le righe (prime 3 e vicini). `scope` null = nessuna aperta. */
+export function useRanking(scope: RankingScope | null, metric: RankingMetric) {
+  const repo = useRepo();
+  return useQuery({
+    queryKey: [...useKey(K.ranking), scope, metric],
+    queryFn: () => repo.ranking(scope!, metric),
+    enabled: scope !== null,
+    staleTime: RANKING_STALE,
+  });
 }
 
 export const useCreateLevelRecord = (okMsg = 'Record salvato') =>

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { useToast } from '../../app/toast';
+import { PlaceFields, type PlaceValue } from '../../components/PlaceFields';
 import { Field, PageTitle, PasswordField, Seg, usePageTitle } from '../../components/ui';
+import { ITALY, placeError, placeOf } from '../../lib/places';
 import { recovery, supabase } from '../../lib/supabase';
 import { authMessage } from './errors';
 
@@ -58,7 +61,9 @@ export function AuthScreen({ invite }: { invite?: string }) {
   usePageTitle(mode === 'signup' ? 'Registrati' : mode === 'signin' ? 'Accedi' : 'Recupero password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  // luogo per le classifiche (ticket 38): si chiede alla registrazione, Italia già scelta
+  const [place, setPlace] = useState<PlaceValue>({ country: ITALY, province: '' });
+  const [errors, setErrors] = useState<{ email?: string; password?: string; place?: 'country' | 'province' }>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg | null>(null);
   const [cooldown, startCooldown] = useCooldown();
@@ -92,8 +97,10 @@ export function AuthScreen({ invite }: { invite?: string }) {
       if (!password) e.password = 'Scrivi la password.';
       else if (mode === 'signup' && password.length < 8) e.password = 'Almeno 8 caratteri.';
     }
+    // la registrazione non si completa senza il luogo
+    if (mode === 'signup') e.place = placeError(place.country, place.province) ?? undefined;
     setErrors(e);
-    return !e.email && !e.password;
+    return !e.email && !e.password && !e.place;
   };
 
   const resend = async () => {
@@ -117,7 +124,12 @@ export function AuthScreen({ invite }: { invite?: string }) {
         const { error } = await supabase.auth.signInWithPassword({ email: addr, password });
         if (error) setMsg({ ok: false, text: authMessage(error), resend: error.code === 'email_not_confirmed' });
       } else if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email: addr, password, options: { emailRedirectTo: location.origin } });
+        // il luogo viaggia nei metadati: il profilo nasce già con nazione e provincia (migration 0017)
+        const { data, error } = await supabase.auth.signUp({
+          email: addr,
+          password,
+          options: { emailRedirectTo: location.origin, data: placeOf(place.country, place.province) },
+        });
         if (error) setMsg({ ok: false, text: authMessage(error) });
         // con la conferma email attiva Supabase non dà errore per un'email già usata:
         // restituisce un utente senza identità e non manda nessuna email
@@ -252,6 +264,15 @@ export function AuthScreen({ invite }: { invite?: string }) {
                       )
                     }
                   />
+                )}
+                {mode === 'signup' && (
+                  <>
+                    <PlaceFields value={place} error={errors.place} onChange={(v) => (setPlace(v), errors.place && setErrors({ ...errors, place: undefined }))} />
+                    <p className="hint">
+                      Il luogo serve per le classifiche. Il tuo profilo nasce <b>privato</b>: il nome lo vede solo chi ti segue, finché non decidi altrimenti da Account.{' '}
+                      <Link to="/privacy">Informativa sulla privacy</Link>
+                    </p>
+                  </>
                 )}
               </fieldset>
               {notice}
