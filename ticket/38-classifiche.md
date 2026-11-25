@@ -57,10 +57,12 @@ figura dell'avatar; niente provincia o regione.
 3. Profili pubblici o privati come su Instagram.
 4. Si mostra il nome dell'utente.
 
+5. **Chi si iscrive parte privato** (Fabio, 25/11): `is_private` vale `true` per i profili nuovi e per quelli già
+   esistenti; si diventa pubblici dalle impostazioni dell'account. Niente passo di scelta alla registrazione.
+6. **Titolare del trattamento: Fabio Brea** (Fabio, 25/11), come persona. Va scritto nell'informativa (A05).
+
 ## Domande aperte
 
-1. Chi si iscrive parte **pubblico o privato**? Su Instagram si parte pubblici; qui si mostrano nome e luogo, quindi
-   proposta: la scelta è un passo esplicito della registrazione, senza valore già selezionato. (Fabio, bloccante: è
-   una scelta di privacy)
-2. Chi è il titolare del trattamento per l'informativa (già aperto in A05)? Con nome e provincia visibili a tutti
-   l'informativa va pubblicata prima di accendere le classifiche. (Fabio, bloccante per il rilascio)
+1. Il **contatto** da scrivere nell'informativa per le richieste sui dati (email): manca ancora. (Fabio, bloccante
+   per il rilascio, non per lo sviluppo) Con nome e provincia visibili l'informativa va pubblicata prima di accendere
+   le classifiche.
