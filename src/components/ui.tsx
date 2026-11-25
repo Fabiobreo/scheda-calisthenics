@@ -206,14 +206,19 @@ type SelectOption<T> = {
   keywords?: string[];
 };
 
-export function Select<T extends string>({ label, value, options, onChange, hideLabel }: {
+export function Select<T extends string>({ label, value, options, onChange, hideLabel, hint, error, autoComplete, disabled }: {
   label: string;
   value: T;
   options: SelectOption<T>[];
   onChange: (v: T) => void;
   hideLabel?: boolean;
+  hint?: ReactNode;
+  error?: string;
+  autoComplete?: string;
+  disabled?: boolean;
 }) {
-  const id = useId();
+  const d = useDescribed(hint, error);
+  const id = d.id;
   const opt = (o: SelectOption<T>) => (
     <option key={o.v} value={o.v}>
       {o.l}
@@ -229,7 +234,7 @@ export function Select<T extends string>({ label, value, options, onChange, hide
   return (
     <label className="fld" htmlFor={id}>
       <span className={hideLabel ? 'sr-only' : undefined}>{label}</span>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value as T)}>
+      <select id={id} value={value} autoComplete={autoComplete} disabled={disabled} {...d.aria} onChange={(e) => onChange(e.target.value as T)}>
         {blocks.map((b, i) =>
           b.group ? (
             <optgroup key={`${b.group}-${i}`} label={b.group}>
@@ -240,6 +245,7 @@ export function Select<T extends string>({ label, value, options, onChange, hide
           ),
         )}
       </select>
+      {d.below}
     </label>
   );
 }

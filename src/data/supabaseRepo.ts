@@ -1,4 +1,5 @@
 import type { Db } from '../lib/supabase';
+import type { LevelScores } from '../lib/levels';
 import type { Repo } from './repo';
 import type {
   CatalogExercise,
@@ -12,6 +13,10 @@ import type {
   PlanItem,
   PlanItemInput,
   Profile,
+  ProfilePatch,
+  Ranking,
+  RankingPlace,
+  RankingScope,
   Program,
   ProgramItem,
   ProgramItemInput,
@@ -292,6 +297,27 @@ function must(res: { data: unknown; error: { message: string; code?: string } | 
 
 type Table = 'exercises' | 'entries' | 'plan_items' | 'level_records';
 
+const PROFILE_COLS = 'display_name, is_trainer, country, province, region, is_private';
+
+interface ProfileRow {
+  display_name: string | null;
+  is_trainer: boolean;
+  country: string | null;
+  province: string | null;
+  region: string | null;
+  is_private: boolean;
+}
+
+interface ScoreRow {
+  total: number;
+  ft: number;
+  fs: number;
+  st: number;
+  ss: number;
+  hb: number;
+  rules_version: number;
+}
+
 /**
  * Repo dei dati di `userId`. Ogni query filtra per utente in modo esplicito: le policy RLS non bastano a
  * delimitare i dati, perché un trainer può leggere anche quelli dei suoi atleti.
@@ -304,17 +330,41 @@ export function createSupabaseRepo(sb: Db, userId: string): Repo {
 
   return {
     async getProfile() {
-      const row = must(await sb.from('profiles').select('display_name, is_trainer').eq('id', userId).single()) as {
-        display_name: string | null;
-        is_trainer: boolean;
-      };
-      return { displayName: row.display_name, isTrainer: row.is_trainer };
+      const row = must(await sb.from('profiles').select(PROFILE_COLS).eq('id', userId).single()) as ProfileRow;
+      return {
+        displayName: row.display_name,
+        isTrainer: row.is_trainer,
+        country: row.country,
+        province: row.province,
+        region: row.region,
+        isPrivate: row.is_private,
+      } satisfies Profile;
     },
-    async updateProfile(patch: Partial<Profile>) {
+    async updateProfile(patch: ProfilePatch) {
       const row: Record<string, unknown> = {};
       if (patch.displayName !== undefined) row.display_name = patch.displayName;
       if (patch.isTrainer !== undefined) row.is_trainer = patch.isTrainer;
+      if (patch.country !== undefined) row.country = patch.country;
+      // fuori dall'Italia la provincia non esiste (la svuota comunque il database)
+      if (patch.province !== undefined) row.province = patch.province;
+      if (patch.isPrivate !== undefined) row.is_private = patch.isPrivate;
       must(await sb.from('profiles').update(row).eq('id', userId));
+    },
+
+    async getLevelScore() {
+      const rows = must(await sb.from('level_scores').select('total, ft, fs, st, ss, hb, rules_version').eq('user_id', userId)) as ScoreRow[];
+      const r = rows[0];
+      return r ? { total: r.total, ft: r.ft, fs: r.fs, st: r.st, ss: r.ss, hb: r.hb, rulesVersion: r.rules_version } : null;
+    },
+    async saveLevelScore(s: LevelScores) {
+      const row = { user_id: userId, total: s.total, ft: s.ft, fs: s.fs, st: s.st, ss: s.ss, hb: s.hb, rules_version: s.rulesVersion };
+      must(await sb.from('level_scores').upsert(row, { onConflict: 'user_id' }));
+    },
+    async ranking(scope, metric) {
+      return must(await sb.rpc('ranking', { p_scope: scope, p_metric: metric })) as Ranking;
+    },
+    async rankingOverview(metric) {
+      return must(await sb.rpc('ranking_overview', { p_metric: metric })) as Record<RankingScope, RankingPlace>;
     },
     async deleteAccount() {
       must(await sb.rpc('delete_own_account'));

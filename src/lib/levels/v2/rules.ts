@@ -111,6 +111,13 @@ export interface Band {
 // ---------------------------------------------------------------------------------------------------------
 // Costanti
 
+/**
+ * Versione delle regole. I punti di ogni utente sono salvati sul server per le classifiche (ticket 38) insieme a
+ * questo numero: va aumentato ogni volta che cambia qualcosa che sposta i punteggi (soglie, divisori, esponenti,
+ * punti di un livello, catene), così al primo avvio ogni app riscrive i suoi punti con le regole nuove.
+ */
+export const RULES_VERSION = 1;
+
 /** F2: peso corporeo di riferimento (kg). */
 export const REF_KG = 60;
 

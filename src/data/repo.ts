@@ -1,3 +1,4 @@
+import type { LevelScores } from '../lib/levels';
 import type {
   CatalogExercise,
   CoachLink,
@@ -10,7 +11,12 @@ import type {
   LevelRecordRow,
   PlanChanges,
   PlanItem,
+  Ranking,
+  RankingMetric,
+  RankingPlace,
+  RankingScope,
   Profile,
+  ProfilePatch,
   Program,
   ProgramItem,
   ProgramItemInput,
@@ -20,7 +26,7 @@ import type {
 /** Accesso ai dati di un utente. */
 export interface Repo {
   getProfile(): Promise<Profile>;
-  updateProfile(patch: Partial<Profile>): Promise<void>;
+  updateProfile(patch: ProfilePatch): Promise<void>;
   /** Elimina l'account con tutti i suoi dati. Non si torna indietro. */
   deleteAccount(): Promise<void>;
 
@@ -30,6 +36,15 @@ export interface Repo {
   createLevelRecord(input: LevelRecordInput, id?: string): Promise<LevelRecordRow>;
   updateLevelRecord(id: string, patch: Partial<LevelRecordInput>): Promise<void>;
   deleteLevelRecord(id: string): Promise<void>;
+
+  /** punti salvati sul server per le classifiche (ticket 38); null = mai salvati */
+  getLevelScore(): Promise<LevelScores | null>;
+  /** scrive (o riscrive) i punti dell'utente: li calcola l'app dai record */
+  saveLevelScore(scores: LevelScores): Promise<void>;
+  /** una classifica: posizione, partecipanti e le righe intorno */
+  ranking(scope: RankingScope, metric: RankingMetric): Promise<Ranking>;
+  /** i 5 ambiti di una metrica in una chiamata, senza le righe */
+  rankingOverview(metric: RankingMetric): Promise<Record<RankingScope, RankingPlace>>;
 
   /** collegamenti attivi in cui l'utente è trainer o atleta */
   listLinks(): Promise<CoachLink[]>;

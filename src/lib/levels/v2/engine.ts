@@ -14,6 +14,7 @@ import {
   ESP_SKILL_SECONDI,
   LIMITS,
   REF_KG,
+  RULES_VERSION,
   TOTAL_MAX,
   type BandId,
   type BandScope,
@@ -291,6 +292,39 @@ export function levelSummary<R extends LevelRecord>(records: readonly R[]): Leve
   const categories = CATEGORIES.map((c) => scoreCategory(c.id, records));
   const total = categories.reduce((t, c) => t + c.points, 0);
   return { categories, total, max: TOTAL_MAX, ...bandPosition('complessivo', total) };
+}
+
+/** I 6 numeri del livello che si salvano sul server per le classifiche (ticket 38), con la versione delle regole. */
+export interface LevelScores {
+  /** Complessivo, 0–7000: la somma delle 5 categorie. */
+  total: number;
+  /** Fondamentali tirata, 0–1400. */
+  ft: number;
+  /** Fondamentali spinta. */
+  fs: number;
+  /** Skill tirata. */
+  st: number;
+  /** Skill spinta. */
+  ss: number;
+  /** Handbalance. */
+  hb: number;
+  rulesVersion: number;
+}
+
+/** Colonna di `level_scores` di ogni categoria. */
+export const SCORE_KEY: Record<CategoryId, 'ft' | 'fs' | 'st' | 'ss' | 'hb'> = {
+  'fondamentali-tirata': 'ft',
+  'fondamentali-spinta': 'fs',
+  'skill-tirata': 'st',
+  'skill-spinta': 'ss',
+  handbalance: 'hb',
+};
+
+/** Dal riepilogo ai numeri da salvare: gli stessi che si vedono nell'app, nessun altro conto. */
+export function levelScores(summary: Pick<LevelSummary, 'categories' | 'total'>): LevelScores {
+  const out: LevelScores = { total: summary.total, ft: 0, fs: 0, st: 0, ss: 0, hb: 0, rulesVersion: RULES_VERSION };
+  for (const c of summary.categories) out[SCORE_KEY[c.categoryId]] = c.points;
+  return out;
 }
 
 const toOption = (entry: EntryRule): EntryOption => ({

@@ -3,6 +3,51 @@ export interface Profile {
   displayName: string | null;
   /** modalità trainer attiva: può invitare atleti e leggerne i dati */
   isTrainer: boolean;
+  /** nazione, ISO 3166-1 alpha-2 ("IT"); null = non ancora indicata (ticket 38) */
+  country: string | null;
+  /** sigla della provincia ("MI"): solo in Italia */
+  province: string | null;
+  /** regione ricavata dalla provincia dal database: si legge soltanto */
+  region: string | null;
+  /** true (valore di partenza) = nelle classifiche il nome lo vede solo chi segue l'utente */
+  isPrivate: boolean;
+}
+
+/** Ciò che l'utente può cambiare del profilo: la regione la decide la provincia. */
+export type ProfilePatch = Partial<Omit<Profile, 'region'>>;
+
+/** Ambiti delle classifiche (ticket 38). "amici" = le persone che seguo, più me. */
+export type RankingScope = 'amici' | 'provincia' | 'regione' | 'nazione' | 'mondo';
+export const RANKING_SCOPES: readonly RankingScope[] = ['amici', 'provincia', 'regione', 'nazione', 'mondo'];
+
+/** Metrica di una classifica: il punteggio complessivo ("Generale") o una delle 5 categorie del motore. */
+export type RankingMetric = 'generale' | 'fondamentali-tirata' | 'fondamentali-spinta' | 'skill-tirata' | 'skill-spinta' | 'handbalance';
+
+/** Dove sono in una classifica. */
+export interface RankingPlace {
+  scope: RankingScope;
+  metric: RankingMetric;
+  /** false se l'ambito non vale per me: provincia e regione fuori dall'Italia, o luogo non ancora indicato */
+  available: boolean;
+  /** 1 = primo; a pari punti stessa posizione; null se non ho ancora punti */
+  position: number | null;
+  /** quanti hanno almeno un punto nell'ambito (contano anche i profili privati) */
+  participants: number;
+  /** i miei punti nella metrica */
+  score: number | null;
+}
+
+export interface RankingRow {
+  position: number;
+  userId: string;
+  name: string | null;
+  score: number;
+  me: boolean;
+}
+
+/** Una classifica: dove sono e le righe da mostrare (le prime 3 visibili e i vicini), non l'elenco intero. */
+export interface Ranking extends RankingPlace {
+  rows: RankingRow[];
 }
 
 /** Collegamento attivo tra un trainer e un atleta. */
