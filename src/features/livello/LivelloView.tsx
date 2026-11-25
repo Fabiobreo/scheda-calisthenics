@@ -8,6 +8,7 @@ import { useLevel, type LevelRow } from '../../data/hooks';
 import { shortDate } from '../../lib/dates';
 import { whenIdle } from '../../lib/idle';
 import type { CategoryId, CategoryScore, ChainId, ChainScore } from '../../lib/levels';
+import { LevelsSheet } from './LevelsSheet';
 import { CARDS, categoryName, chainLevelText, chainName, chainPercent, missingBodyweight, pentagonScale, recordText } from './levelView';
 
 // Il foglio del record si apre a un tocco: si scarica dopo il primo disegno della pagina (audit A4)
@@ -35,6 +36,7 @@ export function LivelloView() {
   const [open, setOpen] = useState<CategoryId | null>(null);
   const [sheet, setSheet] = useState<ChainId | null>(null);
   const [party, setParty] = useState<string[]>([]);
+  const [levels, setLevels] = useState(false);
   useEffect(() => whenIdle(() => void loadRecordSheet()), []);
 
   // la celebrazione resta qualche secondo, poi se ne va da sola
@@ -77,6 +79,11 @@ export function LivelloView() {
         <section className="lv-hero" aria-label={`Livello complessivo: ${summary.name}, ${summary.percent}%`}>
           <Bust band={summary.band} />
           <Pentagon scale={pentagonScale(summary)} />
+          <button type="button" className="lv-info" onClick={() => setLevels(true)} aria-haspopup="dialog">
+            <span>{summary.name}</span>
+            <i aria-hidden="true">i</i>
+            <span className="sr-only">: vedi tutti i livelli</span>
+          </button>
         </section>
 
         <section className="lv-cats" aria-label="Categorie" onKeyDown={onKeys}>
@@ -97,6 +104,8 @@ export function LivelloView() {
           </div>
         )}
       </div>
+
+      {levels && <LevelsSheet summary={summary} onClose={() => setLevels(false)} />}
 
       {sheet && (
         <Suspense fallback={null}>

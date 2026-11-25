@@ -9,6 +9,7 @@ import {
   chainPercent,
   entryLevelsText,
   errorField,
+  ladder,
   lastBodyweight,
   missingBodyweight,
   pentagonScale,
@@ -202,5 +203,25 @@ describe('celebrazioni', () => {
     const after = levelSummary([TRAZIONI_10, ZAVORRA_18, TUCK_10]);
     expect(after.total).toBe(350);
     expect(celebrations(levelSummary([TRAZIONI_10]), after)).toEqual(['Livello complessivo: Intermedio', 'Sei Avanzato in Fondamentali tirata']);
+  });
+});
+
+describe('ladder', () => {
+  it('elenca i sei livelli con le fasce e segna quello attuale', () => {
+    const l = ladder('complessivo', 'intermedio', 350);
+    expect(l.rows.map((r) => [r.name, r.from, r.to, r.state])).toEqual([
+      ['Base', 0, 300, 'done'],
+      ['Intermedio', 301, 800, 'current'],
+      ['Avanzato', 801, 2500, 'todo'],
+      ['Elite', 2501, 4000, 'todo'],
+      ['Titano', 4001, 5500, 'todo'],
+      ['Leggenda', 5501, 7000, 'todo'],
+    ]);
+    expect(l.next).toEqual({ name: 'Avanzato', missing: 451 });
+  });
+
+  it('usa le fasce della categoria e a Leggenda non c’è un prossimo livello', () => {
+    expect(ladder('skill-tirata', 'base', 200).next).toEqual({ name: 'Intermedio', missing: 1 });
+    expect(ladder('handbalance', 'leggenda', 1400).next).toBeNull();
   });
 });

@@ -212,3 +212,38 @@ export function celebrations(before: LevelSummary, after: LevelSummary): string[
   }
   return out;
 }
+
+// ---------------------------------------------------------------------------------------------------------
+// Scala dei livelli (foglio "I livelli")
+
+export type LadderScope = 'complessivo' | CategoryId;
+
+export interface LadderRow {
+  id: BandId;
+  name: string;
+  /** Punti di inizio e fine della fascia, come nel PDF (0–100, 101–200…). */
+  from: number;
+  to: number;
+  /** Già superato, quello attuale, o ancora da raggiungere. */
+  state: 'done' | 'current' | 'todo';
+}
+
+export interface Ladder {
+  rows: LadderRow[];
+  /** Punti di chi guarda in questa scala. */
+  points: number;
+  /** Prossimo livello e punti che mancano per entrarci; null a Leggenda. */
+  next: { name: string; missing: number } | null;
+}
+
+/**
+ * I sei livelli di una scala (complessivo o una categoria) con le fasce di punti e dove si trova l'utente. Il livello
+ * attuale è quello deciso dal motore (`band`), così i bordi restano i suoi: 100 punti = Base 100%, 101 = Intermedio.
+ */
+export function ladder(scope: LadderScope, band: BandId, points: number): Ladder {
+  const bands = BANDS[scope];
+  const cur = bands.findIndex((b) => b.id === band);
+  const rows = bands.map((b, i): LadderRow => ({ id: b.id, name: b.name, from: b.from, to: b.to, state: i < cur ? 'done' : i === cur ? 'current' : 'todo' }));
+  const nb = bands[cur + 1];
+  return { rows, points, next: nb ? { name: nb.name, missing: Math.max(1, nb.from - points) } : null };
+}

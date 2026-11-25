@@ -596,6 +596,34 @@ body:has(.lv:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
   .lv-party { left: calc(var(--side) + 32px); right: 32px; }
 }
 
+/* livello complessivo sopra il busto: apre il foglio "I livelli" */
+.lv-hero { position: relative; }
+.lv-info {
+  position: absolute; top: 4px; left: 4px; z-index: 1; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 6px 4px 12px;
+  border-radius: 999px; border: 1px solid var(--line-strong); background: color-mix(in srgb, var(--surface) 82%, transparent); color: var(--gold-hi);
+  font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; backdrop-filter: blur(6px);
+}
+.lv-info i { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid currentColor; font-style: normal; font-size: 12px; font-family: Georgia, serif; font-weight: 700; }
+.lv-info:hover { border-color: var(--gold-deep); }
+/* foglio "I livelli" */
+.lvl-sheet h2:focus { outline: none; }
+.lvl-scope { margin-top: 14px; }
+.lvl-now { margin: 14px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
+.lvl-now b { color: var(--fg); }
+.lvl-list { list-style: none; margin: 14px 0 4px; padding: 0; display: grid; gap: 8px; }
+.lvl-row {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-areas: "mark name range" "bar bar bar"; align-items: center; column-gap: 10px;
+  padding: 11px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface2);
+}
+.lvl-mark { grid-area: mark; color: var(--gold); font-size: 14px; text-align: center; }
+.lvl-name { grid-area: name; font-weight: 700; }
+.lvl-name small { font-weight: 600; font-size: 12.5px; color: var(--gold); }
+.lvl-range { grid-area: range; color: var(--muted); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.lvl-row .zbar { grid-area: bar; margin-top: 9px; }
+.lvl-row.done .lvl-name { color: var(--gold-dim); }
+.lvl-row.current { border-color: var(--gold-deep); background: color-mix(in srgb, var(--gold) 10%, var(--surface2)); }
+.lvl-row.todo { opacity: .72; }
+
 .rec-sheet h2:focus { outline: none; }
 
 .rec-def { margin-top: 6px; }
