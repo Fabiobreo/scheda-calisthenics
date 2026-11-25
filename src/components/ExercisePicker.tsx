@@ -8,14 +8,17 @@ const CUSTOM = '__custom';
 /**
  * Scelta di un esercizio per un giorno: una voce del catalogo o, in fondo alla lista, un nome personalizzato.
  * Un nome scritto a mano che è nel catalogo diventa la voce del catalogo: stesso esercizio per tutti.
+ * All'apertura il campo è vuoto e senza fuoco (ticket 35): l'elenco, e la tastiera sul telefono, si aprono toccandolo.
+ * `missing` è il messaggio da mostrare quando `ref()` è null.
  */
 export function useExercisePicker(catalog: CatalogExercise[], exclude: (ref: ExerciseRef) => boolean = () => false) {
   const options = byCategory(catalog).filter((c) => !exclude({ catalogId: c.id, customName: null }));
   const [sel, setSel] = useState('');
   const [custom, setCustom] = useState('');
-  const value = sel === CUSTOM || options.some((c) => c.id === sel) ? sel : (options[0]?.id ?? CUSTOM);
+  const value = sel === CUSTOM || options.some((c) => c.id === sel) ? sel : '';
 
   const ref = (): ExerciseRef | null => {
+    if (!value) return null;
     if (value !== CUSTOM) return { catalogId: value, customName: null };
     const name = custom.trim();
     if (!name) return null;
@@ -41,7 +44,7 @@ export function useExercisePicker(catalog: CatalogExercise[], exclude: (ref: Exe
     </>
   );
 
-  return { view, ref, key: value };
+  return { view, ref, key: value, missing: value ? "Scrivi il nome dell'esercizio" : 'Scegli un esercizio' };
 }
 
 /** Nome da mostrare per un riferimento a un esercizio. */

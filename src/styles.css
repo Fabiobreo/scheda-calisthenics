@@ -627,11 +627,53 @@ body:has(.lv:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
   .days.board .day { min-height: 150px; padding: 10px 6px; display: flex; flex-direction: column; align-items: stretch; text-align: left; }
   .days.board .day > span, .days.board .day > i { text-align: center; }
 }
+/* ===== Ticket 35: pagina Esercizi e foglio del catalogo =====
+   Riga: solo il nome e, sotto, l'etichetta in oro spento; le azioni stanno nel menu "⋯" a destra. */
+.ex-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.ex-row { display: flex; align-items: center; gap: 8px; min-height: 60px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.ex-list .ex-row:last-child { border-bottom: 0; }
+.ex-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ex-txt b { font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+.ex-tag { color: var(--gold-dim); font-size: 13px; font-weight: 500; }
+.pname .ex-tag { display: block; margin-top: 2px; }
+.ex-row .menu { margin-right: -8px; }
+.ex-note { margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--line); }
+.ex-note b { color: var(--fg); font-weight: 600; }
+.ex-arch { margin-top: 14px; }
 @media (min-width: 1024px) {
   /* esercizi su due colonne nella scheda larga */
   .ex-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
-  .ex-list .entry:last-child { border-bottom: 1px solid var(--line); }
+  .ex-list .ex-row:last-child { border-bottom: 1px solid var(--line); }
 }
+/* fogli della pagina: aggiunta (catalogo o personalizzato), modifica, conferma di eliminazione */
+.ex-sheet h2 { overflow-wrap: anywhere; }
+.ex-sheet h2:focus { outline: none; }
+.ex-sheet > .seg { margin-top: 14px; }
+.ex-sheet .seg button { flex: 1 1 0; padding: 10px 6px; }
+/* catalogo: testata e ricerca ferme, scorre solo l'elenco */
+.ex-sheet.cat { display: flex; flex-direction: column; height: 92dvh; overflow: hidden; padding-bottom: 0; }
+.ex-sheet.cat > * { flex: none; }
+.ex-sheet.cat > .search { margin-top: 12px; }
+.ex-sheet.cat > .cat-list { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin-top: 6px; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+body:has(.timer) .cat-list { padding-bottom: calc(var(--tabbar) + 110px + env(safe-area-inset-bottom, 0px)); }
+.cat-list ul { list-style: none; margin: 0; padding: 0; }
+.cat-list .ss-group { padding: 14px 2px 4px; color: var(--gold-dim); }
+.cat-row {
+  width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 2px;
+  border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--fg); text-align: left; font-size: 17px; font-weight: 500;
+}
+.cat-list li:first-child .cat-row { border-top: 0; }
+.cat-name { min-width: 0; display: flex; flex-direction: column; gap: 1px; overflow-wrap: anywhere; }
+.cat-name small { color: var(--gold-dim); font-size: 13px; }
+.cat-add { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--gold-deep); color: var(--gold); font-size: 20px; line-height: 1; }
+.cat-row.done { color: var(--muted); cursor: default; }
+.cat-row.done .cat-add { width: auto; height: auto; border: 0; font-size: 14px; font-weight: 600; color: var(--gold-dim); }
+@media (hover: hover) { .cat-row:not(.done):hover { background: color-mix(in srgb, var(--gold) 8%, transparent); } }
+.cat-none { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px 2px; }
+.ex-del { margin: 12px 0 0; font-size: 16px; }
+.ex-del + .hint { margin-top: 8px; }
+.ex-del-act { margin-top: 18px; }
+.ex-del-act .btn { flex: 1 1 auto; }
 
 /* ===== Ticket 21: carattere visivo =====
    Tre livelli di superficie: la scheda protagonista (.star, una per pagina), le schede normali, le parti piatte. */
@@ -712,7 +754,6 @@ body:has(.lv:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
 .exi circle { fill: var(--gold); stroke: none; }
 .exi-custom { stroke-width: 1.5; stroke: var(--muted); }
 .rname .exi { width: 26px; height: 26px; vertical-align: -4px; }
-.ex-name { display: flex; align-items: center; }
 .empty-icons { display: flex; gap: 14px; justify-content: center; padding: 6px 0 4px; }
 .empty-icons .exi { width: 40px; height: 40px; margin: 0; stroke-width: 1.4; opacity: .85; }
 .empty-icons .exi:nth-child(odd) { stroke: var(--muted); }
@@ -799,7 +840,6 @@ main > :nth-child(n + 5), .cols > .col > :nth-child(n + 5) { animation-delay: .2
 .mini-ring.good .ring-fg { stroke: var(--ok); filter: none; }
 .mini-ring b { position: relative; font-family: var(--f-display); font-size: 14px; font-variant-numeric: tabular-nums; }
 .ath-stats { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-.ex-activity { display: flex; align-items: flex-end; gap: 10px; margin-top: 8px; }
 .bars { width: 85px; height: 40px; flex: none; }
 .bars rect { fill: color-mix(in srgb, var(--fg) 12%, transparent); }
 .bars rect.on { fill: var(--gold); }

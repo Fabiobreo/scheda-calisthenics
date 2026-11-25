@@ -147,7 +147,7 @@ impostazione, con stile, sfondo e caratteri di Home e Livello e **al massimo 3�
 | 32 | [Dati dei livelli v2: peso nel record, conversione](32-dati-livelli-v2.md) | 1 | Backend | M | fatto 24/11, unito su main: migration `0015`, da rilasciare col 34; provata su PGlite, **non** su Supabase locale (manca Docker); 3 scelte di conversione confermate il 24/11 |
 | 33 | [Stile nuovo: oro, foto, testata, barra](33-stile-oro.md) | 1 (in parallelo) | UI designer + frontend | L | fatto il 24/11 (da far approvare a Michael) |
 | 34 | [Pagina Livello](34-pagina-livello.md) | 2 | Frontend + UI designer | L | fatto il 24/11 sul ramo `claude/ticket-34-pagina-livello-7545a0` (non unito): tutta l'app sul motore v2, motore vecchio e avatar a 20 stadi cancellati; provata nel browser solo con dati finti perché al database locale manca la `0015`; da far approvare a Michael |
-| 35 | [Pagina Esercizi e catalogo](35-pagina-esercizi.md) | 2 | Frontend + backend | M | da fare |
+| 35 | [Pagina Esercizi e catalogo](35-pagina-esercizi.md) | 2 | Frontend + backend | M | fatto il 25/11 sul ramo `claude/ticket-35-pagina-esercizi-1f5814` (non unito): righe pulite, menu "⋯", foglio del catalogo senza tastiera, migration `0016` (5 voci tolte) provata su PGlite, **non** su Supabase; pagina provata nel browser solo con dati finti; da far approvare a Michael |
 | 36 | [Pagina Grafici](36-pagina-grafici.md) | 2 | Frontend + data-viz | M | da fare |
 | 37 | [Pagina Scheda](37-pagina-scheda.md) | 2 | Frontend | M | da fare |
 | 38 | [Punteggi sul server, profilo pubblico, classifiche](38-classifiche.md) | 3 | Backend + PO (privacy) | L | da fare |

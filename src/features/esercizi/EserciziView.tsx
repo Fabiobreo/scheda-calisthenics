@@ -1,203 +1,64 @@
-import { CategoryRow, ExIcon } from '../../components/ExIcon';
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
-import { ActivityBars, CardHead, ConfirmButton, EmptyState, Field, PageTitle, SearchSelect, Seg } from '../../components/ui';
-import { useArchiveExercise, useCatalog, useCreateExercise, useData, useDeleteExercise, useTrainerLock, useUpdateExercise } from '../../data/hooks';
+import { CategoryRow } from '../../components/ExIcon';
+import { Card, CardHead, EmptyState, MoreMenu, PageTitle } from '../../components/ui';
+import { useArchiveExercise, useCatalog, useData, useDeleteExercise, useTrainerLock } from '../../data/hooks';
+import type { Exercise } from '../../data/types';
 import { todayStr } from '../../lib/dates';
-import { CATEGORY_LABEL, MEASURE_LABEL, MEASURES, type CatalogExercise, type Exercise, type Measure } from '../../data/types';
-import { byCategory, matchCatalog } from '../../lib/catalog';
-import { weeklyCounts } from '../../lib/stats';
+import { plural } from '../../lib/format';
+import { AddSheet, EditSheet, Sheet } from './ExerciseSheet';
 
-type Source = 'catalog' | 'custom';
+type Open = { kind: 'add' } | { kind: 'edit' | 'delete'; id: string };
 
-interface Form {
-  /** null = nuovo esercizio */
-  id: string | null;
-  source: Source;
-  catalogId: string;
-  name: string;
-  inRecords: boolean;
-  /** solo per i personalizzati: quelli del catalogo hanno la misura della voce */
-  measure: Measure;
-}
-
-const blank = (first?: CatalogExercise): Form => ({
-  id: null,
-  source: first ? 'catalog' : 'custom',
-  catalogId: first?.id ?? '',
-  name: '',
-  inRecords: false,
-  measure: 'reps',
-});
-
-const toForm = (e: Exercise): Form => ({
-  id: e.id,
-  source: e.catalogId ? 'catalog' : 'custom',
-  catalogId: e.catalogId ?? '',
-  name: e.name,
-  inRecords: e.inRecords,
-  measure: e.measure,
-});
-
-/** Confronto dei nomi come lo fa il database: maiuscole e spazi esterni non contano. */
-const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
-
+/**
+ * Pagina Esercizi (ticket 35): righe con il solo nome e, sotto, l'etichetta quando serve; tutte le azioni nel menu "⋯"
+ * (Modifica, Archivia, Elimina); "+ Aggiungi" apre il foglio del catalogo. Sotto, la nota su Elimina e Archivia e
+ * l'elenco degli archiviati.
+ */
 export function EserciziView() {
   const { exercises, active, entries, plan } = useData();
   const locked = useTrainerLock();
   const catalog = useCatalog().data ?? [];
-  const create = useCreateExercise();
-  const update = useUpdateExercise('Modifiche salvate');
   const archive = useArchiveExercise();
   const del = useDeleteExercise();
   const toast = useToast();
-  const [form, setForm] = useState<Form | null>(null);
+  const [open, setOpen] = useState<Open | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const archived = exercises.filter((e) => e.archivedAt);
   const today = todayStr();
-
-  // voci del catalogo che l'utente non ha ancora (gli archiviati contano: si ripristinano dalla lista)
-  const linked = new Set(exercises.map((e) => e.catalogId));
-  const free = byCategory(catalog.filter((c) => !linked.has(c.id)));
-  const editing = form?.id ? exercises.find((e) => e.id === form.id) : undefined;
   const count = (id: string) => entries.filter((e) => e.exerciseId === id).length;
-  const measureLocked = !!editing && count(editing.id) > 0;
-  const pickedCatalog = form?.source === 'catalog' && !form.id ? catalog.find((c) => c.id === form.catalogId) : undefined;
+  // il trainer lo ha in programma nei prossimi giorni: toglierlo da qui lo farebbe sparire dalla sua scheda
+  const byTrainer = (e: Exercise) => plan.some((p) => p.exerciseId === e.id && p.date >= today && locked(p));
+  const target = open && open.kind !== 'add' ? exercises.find((e) => e.id === open.id) : undefined;
 
-  const patch = (p: Partial<Form>) => form && setForm({ ...form, ...p });
-  const pickCatalog = (id: string) => {
-    if (catalog.some((x) => x.id === id)) patch({ catalogId: id });
-  };
+  const doArchive = (e: Exercise) =>
+    byTrainer(e)
+      ? toast(`"${e.name}" è nel programma del tuo trainer: chiedigli di toglierlo prima di archiviarlo`)
+      : archive.mutate({ id: e.id, archived: true }, { onSuccess: () => toast(`"${e.name}" archiviato: lo ritrovi in fondo, tra gli archiviati`) });
+  const askDelete = (e: Exercise) =>
+    byTrainer(e) ? toast(`"${e.name}" è nel programma del tuo trainer: chiedigli di toglierlo prima di eliminarlo`) : setOpen({ kind: 'delete', id: e.id });
 
-  const save = () => {
-    if (!form) return;
-    if (form.source === 'catalog') {
-      if (form.id) {
-        update.mutate({ id: form.id, patch: { inRecords: form.inRecords } });
-        return setForm(null);
-      }
-      const c = catalog.find((x) => x.id === form.catalogId);
-      if (!c) return toast('Scegli un esercizio dal catalogo');
-      create.mutate({ catalogId: c.id, name: c.name, inRecords: form.inRecords, measure: c.measure });
-      return setForm(null);
-    }
-    const name = form.name.trim();
-    if (!name) return toast("Scrivi il nome dell'esercizio");
-    if (name.length > 80) return toast('Nome troppo lungo');
-    const twin = exercises.find((e) => e.id !== form.id && sameName(e.name, name));
-    if (twin) return toast(twin.archivedAt ? `"${twin.name}" esiste già tra gli archiviati: ripristinalo` : `"${twin.name}" esiste già`);
-    // un nome del catalogo va preso dal catalogo: stesso esercizio per tutti, grafici confrontabili
-    const known = !form.id && matchCatalog(catalog, name);
-    const mine = known && exercises.find((e) => e.catalogId === known.id);
-    if (mine) return toast(mine.archivedAt ? `"${mine.name}" ce l'hai già tra gli archiviati: ripristinalo` : `"${mine.name}" ce l'hai già`);
-    if (known) {
-      setForm({ ...form, source: 'catalog', catalogId: known.id });
-      return toast(`"${known.name}" è nel catalogo: l'ho scelto da lì`);
-    }
-    // con delle registrazioni la misura resta quella: lo storico e i grafici restano coerenti
-    const measure = editing && count(editing.id) ? editing.measure : form.measure;
-    if (form.id) update.mutate({ id: form.id, patch: { name, inRecords: form.inRecords, measure } });
-    else create.mutate({ catalogId: null, name, inRecords: form.inRecords, measure });
-    setForm(null);
-  };
-
+  const tags = (e: Exercise) => [!e.catalogId && 'Personalizzato', e.measure === 'time' && 'A tempo'].filter(Boolean).join(' · ');
 
   return (
     <>
       <PageTitle title="Esercizi" />
-      <section className="card">
+      <Card>
         <CardHead
           title="Esercizi"
-          help="Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi nel programma, giorno per giorno. Accanto a ogni esercizio, quante volte l'hai registrato nelle ultime 8 settimane."
+          help="Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi nel programma, giorno per giorno."
         >
-          <button className="btn small" onClick={() => setForm(blank(free[0]))}>
+          <button className="btn small" onClick={() => setOpen({ kind: 'add' })}>
             + Aggiungi
           </button>
         </CardHead>
 
-        {form && (
-          <div className="form" id="xform">
-            {!form.id && (
-              <Seg
-                label="Da dove"
-                value={form.source}
-                options={[
-                  { v: 'catalog', l: 'Dal catalogo' },
-                  { v: 'custom', l: 'Personalizzato' },
-                ]}
-                onChange={(source) => patch({ source })}
-              />
-            )}
-            {form.source === 'catalog' ? (
-              editing ? (
-                <p className="pname">
-                  {editing.name} <span className="chip mut">Dal catalogo</span>
-                  {editing.measure === 'time' && <span className="chip mut">A tempo</span>}
-                </p>
-              ) : free.length ? (
-                <>
-                  <SearchSelect
-                    label="Esercizio"
-                    placeholder="Cerca nel catalogo…"
-                    value={form.catalogId}
-                    options={free.map((c) => ({ v: c.id, l: c.name, group: CATEGORY_LABEL[c.category], keywords: c.aliases }))}
-                    onChange={pickCatalog}
-                  />
-                  <p className="hint">
-                    {pickedCatalog?.measure === 'time' && 'Si misura in secondi di tenuta. '}Non c'è quello che cerchi? Crealo personalizzato.
-                  </p>
-                </>
-              ) : (
-                <p className="hint">Hai già tutti gli esercizi del catalogo. Per altri movimenti scegli "Personalizzato".</p>
-              )
-            ) : (
-              <>
-                <Field
-                  label="Nome"
-                  value={form.name}
-                  autoComplete="off"
-                  autoFocus
-                  maxLength={80}
-                  hint={form.id ? undefined : 'Solo per movimenti che non sono nel catalogo.'}
-                  onChange={(e) => patch({ name: e.target.value })}
-                />
-                <div className="fld">
-                  <span>Si misura in</span>
-                  {measureLocked ? (
-                    <>
-                      <p className="pname">{MEASURE_LABEL[form.measure]}</p>
-                      <span className="fld-hint">Ha già delle registrazioni: la misura non si cambia più, così storico e grafici restano coerenti.</span>
-                    </>
-                  ) : (
-                    <>
-                      <Seg label="Si misura in" value={form.measure} options={MEASURES.map((m) => ({ v: m, l: MEASURE_LABEL[m] }))} onChange={(measure) => patch({ measure })} />
-                      <span className="fld-hint">Secondi per le tenute (plank, L-sit, verticale…). Dopo la prima registrazione non si cambia più.</span>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-            <label className="check-row">
-              <input type="checkbox" checked={form.inRecords} onChange={(e) => patch({ inRecords: e.target.checked })} />
-              Mostra nei record personali
-            </label>
-            <div className="row">
-              <button className="btn" onClick={save} disabled={form.source === 'catalog' && !form.id && !free.length}>
-                {form.id ? 'Salva modifiche' : 'Aggiungi esercizio'}
-              </button>
-              <button className="btn ghost" onClick={() => setForm(null)}>
-                Annulla
-              </button>
-            </div>
-          </div>
-        )}
-
-        {!active.length && !form && (
+        {!active.length && (
           <EmptyState
             art={<CategoryRow />}
             title="Nessun esercizio"
             actions={
-              <button className="btn" onClick={() => setForm(blank(free[0]))}>
+              <button className="btn" onClick={() => setOpen({ kind: 'add' })}>
                 Aggiungi dal catalogo
               </button>
             }
@@ -205,84 +66,105 @@ export function EserciziView() {
             Tirate, spinte, gambe, core e skill: scegli i movimenti che fai, poi li metti nel programma della settimana.
           </EmptyState>
         )}
-        <div className="ex-list">
-        {active.map((e) => (
-          <div className="entry" key={e.id}>
-            <div>
-              <b className="ex-name"><ExIcon catalogId={e.catalogId} />{e.name}</b>
-              <Activity weeks={weeklyCounts(entries, e.id, today)} />
-              <div className="chips">
-                {!e.catalogId && <span className="chip mut">Personalizzato</span>}
-                {e.measure === 'time' && <span className="chip mut">A tempo</span>}
-                {e.inRecords && <span className="chip mut">Nei record</span>}
-              </div>
-            </div>
-            <div className="pact col">
-              <button
-                className="btn small ghost"
-                onClick={() => {
-                  setForm(toForm(e));
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              >
-                Modifica
-              </button>
-              <ConfirmButton
-                confirmLabel="Archivia?"
-                onConfirm={() =>
-                  // il trainer lo ha in programma nei prossimi giorni: archiviarlo lo nasconderebbe senza toglierlo
-                  plan.some((p) => p.exerciseId === e.id && p.date >= todayStr() && locked(p))
-                    ? toast(`"${e.name}" è nel programma del tuo trainer: chiedigli di toglierlo prima di archiviarlo`)
-                    : archive.mutate({ id: e.id, archived: true })
-                }
-              >
-                Archivia
-              </ConfirmButton>
-            </div>
-          </div>
-        ))}
-        </div>
-        {active.length > 0 && <p className="hint mt-12">Archiviare toglie l'esercizio da programma e liste, ma conserva lo storico e i grafici. Quelli che il tuo trainer ha in programma li toglie lui.</p>}
+
+        <ul className="ex-list">
+          {active.map((e) => (
+            <li className="ex-row" key={e.id}>
+              <span className="ex-txt">
+                <b>{e.name}</b>
+                {tags(e) && <small className="ex-tag">{tags(e)}</small>}
+              </span>
+              <MoreMenu
+                label={`Azioni per ${e.name}`}
+                items={[
+                  { label: 'Modifica', onSelect: () => setOpen({ kind: 'edit', id: e.id }) },
+                  { label: 'Archivia', onSelect: () => doArchive(e) },
+                  { label: 'Elimina', danger: true, onSelect: () => askDelete(e) },
+                ]}
+              />
+            </li>
+          ))}
+        </ul>
+
+        {exercises.length > 0 && (
+          <p className="hint ex-note">
+            <b>Elimina</b> cancella l'esercizio con tutte le sue registrazioni, per sempre. <b>Archivia</b> lo toglie da scheda e liste ma conserva storico e grafici: lo
+            ripristini quando vuoi.
+          </p>
+        )}
 
         {archived.length > 0 && (
           <>
-            <div className="row mt-16">
-              <button className="btn small ghost" onClick={() => setShowArchived(!showArchived)}>
-                {showArchived ? 'Nascondi archiviati' : `Archiviati (${archived.length})`}
-              </button>
-            </div>
-            {showArchived &&
-              archived.map((e) => {
-                const n = count(e.id);
-                return (
-                  <div className="entry" key={e.id}>
-                    <div>
-                      <b>{e.name}</b>
-                      <div className="pmeta">{n ? `${n} registrazioni nello storico` : 'Nessuna registrazione'}</div>
-                    </div>
-                    <div className="pact col">
-                      <button className="btn small ghost" onClick={() => archive.mutate({ id: e.id, archived: false })}>
-                        Ripristina
-                      </button>
-                      <ConfirmButton confirmLabel={n ? `Elimina anche ${n} reg.` : 'Conferma'} onConfirm={() => del.mutate(e.id)} />
-                    </div>
-                  </div>
-                );
-              })}
+            <button className="btn small ghost ex-arch" aria-expanded={showArchived} aria-controls="ex-archived" onClick={() => setShowArchived(!showArchived)}>
+              Archiviati ({archived.length})
+            </button>
+            {showArchived && (
+              <ul className="ex-list" id="ex-archived" aria-label="Esercizi archiviati">
+                {archived.map((e) => {
+                  const n = count(e.id);
+                  return (
+                    <li className="ex-row" key={e.id}>
+                      <span className="ex-txt">
+                        <b>{e.name}</b>
+                        <small className="ex-tag">{n ? `${plural(n, 'registrazione', 'registrazioni')} nello storico` : 'Nessuna registrazione'}</small>
+                      </span>
+                      <MoreMenu
+                        label={`Azioni per ${e.name}`}
+                        items={[
+                          { label: 'Ripristina', onSelect: () => archive.mutate({ id: e.id, archived: false }, { onSuccess: () => toast(`"${e.name}" ripristinato`) }) },
+                          { label: 'Elimina', danger: true, onSelect: () => askDelete(e) },
+                        ]}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </>
         )}
-      </section>
+      </Card>
+
+      {open?.kind === 'add' && <AddSheet catalog={catalog} exercises={exercises} onClose={() => setOpen(null)} />}
+      {open?.kind === 'edit' && target && <EditSheet exercise={target} exercises={exercises} catalog={catalog} hasEntries={count(target.id) > 0} onClose={() => setOpen(null)} />}
+      {open?.kind === 'delete' && target && (
+        <DeleteSheet
+          exercise={target}
+          entries={count(target.id)}
+          inPlan={plan.some((p) => p.exerciseId === target.id)}
+          onClose={() => setOpen(null)}
+          onConfirm={() => {
+            del.mutate(target.id);
+            setOpen(null);
+          }}
+        />
+      )}
     </>
   );
 }
 
-/** Registrazioni delle ultime 8 settimane come barre (V05), con il totale scritto accanto. */
-function Activity({ weeks }: { weeks: number[] }) {
-  const n = weeks.reduce((a, b) => a + b, 0);
+/** Conferma di "Elimina": dice quante registrazioni si perdono; il fuoco non parte dal bottone che cancella. */
+function DeleteSheet({ exercise, entries, inPlan, onClose, onConfirm }: { exercise: Exercise; entries: number; inPlan: boolean; onClose: () => void; onConfirm: () => void }) {
   return (
-    <div className="ex-activity">
-      <ActivityBars counts={weeks} label={`Ultime 8 settimane: ${n} ${n === 1 ? 'registrazione' : 'registrazioni'}`} />
-      <span className="pmeta">{n ? `${n} in 8 sett.` : 'Mai in 8 sett.'}</span>
-    </div>
+    <Sheet title={`Eliminare "${exercise.name}"?`} onClose={onClose} alert>
+      <p className="ex-del">
+        {entries ? (
+          <>
+            Cancelli anche <b>{plural(entries, 'registrazione', 'registrazioni')}</b>: lo storico e i grafici di questo esercizio spariscono.
+          </>
+        ) : (
+          'Non ha registrazioni.'
+        )}
+        {inPlan && ' Esce anche dalla scheda.'} Non si può annullare.
+      </p>
+      {entries > 0 && !exercise.archivedAt && <p className="hint">Per tenere lo storico usa Archivia.</p>}
+      <div className="row ex-del-act">
+        <button type="button" className="btn danger" onClick={onConfirm}>
+          {entries ? `Elimina con ${plural(entries, 'registrazione', 'registrazioni')}` : 'Elimina'}
+        </button>
+        <button type="button" className="btn ghost" onClick={onClose}>
+          Annulla
+        </button>
+      </div>
+    </Sheet>
   );
 }

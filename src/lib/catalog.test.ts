@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogExercise } from '../data/types';
-import { byCategory, matchCatalog } from './catalog';
+import { byCategory, matchCatalog, searchCatalog } from './catalog';
 
 const c = (id: string, name: string, category: CatalogExercise['category'], aliases: string[] = []): CatalogExercise => ({
   id,
@@ -33,5 +33,22 @@ describe('matchCatalog', () => {
 describe('byCategory', () => {
   it('ordina per categoria: tirata, spinta, gambe, core, skill', () => {
     expect(byCategory(catalog).map((x) => x.id)).toEqual(['trazioni', 'dip', 'plank']);
+  });
+});
+
+describe('searchCatalog', () => {
+  it('senza testo dà tutto il catalogo', () => {
+    expect(searchCatalog(catalog, '  ')).toEqual(catalog);
+  });
+  it('cerca per nome, senza badare a maiuscole, accenti e spazi doppi', () => {
+    expect(searchCatalog(catalog, 'PLÀNK').map((x) => x.id)).toEqual(['plank']);
+    expect(searchCatalog(catalog, 'alle  parallele').map((x) => x.id)).toEqual(['dip']);
+  });
+  it('cerca per sinonimo e per nome del gruppo', () => {
+    expect(searchCatalog(catalog, 'pull').map((x) => x.id)).toEqual(['trazioni']);
+    expect(searchCatalog(catalog, 'spin', (x) => (x.category === 'spinta' ? 'Spinta' : '')).map((x) => x.id)).toEqual(['dip']);
+  });
+  it('niente che corrisponde: elenco vuoto', () => {
+    expect(searchCatalog(catalog, 'zzz')).toEqual([]);
   });
 });

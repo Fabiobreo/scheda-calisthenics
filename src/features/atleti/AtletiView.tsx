@@ -577,7 +577,7 @@ function AthletePlan() {
           />
         ) : !adding ? (
           <div className="row">
-            <button className="btn" onClick={() => (picker.ref() ? setAdding(true) : toast("Scrivi il nome dell'esercizio"))}>
+            <button className="btn" onClick={() => (picker.ref() ? setAdding(true) : toast(picker.missing))}>
               Aggiungi al giorno
             </button>
             <button className="btn ghost" onClick={() => setPanel('multi')}>
@@ -600,7 +600,7 @@ function AthletePlan() {
             saveLabel="Aggiungi"
             onSave={(scheme, note) => {
               const ref = picker.ref();
-              if (!ref) return toast("Scrivi il nome dell'esercizio");
+              if (!ref) return toast(picker.missing);
               addItem.mutate({ date, ref, scheme, note });
               setAdding(false);
             }}
