@@ -49,14 +49,22 @@ function useMyAthletes() {
 
 /**
  * Pagina Atleti. Sul telefono: avvisi, elenco, schede in fila. Su schermo largo (audit A06): elenco e schede a
- * sinistra, "Da guardare" a destra.
+ * sinistra, "Da guardare" a destra. Senza atleti "Da guardare" non c'è: una sola colonna centrata, invece di una
+ * colonna a sinistra e il vuoto a destra.
  */
 export function AtletiView() {
   const wide = useWide();
+  const { links, athletes } = useMyAthletes();
+  const alone = !links.isLoading && !athletes.length;
   return (
     <>
       <PageTitle title="Atleti" />
-      {wide ? (
+      {wide && alone ? (
+        <div className="solo">
+          <AthletesCard />
+          <SchedeCard />
+        </div>
+      ) : wide ? (
         <div className="cols">
           <div className="col">
             <AthletesCard />

@@ -639,7 +639,7 @@ body:has(.lv:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
 
 /* Schermo largo (audit A06): barra laterale al posto di quella in basso, pagine a due colonne.
    Sul telefono .cols, .col e .masonry non esistono (display: contents): le schede restano in fila come prima. */
-.cols, .cols > .col, .masonry, .flat { display: contents; }
+.cols, .cols > .col, .masonry, .flat, .solo { display: contents; }
 .only-wide { display: none; }
 .board-list { margin: 6px 0 0; display: flex; flex-direction: column; gap: 4px; text-align: left; }
 .b-item { font-size: 12px; font-weight: 500; color: var(--fg); line-height: 1.25; display: flex; gap: 5px; align-items: baseline; min-width: 0; }
@@ -669,6 +669,8 @@ body:has(.lv:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
   .cols > .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   /* elenco stretto a sinistra, dettaglio largo a destra */
   .cols.master { grid-template-columns: 280px minmax(0, 1fr); }
+  /* una sola colonna centrata, quando la seconda resterebbe vuota */
+  .solo { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 760px; margin-inline: auto; }
   .entry.on { box-shadow: inset 3px 0 0 var(--gold); padding-left: 12px; }
   .masonry { display: block; columns: 2; column-gap: 20px; }
   .masonry > * { break-inside: avoid; margin-bottom: 16px; }

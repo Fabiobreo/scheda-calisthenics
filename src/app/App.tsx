@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useRegisterSW } from 'virtual:pwa-register/react';
 import { TopBar } from '../components/TopBar';
 import { IconAtleti, IconEsercizi, IconGrafici, IconHome, IconLivello, IconScheda } from '../components/icons';
 import { useData, useProfile, useScoreSync } from '../data/hooks';
@@ -92,7 +91,6 @@ export function App() {
   if (session.status === 'signed-out')
     return (
       <div className="wrap">
-        <UpdateBanner />
         {/* l'informativa si legge anche prima di registrarsi */}
         <Suspense fallback={null}>{location.pathname === '/privacy' ? <PrivacyView signedIn={false} /> : <AuthScreen invite={invite?.toUpperCase()} />}</Suspense>
       </div>
@@ -111,7 +109,6 @@ export function App() {
           </Link>
         )}
       </header>
-      <UpdateBanner />
       {session.status === 'loading' && <Skeleton />}
       {session.status === 'ready' &&
         (recovery ? (
@@ -239,20 +236,4 @@ function FollowRoute() {
 function InviteRoute() {
   const { code } = useParams();
   return <AccountView inviteCode={code} />;
-}
-
-function UpdateBanner() {
-  const {
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW();
-  if (!needRefresh) return null;
-  return (
-    <div className="banner row between">
-      <span>È disponibile una nuova versione.</span>
-      <button className="btn small" onClick={() => updateServiceWorker(true)}>
-        Aggiorna
-      </button>
-    </div>
-  );
 }

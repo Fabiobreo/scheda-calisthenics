@@ -9,6 +9,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './app/App';
 import { RestTimerProvider } from './app/restTimer';
 import { SessionProvider } from './app/session';
+import { AutoUpdate } from './app/update';
 import { ToastProvider } from './app/toast';
 
 const queryClient = new QueryClient({
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ToastProvider>
+          <AutoUpdate />
           <RestTimerProvider>
             <SessionProvider>
               <App />
