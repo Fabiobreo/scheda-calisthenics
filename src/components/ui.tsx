@@ -8,14 +8,14 @@ import { TYPE_LABEL, type ExerciseType } from '../data/types';
  * `children` come in `CardHead`. Senza `show` l'`h1` è solo per gli screen reader (Home, Livello e Grafici hanno già
  * la loro fascia).
  */
-export function PageTitle({ title, show, help, children }: { title: string; show?: boolean; help?: ReactNode; children?: ReactNode }) {
+export function PageTitle({ title, show, help, sub, children }: { title: string; show?: boolean; help?: ReactNode; sub?: string; children?: ReactNode }) {
   const nested = useContext(Nested);
   usePageTitle(nested ? null : title);
   if (nested) return null;
   if (!show) return <h1 className="sr-only">{title}</h1>;
   return (
     <div className="page-h">
-      <CardHead as="h1" title={title} help={help}>
+      <CardHead as="h1" title={title} help={help} sub={sub}>
         {children}
       </CardHead>
     </div>
@@ -422,14 +422,17 @@ export function SearchSelect<T extends string>({ label, value, options, onChange
  * Testata di una scheda (ticket 21): titolo piccolo, azioni a destra e, se c'è, la spiegazione dietro una "?" invece
  * di righe sempre visibili. `big`: titolo grande, per la scheda protagonista della pagina.
  */
-export function CardHead({ title, help, big, as: H = 'h2', children }: { title: string; help?: ReactNode; big?: boolean; as?: 'h1' | 'h2'; children?: ReactNode }) {
+export function CardHead({ title, help, big, sub, as: H = 'h2', children }: { title: string; help?: ReactNode; big?: boolean; sub?: string; as?: 'h1' | 'h2'; children?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
     <>
       <div className="card-h">
         <span className="card-t">
-          <H className={big ? 'big' : undefined}>{title}</H>
+          <span className="card-tt">
+            <H className={big ? 'big' : undefined}>{title}</H>
+            {sub && <small className="card-sub">{sub}</small>}
+          </span>
           {help && (
             <button type="button" className="help" aria-expanded={open} aria-controls={id} aria-label={open ? `Nascondi la spiegazione di ${title}` : `Cos'è ${title}`} onClick={() => setOpen(!open)}>
               <span aria-hidden="true">?</span>

@@ -49,7 +49,7 @@ create function pg_temp.names(r jsonb) returns text language sql as $$
   from jsonb_array_elements(r -> 'rows') with ordinality as t (x, n)
 $$;
 
-select is((select array_agg(public.level_band(t) order by t) from unnest(array[0, 300, 301, 800, 801, 2500, 2501, 4000, 4001, 5500, 5501, 7000]) t),
+select is((select array_agg(public.level_band(t) order by t) from unnest(array[0, 300, 301, 800, 801, 2300, 2301, 3800, 3801, 5300, 5301, 6800]) t),
   array[0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5], 'fasce del livello complessivo come nel motore');
 select is(public.level_band(null), 0, 'senza punti: Base');
 select is((select count(*)::int from public.profiles where share_records and id::text like '00000000-0000-0000-0000-0000000%'), 37, 'la condivisione dei record nasce accesa');

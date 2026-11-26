@@ -13,12 +13,10 @@ import {
   DEFAULT_PERIOD,
   grainFor,
   IN_PERIOD,
-  isMaxMetric,
   isPeriod,
   periodRange,
   PERIODS,
   recordIndex,
-  type Grain,
   type Period,
 } from '../../lib/periods';
 import { METRICS, METRICS_BY_MEASURE, recordPoint, series, type Point } from '../../lib/stats';
@@ -28,8 +26,6 @@ import { SessionSheet } from './SessionSheet';
 /** Sessioni mostrate sotto il grafico. */
 const SESSIONS = 5;
 const PERIOD_KEY = 'grafici-periodo';
-
-const GRAIN_LABEL: Record<Exclude<Grain, 'day'>, string> = { week: 'per settimana', month: 'per mese' };
 
 function loadPeriod(): Period {
   try {
@@ -134,6 +130,13 @@ export function GraficiView() {
   const tip = selected && pts.find((p) => p.date === selected.date && p.end === selected.end) ? selected : null;
   // le ultime sessioni del periodo, dalla più recente
   const sessions = inside.slice(-SESSIONS).reverse();
+  // differenza dalla sessione precedente (di sempre, non solo del periodo), come nel mockup: "+20 kg", "Prima sessione"
+  const delta = (date: string) => {
+    const i = daily.findIndex((p) => p.date === date);
+    if (i <= 0) return 'Prima sessione';
+    const d = daily[i].v - daily[i - 1].v;
+    return d === 0 ? '=' : `${d > 0 ? '+' : '−'}${fmt(Math.abs(d))} ${m.unit}`;
+  };
   const open = openDate ? daily.find((p) => p.date === openDate) : undefined;
   const openEntries = open ? entries.filter((e) => e.exerciseId === ex.id && e.date === open.date).reverse() : [];
 
@@ -143,10 +146,6 @@ export function GraficiView() {
       <div className={cls}>
         <div className="gr-head page-h">
           <CardHead title="Andamento" big help="Tocca o trascina sul grafico per leggere il valore di un punto; tocca di nuovo il punto per chiudere. Tocca una sessione per vederne le serie." />
-          <p className="gr-sub">
-            {ex.name} · {m.label}
-            {grain !== 'day' && `, ${isMaxMetric(metric) ? 'massimo' : 'media'} ${GRAIN_LABEL[grain]}`}
-          </p>
         </div>
         <Seg label="Periodo" value={period} options={PERIODS} onChange={setPeriod} />
         <Seg
@@ -242,10 +241,8 @@ export function GraficiView() {
                   <button type="button" className="gr-row" onClick={() => setOpenDate(p.date)} aria-label={`${shortDate(p.date)}${record?.date === p.date ? ', record' : ''}: ${value(p.v)}. Apri la sessione`}>
                     <span className="gr-date">{shortDate(p.date)}</span>
                     {record?.date === p.date && <span className="gr-tag">Record</span>}
+                    <span className="gr-delta">{delta(p.date)}</span>
                     <b className="gr-val">{value(p.v)}</b>
-                    <span className="gr-chev" aria-hidden="true">
-                      ›
-                    </span>
                   </button>
                 </li>
               ))}

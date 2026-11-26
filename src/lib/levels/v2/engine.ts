@@ -78,7 +78,7 @@ export interface BandPosition {
 
 export interface CategoryScore<R extends LevelRecord = LevelRecord> extends BandPosition {
   categoryId: CategoryId;
-  /** Somma dei punti (interi) delle catene, 0–1400. */
+  /** Somma dei punti (interi) delle catene, da 0 al massimo della categoria (1400, le skill 1300). */
   points: number;
   max: number;
   chains: ChainScore<R>[];
@@ -86,7 +86,7 @@ export interface CategoryScore<R extends LevelRecord = LevelRecord> extends Band
 
 export interface LevelSummary<R extends LevelRecord = LevelRecord> extends BandPosition {
   categories: CategoryScore<R>[];
-  /** Punteggio complessivo: somma delle 5 categorie, 0–7000. */
+  /** Punteggio complessivo: somma delle 5 categorie, 0–6800. */
   total: number;
   max: number;
 }
@@ -167,6 +167,10 @@ function formulaPercent(f: Formula, value: number, bw: number, exponent: number 
       const reached = g >= f.start - EPS;
       const ok = loaded && (f.gate === 'load' || reached);
       return ok ? snap(clamp((100 * (g - f.start)) / f.width)) : 0;
+    }
+    case 'ratio': {
+      const h = (value / REF_KG) * d;
+      return value > 0 && h >= f.start - EPS ? snap(clamp((100 * (h - f.start)) / f.width)) : 0;
     }
     case 'oap':
       return value >= 1 ? snap(clamp((100 * (bw * (1 + value / f.repsDivisor) * d - f.start)) / f.width)) : 0;
@@ -268,7 +272,8 @@ export function scoreChain<R extends LevelRecord>(chainId: ChainId, records: rea
 
 /**
  * Livello con nome e % dentro la fascia per un punteggio (di una categoria o del complessivo).
- * La fascia va dalla fine della precedente alla propria fine: 100 → Base 100%, 101 → Intermedio 1%.
+ * La fascia va dalla fine della precedente alla propria fine: 100 → Base 100%, 101 → Intermedio 1%. Le skill non
+ * hanno Base: a 0 punti sono Intermedio 0%.
  */
 export function bandPosition(scope: BandScope, points: number): BandPosition {
   const bands = BANDS[scope];
@@ -280,14 +285,14 @@ export function bandPosition(scope: BandScope, points: number): BandPosition {
   return { band: band.id, name: band.name, percent, start, end: band.to };
 }
 
-/** Punteggio di una macro categoria: somma delle sue catene (0–1400), livello con nome e % nella fascia. */
+/** Punteggio di una macro categoria: somma delle sue catene (0–1400, le skill 0–1300), livello con nome e % nella fascia. */
 export function scoreCategory<R extends LevelRecord>(categoryId: CategoryId, records: readonly R[]): CategoryScore<R> {
   const chains = chainsOf(categoryId).map((c) => scoreChain(c.id, records));
   const points = chains.reduce((t, c) => t + c.points, 0);
-  return { categoryId, points, max: CATEGORY_MAX, chains, ...bandPosition(categoryId, points) };
+  return { categoryId, points, max: CATEGORY_MAX[categoryId], chains, ...bandPosition(categoryId, points) };
 }
 
-/** Tutto il riepilogo: 5 categorie nell'ordine delle regole e punteggio complessivo (somma, 0–7000). */
+/** Tutto il riepilogo: 5 categorie nell'ordine delle regole e punteggio complessivo (somma, 0–6800). */
 export function levelSummary<R extends LevelRecord>(records: readonly R[]): LevelSummary<R> {
   const categories = CATEGORIES.map((c) => scoreCategory(c.id, records));
   const total = categories.reduce((t, c) => t + c.points, 0);
@@ -296,7 +301,7 @@ export function levelSummary<R extends LevelRecord>(records: readonly R[]): Leve
 
 /** I 6 numeri del livello che si salvano sul server per le classifiche (ticket 38), con la versione delle regole. */
 export interface LevelScores {
-  /** Complessivo, 0–7000: la somma delle 5 categorie. */
+  /** Complessivo, 0–6800: la somma delle 5 categorie. */
   total: number;
   /** Fondamentali tirata, 0–1400. */
   ft: number;

@@ -36,8 +36,10 @@ export function fmtSets(sets: WorkSet[]): string {
   const n = (s: WorkSet) => (timed ? s.seconds : s.reps);
   const unit = timed ? 's' : 'rip.';
   if (sets.every((s) => s.weight === w)) {
-    if (sets.every((s) => n(s) === n(sets[0]))) return `${sets.length} serie × ${n(sets[0])} ${unit} · ${fmt(w)} kg`;
-    return `${sets.map(n).join(' / ')} ${unit} · ${fmt(w)} kg`;
+    // a tempo il peso non si chiede più (ticket 41): si scrive solo se una registrazione vecchia ce l'ha
+    const kg = timed && w === 0 ? '' : ` · ${fmt(w)} kg`;
+    if (sets.every((s) => n(s) === n(sets[0]))) return `${sets.length} serie × ${n(sets[0])} ${unit}${kg}`;
+    return `${sets.map(n).join(' / ')} ${unit}${kg}`;
   }
   return sets.map((s) => `${fmt(s.weight)} kg × ${val(s)}`).join(' · ');
 }
@@ -47,4 +49,4 @@ export const fmtSet = (s: WorkSet) => (s.seconds > 0 && s.weight === 0 ? `${s.se
 
 /** Schema del giorno: "4 × 8 · 10 kg · rec. 90 s", "4 × 8 s · 0 kg". */
 export const fmtScheme = (sc: Scheme) =>
-  `${sc.sets} × ${sc.seconds > 0 ? `${sc.seconds} s` : sc.reps} · ${fmt(sc.weight)} kg${sc.rest > 0 ? ` · rec. ${sc.rest} s` : ''}`;
+  `${sc.sets} × ${sc.seconds > 0 ? `${sc.seconds} s` : sc.reps}${sc.seconds > 0 && sc.weight === 0 ? '' : ` · ${fmt(sc.weight)} kg`}${sc.rest > 0 ? ` · rec. ${sc.rest} s` : ''}`;

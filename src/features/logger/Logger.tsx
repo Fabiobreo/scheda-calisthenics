@@ -8,8 +8,6 @@ import {
   DEFAULT_REST,
   DIFFICULTIES,
   DIFFICULTY_LABEL,
-  EXERCISE_TYPES,
-  TYPE_LABEL,
   type CatalogExercise,
   type Difficulty,
   type Entry,
@@ -532,10 +530,7 @@ function LoggerSheet({ draft, setDraft, session }: { draft: Draft; setDraft: (d:
               {rest > 0 && `recupero ${rest} s`}
             </p>
           )}
-          <div className="fld">
-            <span>Tipo</span>
-            <Seg label="Tipo" value={draft.type} options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))} onChange={(type) => patch({ type })} />
-          </div>
+          {/* niente Forza / Volume / Tecnico da scegliere (Michael, 25 novembre 2026): resta quello della scheda o dell'esercizio */}
           {draft.coachNote && (
             <p className="coach-note">
               <b>Dal trainer:</b> {draft.coachNote}
@@ -543,16 +538,17 @@ function LoggerSheet({ draft, setDraft, session }: { draft: Draft; setDraft: (d:
           )}
 
           <div className="sets">
-            <div className="set-h" aria-hidden="true">
+            <div className={timed ? 'set-h timed' : 'set-h'} aria-hidden="true">
               <span>#</span>
-              <span>Peso (kg)</span>
+              {!timed && <span>Peso (kg)</span>}
               <span>{timed ? 'Secondi' : 'Rip.'}</span>
               <span />
             </div>
             {draft.rows.map((r, i) => (
-              <div className={`set${r.done ? ' done' : ''}${r.done && pop === i ? ' pop' : ''}`} key={i}>
+              <div className={`set${timed ? ' timed' : ''}${r.done ? ' done' : ''}${r.done && pop === i ? ' pop' : ''}`} key={i}>
                 <span className="set-n">{i + 1}</span>
-                <input aria-label={`Peso serie ${i + 1}`} inputMode="decimal" value={r.weight} placeholder="0" onChange={(e) => patchRow(i, { weight: e.target.value })} />
+                {/* a tempo il peso non si chiede (Michael, 25 novembre 2026): resta quello che la serie aveva già */}
+                {!timed && <input aria-label={`Peso serie ${i + 1}`} inputMode="decimal" value={r.weight} placeholder="0" onChange={(e) => patchRow(i, { weight: e.target.value })} />}
                 <input
                   aria-label={`${unit} serie ${i + 1}`}
                   inputMode="numeric"

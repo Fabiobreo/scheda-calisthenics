@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CATEGORIES, levelScores, levelSummary, RULES_VERSION, SCORE_KEY, type LevelRecord, type LevelScores } from '../lib/levels';
+import { CATEGORIES, CATEGORY_MAX, CHAINS, levelScores, levelSummary, RULES_VERSION, SCORE_KEY, type LevelRecord, type LevelScores } from '../lib/levels';
 import { scoreToSave } from './scoreSync';
 
 // Tre record veri: trazioni zavorrate, planche straddle, verticale.
@@ -27,6 +27,22 @@ describe('i 6 numeri da salvare', () => {
 
   it('ogni categoria ha la sua colonna', () => {
     expect(new Set(CATEGORIES.map((c) => SCORE_KEY[c.id])).size).toBe(5);
+  });
+
+  it('la versione delle regole è la 2 (punteggi del 26 novembre): ogni app riscrive i suoi punti', () => {
+    expect(RULES_VERSION).toBe(2);
+    expect(ZERO.rulesVersion).toBe(2);
+  });
+
+  it('anche al massimo restano nei vincoli del database (1400 per categoria, 7000 in tutto)', () => {
+    const all: LevelRecord[] = CHAINS.map((chain) => {
+      const top = chain.entries[chain.entries.length - 1];
+      return { chainId: chain.id, entry: top.id, value: top.measure === 'kg' ? 400 : top.measure === 'reps' ? 50 : 60, bodyweightKg: 60 };
+    });
+    const s = scoresOf(all);
+    for (const c of CATEGORIES) expect(s[SCORE_KEY[c.id]]).toBe(CATEGORY_MAX[c.id]);
+    expect([s.ft, s.fs, s.st, s.ss, s.hb]).toEqual([1400, 1400, 1300, 1300, 1400]);
+    expect(s.total).toBe(6800);
   });
 
   it('rispettano i vincoli del database: interi, 0–1400 per categoria e 0–7000 in tutto', () => {

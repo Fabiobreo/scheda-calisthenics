@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useToast } from '../../app/toast';
 import { CategoryRow } from '../../components/ExIcon';
-import { Card, EmptyState, MoreMenu, PageTitle } from '../../components/ui';
+import { EmptyState, MoreMenu, PageTitle } from '../../components/ui';
 import { useArchiveExercise, useCatalog, useData, useDeleteExercise, useTrainerLock } from '../../data/hooks';
 import type { Exercise } from '../../data/types';
 import { todayStr } from '../../lib/dates';
@@ -45,14 +45,14 @@ export function EserciziView() {
       <PageTitle
         show
         title="Esercizi"
+        sub={active.length ? plural(active.length, 'esercizio', 'esercizi') : undefined}
         help="Scegli i movimenti dal catalogo, uguale per tutti: così tu e il tuo trainer parlate dello stesso esercizio. Serie e ripetizioni le decidi nel programma, giorno per giorno."
       >
         <button className="btn small" onClick={() => setOpen({ kind: 'add' })}>
           + Aggiungi
         </button>
       </PageTitle>
-      <Card>
-
+      <div className="ex-page">
         {!active.length && (
           <EmptyState
             art={<CategoryRow />}
@@ -87,7 +87,7 @@ export function EserciziView() {
         </ul>
 
         {exercises.length > 0 && (
-          <p className="hint ex-note">
+          <p className="hint ex-note card">
             <b>Elimina</b> cancella l'esercizio con tutte le sue registrazioni, per sempre. <b>Archivia</b> lo toglie da scheda e liste ma conserva storico e grafici: lo
             ripristini quando vuoi.
           </p>
@@ -122,7 +122,7 @@ export function EserciziView() {
             )}
           </>
         )}
-      </Card>
+      </div>
 
       {open?.kind === 'add' && <AddSheet catalog={catalog} exercises={exercises} onClose={() => setOpen(null)} />}
       {open?.kind === 'edit' && target && <EditSheet exercise={target} exercises={exercises} catalog={catalog} hasEntries={count(target.id) > 0} onClose={() => setOpen(null)} />}

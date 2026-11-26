@@ -181,7 +181,7 @@ export function RecordSheet({
               }}
             />
             <p className="hint">
-              {entryLevelsText(opt)}
+              {entryLevelsText(chainId, opt)}
               {opt.levels.length > 1 ? ': quale raggiungi lo decide il valore.' : '.'}
             </p>
             <Field

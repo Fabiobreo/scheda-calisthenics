@@ -22,8 +22,16 @@ describe('metriche', () => {
   it('il livello di una riga usa le fasce della sua metrica', () => {
     expect(rowLevel('generale', 300)).toBe('Base');
     expect(rowLevel('generale', 301)).toBe('Intermedio');
-    expect(rowLevel('skill-tirata', 300)).toBe('Intermedio');
+    // le skill partono da Intermedio (0–100), poi Avanzato fino a 400
+    expect(rowLevel('skill-tirata', 0)).toBe('Intermedio');
+    expect(rowLevel('skill-tirata', 100)).toBe('Intermedio');
+    expect(rowLevel('skill-tirata', 300)).toBe('Avanzato');
+    expect(rowLevel('skill-spinta', 401)).toBe('Elite');
+    expect(rowLevel('handbalance', 0)).toBe('Base');
     expect(rowLevel('handbalance', 300)).toBe('Avanzato');
+    expect(rowLevel('generale', 2300)).toBe('Avanzato');
+    expect(rowLevel('generale', 2301)).toBe('Elite');
+    expect(rowLevel('generale', 6800)).toBe('Leggenda');
   });
 });
 

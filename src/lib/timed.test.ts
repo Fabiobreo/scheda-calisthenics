@@ -66,10 +66,10 @@ describe('testo delle serie a tempo', () => {
   const s = (weight: number, seconds: number) => ({ weight, reps: 0, seconds });
 
   it('serie tutte uguali', () => {
-    expect(fmtSets([s(0, 8), s(0, 8), s(0, 8), s(0, 8)])).toBe('4 serie × 8 s · 0 kg');
+    expect(fmtSets([s(0, 8), s(0, 8), s(0, 8), s(0, 8)])).toBe('4 serie × 8 s');
   });
   it('stesso peso, secondi diversi', () => {
-    expect(fmtSets([s(0, 10), s(0, 8), s(0, 6)])).toBe('10 / 8 / 6 s · 0 kg');
+    expect(fmtSets([s(0, 10), s(0, 8), s(0, 6)])).toBe('10 / 8 / 6 s');
   });
   it('pesi diversi', () => {
     expect(fmtSets([s(5, 8), s(2.5, 10)])).toBe('5 kg × 8 s · 2,5 kg × 10 s');
@@ -80,7 +80,7 @@ describe('testo delle serie a tempo', () => {
     expect(fmtSet({ weight: 50, reps: 6, seconds: 0 })).toBe('50 kg × 6');
   });
   it('schema del giorno', () => {
-    expect(fmtScheme(timed(4, 8))).toBe('4 × 8 s · 0 kg · rec. 120 s');
+    expect(fmtScheme(timed(4, 8))).toBe('4 × 8 s · rec. 120 s');
     expect(fmtScheme({ type: 'forza', sets: 5, reps: 5, seconds: 0, weight: 20, rest: 0 })).toBe('5 × 5 · 20 kg');
   });
 });

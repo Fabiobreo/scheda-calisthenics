@@ -15,6 +15,7 @@ import {
   type EntryOption,
   type LevelRecord,
   type LevelSummary,
+  type Letter,
   type Measure,
   type ValidationError,
 } from '../../lib/levels';
@@ -69,15 +70,22 @@ export interface PentagonScale {
 
 /**
  * Scala del pentagono (30, decisione 5): il contorno è la fine del livello più alto raggiunto tra le 5 categorie, e
- * ogni asse va da 0 alla fine di quel livello per la sua categoria (Avanzato = 500, 500, 666, 684, 500 punti). Gli
- * anelli interni sono le fini dei livelli sotto, asse per asse: per questo non sono pentagoni regolari.
+ * ogni asse va da 0 alla fine di quel livello per la sua categoria (Avanzato = 500 punti nei fondamentali e in
+ * handbalance, 400 nelle skill). Gli anelli interni sono le fini dei livelli sotto, asse per asse: per questo non sono
+ * pentagoni regolari.
+ *
+ * Le skill non hanno la fascia Base e a 0 punti sono già "Intermedio": una categoria senza punti non alza il
+ * contorno, altrimenti chi inizia vedrebbe un pentagono in scala Intermedio. Se il contorno è Base, l'asse di una
+ * skill (che è per forza a 0) usa la sua prima fascia.
  */
 export function pentagonScale(summary: LevelSummary): PentagonScale {
-  const top = Math.max(0, ...summary.categories.map((c) => rank(c.band)));
+  const top = Math.max(0, ...summary.categories.filter((c) => c.points > 0).map((c) => rank(c.band)));
+  const topBand = BANDS.complessivo[top];
   const axes = AXES.map((id): PentagonAxis => {
     const cat = summary.categories.find((c) => c.categoryId === id)!;
     const bands = BANDS[id];
-    const end = bands[top].to;
+    const i = Math.max(0, bands.findIndex((b) => b.id === topBand.id));
+    const end = bands[i].to;
     return {
       id,
       code: SIGLA[id],
@@ -85,10 +93,10 @@ export function pentagonScale(summary: LevelSummary): PentagonScale {
       level: cat.name,
       percent: cat.percent,
       at: Math.min(1, Math.max(0, cat.points / end)),
-      rings: bands.slice(0, top).map((b) => b.to / end),
+      rings: bands.slice(0, i).map((b) => b.to / end),
     };
   });
-  return { band: BANDS.complessivo[top].id, name: BANDS.complessivo[top].name, axes };
+  return { band: topBand.id, name: topBand.name, axes };
 }
 
 /** Testo alternativo del pentagono: nomi e valori per intero. */
@@ -117,14 +125,26 @@ export function recordText(r: { subId: string; stage: string; value: number }): 
 }
 
 /**
- * Livello attuale di una catena come si scrive in pagina: la voce e la lettera ("Trazioni zavorrate, livello C"),
+ * Lettera di un livello come si legge in pagina: **A è il livello più difficile** della catena e si scende fino al
+ * più facile (Michael, 25 novembre 2026). Nelle regole e nei PDF dei punteggi è il contrario (A = il più facile):
+ * qui si gira soltanto la scritta, catena per catena (in una catena di 6 livelli il primo è F, in una di 8 è H).
+ */
+export function shownLetter(chainId: string, letter: Letter): string {
+  const levels = chainRule(chainId)?.levels;
+  const i = levels?.findIndex((l) => l.letter === letter) ?? -1;
+  return !levels || i < 0 ? letter : String.fromCharCode(65 + levels.length - 1 - i);
+}
+
+/**
+ * Livello attuale di una catena come si scrive in pagina: la voce e la lettera ("Trazioni zavorrate, livello D"),
  * mai il nome del livello nelle regole, che porta percentuali del peso corporeo valide solo a 60 kg (30, decisione
  * 16). null se la catena non ha ancora un livello.
  */
 export function chainLevelText(chain: Pick<ChainScore, 'chainId' | 'level'>): string | null {
   if (!chain.level) return null;
   const entry = chainRule(chain.chainId)?.entries.find((e) => e.levels.includes(chain.level!));
-  return entry ? `${entry.name}, livello ${chain.level}` : `Livello ${chain.level}`;
+  const letter = shownLetter(chain.chainId, chain.level);
+  return entry ? `${entry.name}, livello ${letter}` : `Livello ${letter}`;
 }
 
 /** % del livello attuale di una catena, intera e per difetto: 100 solo a livello pieno, mai 0 se il livello c'è. */
@@ -132,10 +152,11 @@ export function chainPercent(chain: Pick<ChainScore, 'level' | 'percent'>): numb
   return chain.level ? Math.max(1, Math.floor(chain.percent + 1e-9)) : 0;
 }
 
-/** Livelli coperti da una voce: "Livello A", "Livelli C–F". */
-export function entryLevelsText(opt: Pick<EntryOption, 'levels'>): string {
+/** Livelli coperti da una voce, dal più facile, con le lettere come si leggono in pagina: "Livello F", "Livelli D–A". */
+export function entryLevelsText(chainId: string, opt: Pick<EntryOption, 'levels'>): string {
   const { levels } = opt;
-  return levels.length === 1 ? `Livello ${levels[0]}` : `Livelli ${levels[0]}–${levels[levels.length - 1]}`;
+  const s = (l: Letter) => shownLetter(chainId, l);
+  return levels.length === 1 ? `Livello ${s(levels[0])}` : `Livelli ${s(levels[0])}–${s(levels[levels.length - 1])}`;
 }
 
 /** Etichetta del campo del valore. */
@@ -237,7 +258,8 @@ export interface Ladder {
 }
 
 /**
- * I sei livelli di una scala (complessivo o una categoria) con le fasce di punti e dove si trova l'utente. Il livello
+ * I livelli di una scala (sei per il complessivo, i fondamentali e handbalance; cinque per le skill, che partono da
+ * Intermedio) con le fasce di punti e dove si trova l'utente. Il livello
  * attuale è quello deciso dal motore (`band`), così i bordi restano i suoi: 100 punti = Base 100%, 101 = Intermedio.
  */
 export function ladder(scope: LadderScope, band: BandId, points: number): Ladder {

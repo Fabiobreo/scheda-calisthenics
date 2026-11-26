@@ -15,7 +15,7 @@ import {
   useRemovePlanItem,
   useSetPlanScheme,
 } from '../../data/hooks';
-import { CATEGORY_LABEL, DIFFICULTY_LABEL, TYPE_LABEL, type PlanChanges, type PlanItem } from '../../data/types';
+import { CATEGORY_LABEL, DIFFICULTY_LABEL, type PlanChanges, type PlanItem } from '../../data/types';
 import { byCategory, defaultType } from '../../lib/catalog';
 import { addDays, inWeek, longDate, mondayOf, shortDate, todayStr, weekLabel, weekdayIndex } from '../../lib/dates';
 import { fmtScheme, fmtSets } from '../../lib/format';
@@ -207,10 +207,12 @@ function Programma() {
               <div>
                 <SetBlocks total={sc.sets} done={saved && !future ? saved.sets.length : 0} type={sc.type} />
                 <div className="pmeta">
-                  {/* il tipo deciso dal trainer resta come testo, senza colori (ticket 37) */}
-                  {fmtScheme(sc)} · {TYPE_LABEL[sc.type]}{' '}
+                  {/* niente Forza / Volume / Tecnico per l'atleta (Michael, 25 novembre 2026) */}
+                  {fmtScheme(sc)}
+                </div>
+                <div className="pmeta">
                   {!fromTrainer && editing !== p.id && (
-                    <button className="link small" onClick={() => setEditing(p.id)} aria-label={`Modifica serie, ripetizioni, peso e recupero di ${ex.name} per ${dayName}`}>
+                    <button className="btn small ghost sch-edit" onClick={() => setEditing(p.id)} aria-label={`Modifica serie, ripetizioni, peso e recupero di ${ex.name} per ${dayName}`}>
                       Modifica
                     </button>
                   )}
@@ -249,6 +251,7 @@ function Programma() {
               </div>
               {editing === p.id && (
                 <SchemeForm
+                  noType
                   initial={sc}
                   measure={ex.measure}
                   hint={`Vale solo per ${title}.`}
@@ -283,6 +286,7 @@ function Programma() {
           )}
           {addOpen && addId && (
             <SchemeForm
+              noType
               key={addId}
               initial={suggestScheme(plan, done, archivedTwin?.id ?? addId, addCatalogItem?.defaultType ?? defaultType(catalog, byId.get(addId)), addMeasure)}
               measure={addMeasure}

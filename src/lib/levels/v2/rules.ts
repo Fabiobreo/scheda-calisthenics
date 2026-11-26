@@ -1,7 +1,8 @@
 /**
  * Regole dei punteggi v2 (ticket 30 e 31), scritte come dati. Fonte: `Correzioni punteggi.pdf` di Michael
- * (22 novembre 2026). Soglie e divisori sono copiati dal PDF numero per numero: per cambiarne uno si cambia
- * un numero in questo file e il motore (`engine.ts`) lo applica ovunque.
+ * (22 novembre 2026) per i fondamentali e `Correzioni punteggi 26_11.pdf` (26 novembre 2026, ticket 40) per skill
+ * tirata, skill spinta e handbalance. Soglie e divisori sono copiati dai PDF numero per numero: per cambiarne uno si
+ * cambia un numero in questo file e il motore (`engine.ts`) lo applica ovunque.
  *
  * Notazione del PDF: A2 = peso corporeo (PC), B2 = ripetizioni o secondi, C2 = zavorra o massimale,
  * F2 = peso di riferimento, D = (F2/A2)^esponente, G = (A2+C2)×D oppure C2×D per panca e military.
@@ -46,6 +47,9 @@ export type LoadKind = 'zavorra' | 'bilanciere';
  *   Il carico deve essere sempre maggiore di zero e la panca e il military partono dalla soglia del 35%
  *   (Michael, 24 novembre 2026): nel PDF trazioni, dip e HSPU F avevano solo `G >= start`, panca B e
  *   military A solo `C2 > 0`.
+ * - `ratio`: `SE(E(C2>0; H>=start); MIN(100; MAX(1; 100 × (H − start) / width)); 0)` con `H = (C2/F2) × D`, la
+ *   zavorra come frazione dei 60 kg di riferimento (HSPU zavorrati, PDF del 26 novembre: il peso del corpo non entra
+ *   nella somma, a differenza di `window`).
  * - `oap`: `SE(rip>=1; MIN(100; MAX(1; 100 × (PC × (1 + rip/repsDivisor) × D − start) / width)); 0)`.
  * - `hold`: `SE(s>=1; MIN(100; MAX(1; 100 × s / target)); 0)`. Non usa il peso.
  * - `hold-window`: `SE(s>=start; MIN(100; MAX(1; 100 × (s − start) / width)); 0)`. Non usa il peso.
@@ -55,6 +59,7 @@ export type LoadKind = 'zavorra' | 'bilanciere';
 export type Formula =
   | { kind: 'reps'; target: number; normalized: boolean }
   | { kind: 'window'; gate: 'threshold' | 'load'; start: number; width: number }
+  | { kind: 'ratio'; start: number; width: number }
   | { kind: 'oap'; repsDivisor: number; start: number; width: number }
   | { kind: 'hold'; target: number }
   | { kind: 'hold-window'; start: number; width: number }
@@ -116,7 +121,7 @@ export interface Band {
  * questo numero: va aumentato ogni volta che cambia qualcosa che sposta i punteggi (soglie, divisori, esponenti,
  * punti di un livello, catene), così al primo avvio ogni app riscrive i suoi punti con le regole nuove.
  */
-export const RULES_VERSION = 1;
+export const RULES_VERSION = 2;
 
 /** F2: peso corporeo di riferimento (kg). */
 export const REF_KG = 60;
@@ -150,9 +155,15 @@ export const LIMITS = {
   maxLoadKg: 400,
 } as const;
 
-/** Punti massimi di una categoria e del complessivo. */
-export const CATEGORY_MAX = 1400;
-export const TOTAL_MAX = 7000;
+/** Punti massimi di ogni categoria e del complessivo (la loro somma). Le skill si fermano a 1300: non hanno la fascia Base. */
+export const CATEGORY_MAX: Record<CategoryId, number> = {
+  'fondamentali-tirata': 1400,
+  'fondamentali-spinta': 1400,
+  'skill-tirata': 1300,
+  'skill-spinta': 1300,
+  handbalance: 1400,
+};
+export const TOTAL_MAX = 6800;
 
 export const CATEGORIES: readonly CategoryRule[] = [
   { id: 'fondamentali-tirata', name: 'Fondamentali tirata' },
@@ -173,18 +184,28 @@ export const BAND_NAMES: Record<BandId, string> = {
 
 const BAND_ORDER: readonly BandId[] = ['base', 'intermedio', 'avanzato', 'elite', 'titano', 'leggenda'];
 
-/** Dalle sei fini di fascia alle fasce "da … a …" del PDF (la prima parte da 0, le altre dalla fine precedente + 1). */
-const bands = (...ends: [number, number, number, number, number, number]): readonly Band[] =>
-  BAND_ORDER.map((id, i) => ({ id, name: BAND_NAMES[id], from: i === 0 ? 0 : ends[i - 1] + 1, to: ends[i] }));
+/**
+ * Dalle fini di fascia alle fasce "da … a …" del PDF (la prima parte da 0, le altre dalla fine precedente + 1).
+ * `first` è la fascia da cui parte la scala: le skill partono da Intermedio.
+ */
+const bands = (first: BandId, ...ends: number[]): readonly Band[] =>
+  BAND_ORDER.slice(BAND_ORDER.indexOf(first)).map((id, i) => ({ id, name: BAND_NAMES[id], from: i === 0 ? 0 : ends[i - 1] + 1, to: ends[i] }));
 
-/** Fasce dei 6 livelli: diverse per categoria, e quelle del complessivo valgono solo per il complessivo. */
+/**
+ * Fasce dei livelli: diverse per categoria. Le due skill non hanno la fascia Base (il Base dei fondamentali è il
+ * prerequisito di forza per arrivarci): partono da Intermedio, 0–100, e finiscono a 1300.
+ *
+ * Le fasce del complessivo valgono solo per il complessivo: sono quelle date da Michael il 26 novembre 2026
+ * (0–300, 301–800, 801–2300, 2301–3800, 3801–5300, 5301–6800), cioè la somma delle fini della stessa fascia nelle
+ * 5 categorie.
+ */
 export const BANDS: Record<BandScope, readonly Band[]> = {
-  'fondamentali-tirata': bands(100, 200, 500, 800, 1100, 1400),
-  'fondamentali-spinta': bands(100, 200, 500, 800, 1100, 1400),
-  'skill-tirata': bands(200, 500, 666, 800, 1100, 1400),
-  'skill-spinta': bands(100, 500, 684, 850, 1100, 1400),
-  handbalance: bands(100, 200, 500, 800, 1100, 1400),
-  complessivo: bands(300, 800, 2500, 4000, 5500, 7000),
+  'fondamentali-tirata': bands('base', 100, 200, 500, 800, 1100, 1400),
+  'fondamentali-spinta': bands('base', 100, 200, 500, 800, 1100, 1400),
+  'skill-tirata': bands('intermedio', 100, 400, 700, 1000, 1300),
+  'skill-spinta': bands('intermedio', 100, 400, 700, 1000, 1300),
+  handbalance: bands('base', 100, 200, 500, 800, 1100, 1400),
+  complessivo: bands('base', 300, 800, 2300, 3800, 5300, 6800),
 };
 
 // ---------------------------------------------------------------------------------------------------------
@@ -197,6 +218,8 @@ const reps = (target: number, normalized: boolean): Formula => ({ kind: 'reps', 
 const win = (start: number, width: number): Formula => ({ kind: 'window', gate: 'threshold', start, width });
 /** `SE(C2>0; …(G−start)/width…)` */
 const winLoad = (start: number, width: number): Formula => ({ kind: 'window', gate: 'load', start, width });
+/** `SE(E(C2>0;H8>=start); …(H8−start)/width…)` con `H8 = (C2/F2)×D10` */
+const ratio = (start: number, width: number): Formula => ({ kind: 'ratio', start, width });
 /** `100×((A2×(1+B2/30)×D3)−60)/6`, uguale per i livelli A–D dell'OAP. */
 const OAP_REPS: Formula = { kind: 'oap', repsDivisor: 30, start: 60, width: 6 };
 const hold = (target: number): Formula => ({ kind: 'hold', target });
@@ -213,7 +236,7 @@ const E = (id: string, name: string, measure: Measure, levels: readonly Letter[]
 });
 
 // ---------------------------------------------------------------------------------------------------------
-// Le 14 catene
+// Le 14 catene. Le lettere vanno dal livello più facile (A) al più difficile, come nei PDF.
 
 export const CHAINS: readonly ChainRule[] = [
   // ---- Fondamentali tirata: Trazioni 600 · Muscle up 400 · OAP 400
@@ -327,7 +350,7 @@ export const CHAINS: readonly ChainRule[] = [
     entries: [E('massimale', 'Military massimale', 'kg', ['A', 'B', 'C', 'D', 'E'], true, 'bilanciere')],
   },
 
-  // ---- Handbalance: HSPU 700 · Verticale e OAHS 700
+  // ---- Handbalance: HSPU 755 · Verticale e OAHS 645
   {
     id: 'hspu',
     name: 'HSPU',
@@ -337,16 +360,16 @@ export const CHAINS: readonly ChainRule[] = [
       L('A', 'Pike push up a terra 1–15 rip.', 'base', 50, reps(15, true)),
       L('B', 'Pike push up su rialzo 1–10 rip.', 'intermedio', 50, reps(10, true)),
       L('C', 'HSPU a muro 1–5 rip.', 'avanzato', 150, reps(5, true)),
-      L('D', 'HSPU 1–10 rip.', 'elite', 150, reps(10, true)),
-      L('E', 'HSPU 5%–30% PC', 'titano', 150, win(63, 15)),
-      L('F', 'HSPU 30%–65% PC', 'leggenda', 150, win(78, 21)),
+      L('D', 'HSPU liberi 1–10 rip.', 'elite', 150, reps(10, true)),
+      L('E', 'HSPU liberi zavorrati 5%–30% PC', 'titano', 175, ratio(0.05, 0.25)),
+      L('F', 'HSPU liberi zavorrati 30%–65% PC', 'leggenda', 180, ratio(0.3, 0.35)),
     ],
     entries: [
       E('pike-terra', 'Pike push up a terra', 'reps', ['A'], true),
       E('pike-rialzo', 'Pike push up su rialzo', 'reps', ['B'], true),
       E('muro', 'HSPU a muro', 'reps', ['C'], true),
       E('liberi', 'HSPU liberi', 'reps', ['D'], true),
-      E('zavorra', 'HSPU zavorrati', 'kg', ['E', 'F'], true, 'zavorra'),
+      E('zavorra', 'HSPU liberi zavorrati', 'kg', ['E', 'F'], true, 'zavorra'),
     ],
   },
   {
@@ -356,40 +379,40 @@ export const CHAINS: readonly ChainRule[] = [
     exponent: null,
     levels: [
       L('A', 'Verticale a muro 1–60 s', 'base', 50, hold(60)),
-      L('B', 'Verticale 1–15 s', 'intermedio', 50, hold(15)),
-      L('C', 'Verticale 15–60 s', 'avanzato', 150, { kind: 'hold-window', start: 15, width: 45 }),
+      L('B', 'Verticale libera 1–15 s', 'intermedio', 50, hold(15)),
+      L('C', 'Verticale libera 15–60 s', 'avanzato', 150, { kind: 'hold-window', start: 15, width: 45 }),
       L('D', 'OAHS assistito 5 dita 1–10 s', 'elite', 50, hold(10)),
       L('E', 'OAHS assistito 3 dita 1–10 s', 'elite', 50, hold(10)),
       L('F', 'OAHS assistito 1 dito 1–10 s', 'elite', 50, hold(10)),
-      L('G', 'OAHS straddle 1–10 s', 'titano', 150, hold(10)),
-      L('H', 'OAHS 1–10 s', 'leggenda', 150, hold(10)),
+      L('G', 'OAHS straddle 1–10 s', 'titano', 125, hold(10)),
+      L('H', 'OAHS full 1–10 s', 'leggenda', 120, hold(10)),
     ],
     entries: [
       E('muro', 'Verticale a muro', 'seconds', ['A'], false),
-      E('verticale', 'Verticale', 'seconds', ['B', 'C'], false),
+      E('verticale', 'Verticale libera', 'seconds', ['B', 'C'], false),
       E('oahs-5-dita', 'OAHS assistito 5 dita', 'seconds', ['D'], false),
       E('oahs-3-dita', 'OAHS assistito 3 dita', 'seconds', ['E'], false),
       E('oahs-1-dito', 'OAHS assistito 1 dito', 'seconds', ['F'], false),
       E('oahs-straddle', 'OAHS straddle', 'seconds', ['G'], false),
-      E('oahs', 'OAHS', 'seconds', ['H'], false),
+      E('oahs', 'OAHS full', 'seconds', ['H'], false),
     ],
   },
 
-  // ---- Skill tirata: Front lever 800 · Front lever touch 300 · Front lever pull ups 300
+  // ---- Skill tirata (1300): Front lever 520 · Front lever touch 380 · Front lever pull ups 400
   {
     id: 'front-lever',
     name: 'Front lever',
     category: 'skill-tirata',
     exponent: null,
     levels: [
-      L('A', 'Tuck front lever 1–10 s', 'base', 200, skillSeconds(10)),
-      L('B', 'Tuck advanced front lever 1–10 s', 'intermedio', 150, skillSeconds(10)),
-      L('C', 'One leg front lever 1–10 s', 'intermedio', 150, skillSeconds(10)),
-      L('D', 'Straddle front lever 1–10 s', 'avanzato', 33, skillSeconds(10)),
-      L('E', 'Half lay front lever 1–10 s', 'avanzato', 33, skillSeconds(10)),
-      L('F', 'Full front lever 1–10 s', 'elite', 34, skillSeconds(10)),
-      L('G', 'Wide full front lever 1–10 s', 'titano', 100, skillSeconds(10)),
-      L('H', 'Victorian 1–10 s', 'leggenda', 100, skillSeconds(10)),
+      L('A', 'Tuck front lever 1–10 s', 'intermedio', 100, skillSeconds(10)),
+      L('B', 'Tuck advanced front lever 1–10 s', 'avanzato', 45, skillSeconds(10)),
+      L('C', 'One leg front lever 1–10 s', 'avanzato', 55, skillSeconds(10)),
+      L('D', 'Straddle front lever 1–10 s', 'elite', 40, skillSeconds(10)),
+      L('E', 'Half lay front lever 1–10 s', 'elite', 45, skillSeconds(10)),
+      L('F', 'Full front lever 1–10 s', 'titano', 45, skillSeconds(10)),
+      L('G', 'Wide full front lever 1–10 s', 'titano', 70, skillSeconds(10)),
+      L('H', 'Victorian alle parallele 1–10 s', 'leggenda', 120, skillSeconds(10)),
     ],
     entries: [
       E('tuck', 'Tuck', 'seconds', ['A'], true),
@@ -399,7 +422,7 @@ export const CHAINS: readonly ChainRule[] = [
       E('half-lay', 'Half lay', 'seconds', ['E'], true),
       E('full', 'Full', 'seconds', ['F'], true),
       E('wide', 'Wide full', 'seconds', ['G'], true),
-      E('victorian', 'Victorian', 'seconds', ['H'], true),
+      E('victorian', 'Victorian alle parallele', 'seconds', ['H'], true),
     ],
   },
   {
@@ -408,12 +431,12 @@ export const CHAINS: readonly ChainRule[] = [
     category: 'skill-tirata',
     exponent: null,
     levels: [
-      L('A', 'Tuck advanced front lever touch 1–10 s', 'avanzato', 25, skillSeconds(10)),
-      L('B', 'One leg front lever touch 1–10 s', 'avanzato', 25, skillSeconds(10)),
-      L('C', 'Straddle front lever touch 1–10 s', 'elite', 25, skillSeconds(10)),
-      L('D', 'Half lay front lever touch 1–10 s', 'elite', 25, skillSeconds(10)),
-      L('E', 'Full front lever touch 1–5 s', 'titano', 100, skillSeconds(5)),
-      L('F', 'Wide full front lever touch 1–10 s', 'leggenda', 100, skillSeconds(10)),
+      L('A', 'Tuck advanced front lever touch 1–10 s', 'avanzato', 55, skillSeconds(10)),
+      L('B', 'One leg front lever touch 1–10 s', 'avanzato', 65, skillSeconds(10)),
+      L('C', 'Straddle front lever touch 1–10 s', 'elite', 55, skillSeconds(10)),
+      L('D', 'Half lay front lever touch 1–10 s', 'elite', 65, skillSeconds(10)),
+      L('E', 'Full front lever touch 1–10 s', 'titano', 60, skillSeconds(10)),
+      L('F', 'Wide full front lever touch 1–10 s', 'leggenda', 80, skillSeconds(10)),
     ],
     entries: [
       E('advanced-tuck', 'Tuck advanced', 'seconds', ['A'], true),
@@ -430,11 +453,11 @@ export const CHAINS: readonly ChainRule[] = [
     category: 'skill-tirata',
     exponent: null,
     levels: [
-      L('A', 'Tuck advanced front lever pull ups 1–5 rip.', 'avanzato', 25, skillReps(5)),
-      L('B', 'One leg front lever pull ups 1–5 rip.', 'avanzato', 25, skillReps(5)),
-      L('C', 'Straddle front lever pull ups 1–5 rip.', 'elite', 50, skillReps(5)),
+      L('A', 'Tuck advanced front lever pull ups 1–5 rip.', 'avanzato', 80, skillReps(5)),
+      L('B', 'One leg front lever pull ups 1–5 rip.', 'elite', 35, skillReps(5)),
+      L('C', 'Straddle front lever pull ups 1–5 rip.', 'elite', 60, skillReps(5)),
       L('D', 'Half lay front lever pull ups 1–5 rip.', 'titano', 50, skillReps(5)),
-      L('E', 'Full front lever pull ups 1–5 rip.', 'titano', 50, skillReps(5)),
+      L('E', 'Full front lever pull ups 1–5 rip.', 'titano', 75, skillReps(5)),
       L('F', 'Wide full front lever pull ups 1–5 rip.', 'leggenda', 100, skillReps(5)),
     ],
     entries: [
@@ -447,27 +470,29 @@ export const CHAINS: readonly ChainRule[] = [
     ],
   },
 
-  // ---- Skill spinta: Planche 534 · Planche push ups 433 · Planche press 433
+  // ---- Skill spinta (1300): Planche 500 · Planche push ups 385 · Planche press 415
   {
     id: 'planche',
     name: 'Planche',
     category: 'skill-spinta',
     exponent: null,
     levels: [
-      L('A', 'Tuck planche 1–10 s', 'base', 100, skillSeconds(10)),
-      L('B', 'Tuck advanced planche 1–10 s', 'intermedio', 134, skillSeconds(10)),
-      L('C', 'One leg planche 1–10 s', 'avanzato', 50, skillSeconds(10)),
-      L('D', 'Straddle planche 1–10 s', 'elite', 50, skillSeconds(10)),
-      L('E', 'Full planche 1–10 s', 'titano', 100, skillSeconds(10)),
-      L('F', 'Maltese 1–10 s', 'leggenda', 100, skillSeconds(10)),
+      L('A', 'Frog stand 1–10 s', 'intermedio', 100, skillSeconds(10)),
+      L('B', 'Tuck planche 1–10 s', 'avanzato', 80, skillSeconds(10)),
+      L('C', 'Tuck advanced planche 1–10 s', 'elite', 45, skillSeconds(10)),
+      L('D', 'One leg planche 1–10 s', 'elite', 55, skillSeconds(10)),
+      L('E', 'Straddle planche 1–10 s', 'titano', 70, skillSeconds(10)),
+      L('F', 'Full planche 1–10 s', 'leggenda', 50, skillSeconds(10)),
+      L('G', 'Maltese 1–10 s', 'leggenda', 100, skillSeconds(10)),
     ],
     entries: [
-      E('tuck', 'Tuck', 'seconds', ['A'], true),
-      E('advanced-tuck', 'Tuck advanced', 'seconds', ['B'], true),
-      E('one-leg', 'One leg', 'seconds', ['C'], true),
-      E('straddle', 'Straddle', 'seconds', ['D'], true),
-      E('full', 'Full', 'seconds', ['E'], true),
-      E('maltese', 'Maltese', 'seconds', ['F'], true),
+      E('frog-stand', 'Frog stand', 'seconds', ['A'], true),
+      E('tuck', 'Tuck', 'seconds', ['B'], true),
+      E('advanced-tuck', 'Tuck advanced', 'seconds', ['C'], true),
+      E('one-leg', 'One leg', 'seconds', ['D'], true),
+      E('straddle', 'Straddle', 'seconds', ['E'], true),
+      E('full', 'Full', 'seconds', ['F'], true),
+      E('maltese', 'Maltese', 'seconds', ['G'], true),
     ],
   },
   {
@@ -476,11 +501,11 @@ export const CHAINS: readonly ChainRule[] = [
     category: 'skill-spinta',
     exponent: null,
     levels: [
-      L('A', 'Tuck planche push ups 1–5 rip.', 'intermedio', 133, skillReps(5)),
-      L('B', 'Tuck advanced planche push ups 1–5 rip.', 'avanzato', 100, skillReps(5)),
-      L('C', 'One leg planche push ups 1–5 rip.', 'elite', 50, skillReps(5)),
-      L('D', 'Straddle planche push ups 1–5 rip.', 'titano', 50, skillReps(5)),
-      L('E', 'Full planche push ups 1–5 rip.', 'leggenda', 100, skillReps(5)),
+      L('A', 'Tuck planche push ups 1–5 rip.', 'avanzato', 100, skillReps(5)),
+      L('B', 'Tuck advanced planche push ups 1–5 rip.', 'elite', 60, skillReps(5)),
+      L('C', 'One leg planche push ups 1–5 rip.', 'elite', 75, skillReps(5)),
+      L('D', 'Straddle planche push ups 1–5 rip.', 'titano', 80, skillReps(5)),
+      L('E', 'Full planche push ups 1–5 rip.', 'leggenda', 70, skillReps(5)),
     ],
     entries: [
       E('tuck', 'Tuck', 'reps', ['A'], true),
@@ -496,11 +521,11 @@ export const CHAINS: readonly ChainRule[] = [
     category: 'skill-spinta',
     exponent: null,
     levels: [
-      L('A', 'Tuck planche press 1–3 rip.', 'intermedio', 133, skillReps(3)),
-      L('B', 'Tuck advanced planche press 1–3 rip.', 'avanzato', 34, skillReps(3)),
-      L('C', 'One leg planche press 1–3 rip.', 'elite', 66, skillReps(3)),
-      L('D', 'Straddle planche press 1–3 rip.', 'titano', 100, skillReps(3)),
-      L('E', 'Full planche press 1–3 rip.', 'leggenda', 100, skillReps(3)),
+      L('A', 'Tuck planche press 1–3 rip.', 'avanzato', 120, skillReps(3)),
+      L('B', 'Tuck advanced planche press 1–3 rip.', 'elite', 65, skillReps(3)),
+      L('C', 'One leg planche press 1–3 rip.', 'titano', 60, skillReps(3)),
+      L('D', 'Straddle planche press 1–3 rip.', 'titano', 90, skillReps(3)),
+      L('E', 'Full planche press 1–3 rip.', 'leggenda', 80, skillReps(3)),
     ],
     entries: [
       E('tuck', 'Tuck', 'reps', ['A'], true),

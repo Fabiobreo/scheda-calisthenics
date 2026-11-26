@@ -174,16 +174,12 @@ function Plot({
           <circle className="g-dot g-last" cx={x(last.date)} cy={y(last.v)} r={5} />
         </>
       )}
-      {/* record: oro chiaro, con l'etichetta (mai solo colore) */}
+      {/* record: punto in oro chiaro, senza scritta (Michael, 25 novembre 2026: con molti punti le scritte si
+          accavallano). Che è il record lo dicono la riga sotto il grafico, il fumetto e l'elenco delle sessioni. */}
       {rec && (
         <>
           <circle className="g-halo rec" cx={x(rec.date)} cy={y(rec.v)} r={12} />
           <circle className="g-dot rec" cx={x(rec.date)} cy={y(rec.v)} r={5.5} />
-          {rec !== sel && (
-            <text className="g-rec-t" x={Math.min(Math.max(x(rec.date), p.l + 22), w - p.r - 22)} y={Math.max(y(rec.v) - 12, 9)} textAnchor="middle">
-              RECORD
-            </text>
-          )}
         </>
       )}
       {sel && <Tip x={x(sel.date)} y={y(sel.v)} value={`${format(sel)}${sel === rec ? ' · record' : ''}`} date={tipLabel(sel.date)} w={w} p={p} />}

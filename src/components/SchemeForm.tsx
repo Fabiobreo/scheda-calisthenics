@@ -9,6 +9,8 @@ import { Field, Seg } from './ui';
  * `measure`: come si misura l'esercizio. `measureEditable`: si può scegliere qui (nome personalizzato nuovo),
  * partendo da `measure`.
  * `note`: mostra anche il campo della nota del trainer, partendo da questo valore.
+ * `noType`: non chiede Forza / Volume / Tecnico (Scheda dell'atleta, Michael 25 novembre 2026): resta quello di `initial`.
+ * Negli esercizi a tempo il peso non si chiede (Michael, 25 novembre 2026): vale 0.
  */
 export function SchemeForm({
   initial,
@@ -19,10 +21,12 @@ export function SchemeForm({
   note,
   measure: initialMeasure,
   measureEditable = false,
+  noType = false,
 }: {
   initial: Scheme;
   measure: Measure;
   measureEditable?: boolean;
+  noType?: boolean;
   hint: string;
   saveLabel: string;
   onSave: (s: Scheme, note: string | null) => void;
@@ -46,14 +50,14 @@ export function SchemeForm({
     const timed = measure === 'time';
     const scheme: Scheme = {
       type,
-      weight: parseNum(weight || '0'),
+      weight: timed ? 0 : parseNum(weight || '0'),
       sets: Number(sets),
       reps: timed ? 0 : n,
       seconds: timed ? n : 0,
       rest: Number(rest || '0'),
     };
     if (!(scheme.weight >= 0 && scheme.weight < 10000) || !isInt(scheme.sets, 1, 50))
-      return toast(timed ? 'Controlla peso e serie' : 'Controlla peso, serie e ripetizioni');
+      return toast(timed ? 'Controlla le serie' : 'Controlla peso, serie e ripetizioni');
     if (timed ? !isInt(n, 1, 3600) : !isInt(n, 1, 1000))
       return toast(timed ? 'Secondi di tenuta tra 1 e 3600' : 'Ripetizioni tra 1 e 1000');
     if (!isInt(scheme.rest, 0, 3600)) return toast('Recupero tra 0 e 3600 secondi');
@@ -63,24 +67,36 @@ export function SchemeForm({
 
   return (
     <div className="form span-all mt-8">
-      <div className="fld">
-        <span>Tipo</span>
-        <Seg label="Tipo" value={type} options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))} onChange={setType} />
-      </div>
+      {!noType && (
+        <div className="fld">
+          <span>Tipo</span>
+          <Seg label="Tipo" value={type} options={EXERCISE_TYPES.map((t) => ({ v: t, l: TYPE_LABEL[t] }))} onChange={setType} />
+        </div>
+      )}
       {measureEditable && (
         <div className="fld">
           <span>Si misura in</span>
           <Seg label="Si misura in" value={measure} options={MEASURES.map((m) => ({ v: m, l: MEASURE_LABEL[m] }))} onChange={setMeasure} />
         </div>
       )}
-      <div className="grid3">
-        <Field label="Peso (kg)" inputMode="decimal" value={weight} autoFocus onChange={(e) => setWeight(e.target.value)} />
-        <Field label="Serie" inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} />
-        <Field label={measure === 'time' ? 'Secondi' : 'Rip.'} inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} />
-      </div>
-      <div className="grid2">
-        <Field label="Recupero (s)" inputMode="numeric" value={rest} onChange={(e) => setRest(e.target.value)} />
-      </div>
+      {measure === 'time' ? (
+        <div className="grid3">
+          <Field label="Serie" inputMode="numeric" value={sets} autoFocus onChange={(e) => setSets(e.target.value)} />
+          <Field label="Secondi" inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} />
+          <Field label="Rec. (s)" inputMode="numeric" value={rest} onChange={(e) => setRest(e.target.value)} />
+        </div>
+      ) : (
+        <>
+          <div className="grid3">
+            <Field label="Peso (kg)" inputMode="decimal" value={weight} autoFocus onChange={(e) => setWeight(e.target.value)} />
+            <Field label="Serie" inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} />
+            <Field label="Rip." inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} />
+          </div>
+          <div className="grid2">
+            <Field label="Recupero (s)" inputMode="numeric" value={rest} onChange={(e) => setRest(e.target.value)} />
+          </div>
+        </>
+      )}
       {withNote && (
         <Field
           label="Nota per l'atleta"
@@ -90,7 +106,9 @@ export function SchemeForm({
           onChange={(e) => setText(e.target.value)}
         />
       )}
-      <p className="hint">{hint} Peso 0 kg vuol dire corpo libero, recupero 0 niente timer.</p>
+      <p className="hint">
+        {hint} {measure === 'time' ? 'Recupero 0 vuol dire niente timer.' : 'Peso 0 kg vuol dire corpo libero, recupero 0 niente timer.'}
+      </p>
       <div className="row">
         <button className="btn small" onClick={save}>
           {saveLabel}

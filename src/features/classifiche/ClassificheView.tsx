@@ -22,7 +22,7 @@ export function RankingBoard({ metric, onMetric, onOpen, profile }: {
   const { summary, isLoading } = useLevel();
   const noPoints = !isLoading && summary.total === 0;
   return (
-    <section className="card rk">
+    <section className="rk">
       <div className="card-h">
         <h2>Classifica</h2>
         {profile && <span className="rk-vis">{profile.isPrivate ? 'Profilo privato' : 'Profilo pubblico'}</span>}

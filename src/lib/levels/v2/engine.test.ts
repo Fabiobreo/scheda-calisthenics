@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   BANDS,
   CATEGORIES,
+  CATEGORY_MAX,
   CHAINS,
   ESP_SKILL_RIPETIZIONI,
   ESP_SKILL_SECONDI,
   EXPONENTS,
   LIMITS,
   REF_KG,
+  RULES_VERSION,
+  TOTAL_MAX,
   availableEntries,
   bandPosition,
   chainMax,
@@ -73,7 +76,7 @@ const PDF_AT_60: readonly [ChainId, Letter, number, number, number][] = [
   ['military', 'C', 46.2, 1, 61.2],
   ['military', 'D', 61.2, 1, 76.8],
   ['military', 'E', 76.8, 1, 81],
-  // HSPU
+  // HSPU — E e F: zavorra = H8 × 60 (5% = 3 kg, 30% = 18 kg, 65% = 39 kg; PDF del 26/11)
   ['hspu', 'A', 1, 100 / 15, 15],
   ['hspu', 'B', 1, 10, 10],
   ['hspu', 'C', 1, 20, 5],
@@ -91,17 +94,12 @@ const PDF_AT_60: readonly [ChainId, Letter, number, number, number][] = [
   ['verticale', 'H', 1, 10, 10],
   // FRONT LEVER (T = 10)
   ...(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const).map((l): [ChainId, Letter, number, number, number] => ['front-lever', l, 1, 10, 10]),
-  // FRONT LEVER TOUCH (T = 10, full T = 5)
-  ['front-lever-touch', 'A', 1, 10, 10],
-  ['front-lever-touch', 'B', 1, 10, 10],
-  ['front-lever-touch', 'C', 1, 10, 10],
-  ['front-lever-touch', 'D', 1, 10, 10],
-  ['front-lever-touch', 'E', 1, 20, 5],
-  ['front-lever-touch', 'F', 1, 10, 10],
+  // FRONT LEVER TOUCH (T = 10 per tutti, anche il full: PDF del 26/11)
+  ...(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((l): [ChainId, Letter, number, number, number] => ['front-lever-touch', l, 1, 10, 10]),
   // FRONT LEVER PULL UPS (T = 5)
   ...(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((l): [ChainId, Letter, number, number, number] => ['front-lever-pull-up', l, 1, 20, 5]),
-  // PLANCHE (T = 10), PUSH UPS (T = 5), PRESS (T = 3)
-  ...(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((l): [ChainId, Letter, number, number, number] => ['planche', l, 1, 10, 10]),
+  // PLANCHE (T = 10, dal frog stand al maltese), PUSH UPS (T = 5), PRESS (T = 3)
+  ...(['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const).map((l): [ChainId, Letter, number, number, number] => ['planche', l, 1, 10, 10]),
   ...(['A', 'B', 'C', 'D', 'E'] as const).map((l): [ChainId, Letter, number, number, number] => ['planche-push-up', l, 1, 20, 5]),
   ...(['A', 'B', 'C', 'D', 'E'] as const).map((l): [ChainId, Letter, number, number, number] => ['planche-press', l, 1, 100 / 3, 3]),
 ];
@@ -237,9 +235,77 @@ describe('esempi scritti nel PDF (skill)', () => {
     expect(levelPercent('front-lever-pull-up', 'E', 2, 80)).toBeLessThan(100);
   });
 
-  it('full front lever touch con T = 5', () => {
-    expect(levelPercent('front-lever-touch', 'E', 5, 60)).toBe(100);
+  it('full front lever touch con T = 10 come tutti gli altri touch', () => {
+    expect(levelPercent('front-lever-touch', 'E', 10, 60)).toBe(100);
+    expect(levelPercent('front-lever-touch', 'E', 5, 60)).toBe(50);
     expect(levelPercent('front-lever-touch', 'D', 5, 60)).toBe(50);
+  });
+
+  it('frog stand, planche e maltese (T = 10): 7,5 s a 80 kg, 12 s a 50 kg', () => {
+    for (const l of ['A', 'B', 'F', 'G'] as const) {
+      expect(levelPercent('planche', l, 10, 60)).toBe(100);
+      expect(levelPercent('planche', l, 7.5, 80)).toBe(100);
+      expect(levelPercent('planche', l, 7, 80)).toBeLessThan(100);
+      expect(levelPercent('planche', l, 12, 50)).toBe(100);
+      expect(levelPercent('planche', l, 11, 50)).toBeLessThan(100);
+    }
+  });
+
+  it('planche push ups con T = 5: 5 ripetizioni a 60 kg, 4 a 70 kg (~3,67), 3 a 80 kg (~2,81)', () => {
+    expect(levelPercent('planche-push-up', 'A', 5, 60)).toBe(100);
+    expect(levelPercent('planche-push-up', 'A', 4, 60)).toBe(80);
+    expect(levelPercent('planche-push-up', 'C', 4, 70)).toBe(100);
+    expect(levelPercent('planche-push-up', 'C', 3, 70)).toBeLessThan(100);
+    expect(levelPercent('planche-push-up', 'E', 3, 80)).toBe(100);
+    expect(levelPercent('planche-push-up', 'E', 2, 80)).toBeLessThan(100);
+    // i valori esatti del PDF: 5 / (70/60)² = 3,67 e 5 / (80/60)² = 2,81
+    expect(levelPercent('planche-push-up', 'A', 5 / Math.pow(70 / 60, 2), 70)).toBeCloseTo(100, 9);
+    expect(levelPercent('planche-push-up', 'A', 2.81, 80)).toBeCloseTo(99.9, 1);
+  });
+
+  it('planche press con T = 3: 3 ripetizioni a 60 kg, ~2,2 a 70 kg, ~1,7 a 80 kg (2 ripetizioni = 100%)', () => {
+    expect(levelPercent('planche-press', 'A', 3, 60)).toBe(100);
+    expect(levelPercent('planche-press', 'A', 2, 60)).toBeCloseTo(200 / 3, 9);
+    expect(levelPercent('planche-press', 'C', 3, 70)).toBe(100);
+    expect(levelPercent('planche-press', 'C', 2, 70)).toBeLessThan(100); // ne servono 2,2
+    expect(levelPercent('planche-press', 'E', 2, 80)).toBe(100);
+    expect(levelPercent('planche-press', 'E', 1, 80)).toBeLessThan(100); // ne servono 1,7
+  });
+});
+
+describe('HSPU zavorrati (PDF del 26/11): H8 = (zavorra / 60) × (60/PC)^0,75', () => {
+  const d80 = Math.pow(60 / 80, 0.75);
+
+  it('a 60 kg: livello E da 3 a 18 kg, livello F da 18 a 39 kg', () => {
+    expect(levelPercent('hspu', 'E', 2.9, 60)).toBe(0);
+    expect(levelPercent('hspu', 'E', 3, 60)).toBe(1);
+    expect(levelPercent('hspu', 'E', 10.5, 60)).toBeCloseTo(50, 9);
+    expect(levelPercent('hspu', 'E', 18, 60)).toBe(100);
+    expect(levelPercent('hspu', 'F', 17.9, 60)).toBe(0);
+    expect(levelPercent('hspu', 'F', 18, 60)).toBe(1);
+    expect(levelPercent('hspu', 'F', 28.5, 60)).toBeCloseTo(50, 9);
+    expect(levelPercent('hspu', 'F', 39, 60)).toBe(100);
+    // punti: A 50 + B 50 + C 150 + D 150 = 400, poi E 175 e F 180
+    expect(scoreRecord(rec('hspu', 'zavorra', 10.5, 60))).toEqual({ points: 400 + 87.5, level: 'E', percent: 50 });
+    expect(scoreRecord(rec('hspu', 'zavorra', 18, 60))).toEqual({ points: 575 + 1.8, level: 'F', percent: 1 });
+    expect(scoreRecord(rec('hspu', 'zavorra', 39, 60))).toEqual({ points: 755, level: 'F', percent: 100 });
+  });
+
+  it('a 80 kg conta solo la zavorra, non il peso del corpo: 0,1 kg vale 0', () => {
+    expect(levelPercent('hspu', 'E', 0.1, 80)).toBe(0);
+    expect(scoreRecord(rec('hspu', 'zavorra', 0.1, 80))).toEqual({ points: 0, level: null, percent: 0 });
+    // soglia del 5%: 3 / d = 3,72 kg
+    expect(levelPercent('hspu', 'E', 3.7, 80)).toBe(0);
+    expect(levelPercent('hspu', 'E', 3.8, 80)).toBeGreaterThanOrEqual(1);
+    expect(levelPercent('hspu', 'E', 10, 80)).toBeCloseTo((100 * ((10 / 60) * d80 - 0.05)) / 0.25, 9);
+    expect(levelPercent('hspu', 'F', 30, 80)).toBeCloseTo((100 * ((30 / 60) * d80 - 0.3)) / 0.35, 9);
+    // fine del livello F: 39 / d = 48,39 kg
+    expect(levelPercent('hspu', 'F', 48.3, 80)).toBeLessThan(100);
+    expect(levelPercent('hspu', 'F', 48.4, 80)).toBe(100);
+  });
+
+  it('senza zavorra non si entra, a nessun peso', () => {
+    for (const bw of [40, 60, 120, 250]) expect(levelPercent('hspu', 'E', 0, bw)).toBe(0);
   });
 });
 
@@ -249,13 +315,38 @@ describe('struttura delle regole', () => {
     expect(CATEGORIES).toHaveLength(5);
   });
 
-  it('la somma dei massimi è 1400 per categoria', () => {
+  it('la somma dei massimi è 1400 per categoria, 1300 per le skill; 6800 in tutto', () => {
+    expect(CATEGORY_MAX).toEqual({ 'fondamentali-tirata': 1400, 'fondamentali-spinta': 1400, 'skill-tirata': 1300, 'skill-spinta': 1300, handbalance: 1400 });
     for (const c of CATEGORIES) {
-      expect(chainsOf(c.id).reduce((t, ch) => t + chainMax(ch), 0), c.id).toBe(1400);
+      expect(chainsOf(c.id).reduce((t, ch) => t + chainMax(ch), 0), c.id).toBe(CATEGORY_MAX[c.id]);
     }
+    expect(TOTAL_MAX).toBe(6800);
+    expect(Object.values(CATEGORY_MAX).reduce((t, x) => t + x, 0)).toBe(TOTAL_MAX);
+    // i punteggi cambiano: le app devono riscrivere i punti sul server
+    expect(RULES_VERSION).toBe(2);
   });
 
-  it('massimi delle catene come nel ticket 30', () => {
+  it('punti di ogni livello delle skill e di handbalance come nel PDF del 26/11', () => {
+    const points = (id: ChainId) => CHAINS.find((c) => c.id === id)!.levels.map((l) => [l.band, l.max]);
+    expect(points('front-lever')).toEqual([['intermedio', 100], ['avanzato', 45], ['avanzato', 55], ['elite', 40], ['elite', 45], ['titano', 45], ['titano', 70], ['leggenda', 120]]);
+    expect(points('front-lever-touch')).toEqual([['avanzato', 55], ['avanzato', 65], ['elite', 55], ['elite', 65], ['titano', 60], ['leggenda', 80]]);
+    expect(points('front-lever-pull-up')).toEqual([['avanzato', 80], ['elite', 35], ['elite', 60], ['titano', 50], ['titano', 75], ['leggenda', 100]]);
+    expect(points('planche')).toEqual([['intermedio', 100], ['avanzato', 80], ['elite', 45], ['elite', 55], ['titano', 70], ['leggenda', 50], ['leggenda', 100]]);
+    expect(points('planche-push-up')).toEqual([['avanzato', 100], ['elite', 60], ['elite', 75], ['titano', 80], ['leggenda', 70]]);
+    expect(points('planche-press')).toEqual([['avanzato', 120], ['elite', 65], ['titano', 60], ['titano', 90], ['leggenda', 80]]);
+    expect(points('hspu')).toEqual([['base', 50], ['intermedio', 50], ['avanzato', 150], ['elite', 150], ['titano', 175], ['leggenda', 180]]);
+    expect(points('verticale')).toEqual([['base', 50], ['intermedio', 50], ['avanzato', 150], ['elite', 50], ['elite', 50], ['elite', 50], ['titano', 125], ['leggenda', 120]]);
+  });
+
+  it('voci delle skill: frog stand prima del tuck, victorian alle parallele in cima al front lever', () => {
+    const entries = (id: ChainId) => CHAINS.find((c) => c.id === id)!.entries.map((e) => e.id);
+    expect(entries('planche')).toEqual(['frog-stand', 'tuck', 'advanced-tuck', 'one-leg', 'straddle', 'full', 'maltese']);
+    expect(entries('front-lever')).toEqual(['tuck', 'advanced-tuck', 'one-leg', 'straddle', 'half-lay', 'full', 'wide', 'victorian']);
+    expect(CHAINS.find((c) => c.id === 'front-lever')!.entries.at(-1)!.name).toBe('Victorian alle parallele');
+    expect(CHAINS.find((c) => c.id === 'planche')!.entries[0].name).toBe('Frog stand');
+  });
+
+  it('massimi delle catene (fondamentali dal ticket 30, skill e handbalance dal PDF del 26/11)', () => {
     const max = Object.fromEntries(CHAINS.map((c) => [c.id, chainMax(c)]));
     expect(max).toEqual({
       trazioni: 600,
@@ -264,15 +355,30 @@ describe('struttura delle regole', () => {
       dip: 484,
       'panca-piana': 483,
       military: 433,
-      hspu: 700,
-      verticale: 700,
-      'front-lever': 800,
-      'front-lever-touch': 300,
-      'front-lever-pull-up': 300,
-      planche: 534,
-      'planche-push-up': 433,
-      'planche-press': 433,
+      hspu: 755,
+      verticale: 645,
+      'front-lever': 520,
+      'front-lever-touch': 380,
+      'front-lever-pull-up': 400,
+      planche: 500,
+      'planche-push-up': 385,
+      'planche-press': 415,
     });
+  });
+
+  it('budget di ogni fascia come nel PDF: 100 fino a Intermedio, poi 300; le skill senza Base', () => {
+    const budget = (id: (typeof CATEGORIES)[number]['id']) => {
+      const out: Partial<Record<BandId, number>> = {};
+      for (const l of chainsOf(id).flatMap((ch) => ch.levels)) out[l.band] = (out[l.band] ?? 0) + l.max;
+      return out;
+    };
+    const six = { base: 100, intermedio: 100, avanzato: 300, elite: 300, titano: 300, leggenda: 300 };
+    const five = { intermedio: 100, avanzato: 300, elite: 300, titano: 300, leggenda: 300 };
+    expect(budget('fondamentali-tirata')).toEqual(six);
+    expect(budget('fondamentali-spinta')).toEqual(six);
+    expect(budget('handbalance')).toEqual(six);
+    expect(budget('skill-tirata')).toEqual(five);
+    expect(budget('skill-spinta')).toEqual(five);
   });
 
   it('l’ampiezza di ogni fascia è la somma dei punti dei suoi livelli', () => {
@@ -295,10 +401,16 @@ describe('struttura delle regole', () => {
     expect(ranges('fondamentali-tirata')).toEqual(fondamentali);
     expect(ranges('fondamentali-spinta')).toEqual(fondamentali);
     expect(ranges('handbalance')).toEqual(fondamentali);
-    expect(ranges('skill-tirata')).toEqual([[0, 200], [201, 500], [501, 666], [667, 800], [801, 1100], [1101, 1400]]);
-    expect(ranges('skill-spinta')).toEqual([[0, 100], [101, 500], [501, 684], [685, 850], [851, 1100], [1101, 1400]]);
-    expect(ranges('complessivo')).toEqual([[0, 300], [301, 800], [801, 2500], [2501, 4000], [4001, 5500], [5501, 7000]]);
+    // le skill partono da Intermedio (PDF del 26/11)
+    const skill = [[0, 100], [101, 400], [401, 700], [701, 1000], [1001, 1300]];
+    expect(ranges('skill-tirata')).toEqual(skill);
+    expect(ranges('skill-spinta')).toEqual(skill);
+    expect(BANDS['skill-tirata'].map((b) => b.id)).toEqual(['intermedio', 'avanzato', 'elite', 'titano', 'leggenda']);
+    expect(BANDS['skill-spinta'].map((b) => b.id)).toEqual(['intermedio', 'avanzato', 'elite', 'titano', 'leggenda']);
+    // punteggio utente (Michael, 26/11)
+    expect(ranges('complessivo')).toEqual([[0, 300], [301, 800], [801, 2300], [2301, 3800], [3801, 5300], [5301, 6800]]);
     expect(BANDS.complessivo.map((b) => b.name)).toEqual(['Base', 'Intermedio', 'Avanzato', 'Elite', 'Titano', 'Leggenda']);
+    expect(BANDS.handbalance.map((b) => b.id)).toEqual(['base', 'intermedio', 'avanzato', 'elite', 'titano', 'leggenda']);
   });
 
   it('ogni livello è coperto da una sola voce, lettere in ordine da A', () => {
@@ -329,7 +441,7 @@ describe('struttura delle regole', () => {
       for (const entry of chain.entries) {
         const uses = chain.levels
           .filter((l) => entry.levels.includes(l.letter))
-          .some((l) => l.formula.kind === 'window' || l.formula.kind === 'oap' || l.formula.kind === 'skill' || (l.formula.kind === 'reps' && l.formula.normalized));
+          .some((l) => l.formula.kind === 'window' || l.formula.kind === 'ratio' || l.formula.kind === 'oap' || l.formula.kind === 'skill' || (l.formula.kind === 'reps' && l.formula.normalized));
         expect(entry.usesBodyweight, `${chain.id}/${entry.id}`).toBe(uses);
       }
     }
@@ -353,10 +465,44 @@ describe('scoreRecord', () => {
   it('chi è a un livello ha pieni tutti i livelli sotto', () => {
     // trazioni zavorrate 18 kg a 60 kg: C al 50% → A 100 + B 100 + 50
     expect(scoreRecord(rec('trazioni', 'zavorra', 18, 60))).toEqual({ points: 250, level: 'C', percent: 50 });
-    // one leg front lever 5 s a 60 kg: A 200 + B 150 + 75
-    expect(scoreRecord(rec('front-lever', 'one-leg', 5, 60))).toEqual({ points: 425, level: 'C', percent: 50 });
-    // OAHS 1 s: tutta la catena sotto (50+50+150+50+50+50+150) + 15
-    expect(scoreRecord(rec('verticale', 'oahs', 1))).toEqual({ points: 565, level: 'H', percent: 10 });
+    // one leg front lever 5 s a 60 kg: A 100 + B 45 + metà di 55
+    expect(scoreRecord(rec('front-lever', 'one-leg', 5, 60))).toEqual({ points: 172.5, level: 'C', percent: 50 });
+    // OAHS full 1 s: tutta la catena sotto (50+50+150+50+50+50+125) + 10% di 120
+    expect(scoreRecord(rec('verticale', 'oahs', 1))).toEqual({ points: 537, level: 'H', percent: 10 });
+  });
+
+  it('catena planche: dal frog stand in su, un valore valido in alto riempie i livelli sotto', () => {
+    expect(scoreRecord(rec('planche', 'frog-stand', 5, 60))).toEqual({ points: 50, level: 'A', percent: 50 });
+    expect(scoreRecord(rec('planche', 'frog-stand', 10, 60))).toEqual({ points: 100, level: 'A', percent: 100 });
+    // tuck 5 s: frog stand pieno (100) + metà di 80
+    expect(scoreRecord(rec('planche', 'tuck', 5, 60))).toEqual({ points: 140, level: 'B', percent: 50 });
+    // basta 1 secondo di full planche: 100 + 80 + 45 + 55 + 70 = 350, più il 10% di 50
+    expect(scoreRecord(rec('planche', 'full', 1, 60))).toEqual({ points: 355, level: 'F', percent: 10 });
+    // maltese 1 s: 400 sotto + 10% di 100; 10 s: tutta la catena
+    expect(scoreRecord(rec('planche', 'maltese', 1, 60))).toEqual({ points: 410, level: 'G', percent: 10 });
+    expect(scoreRecord(rec('planche', 'maltese', 10, 60))).toEqual({ points: 500, level: 'G', percent: 100 });
+  });
+
+  it('i punti non si ereditano tra catene diverse', () => {
+    const maltese = rec('planche', 'maltese', 10, 60);
+    expect(scoreChain('planche', [maltese]).points).toBe(500);
+    expect(scoreChain('planche-push-up', [maltese]).points).toBe(0);
+    expect(scoreChain('planche-press', [maltese]).points).toBe(0);
+    expect(scoreCategory('skill-spinta', [maltese]).points).toBe(500);
+    const victorian = rec('front-lever', 'victorian', 10, 60);
+    expect(scoreCategory('skill-tirata', [victorian]).chains.map((c) => c.points)).toEqual([520, 0, 0]);
+  });
+
+  it('catene delle skill tirata: punti dei livelli sotto pieni', () => {
+    // full front lever 10 s: 100 + 45 + 55 + 40 + 45 + 45
+    expect(scoreRecord(rec('front-lever', 'full', 10, 60))).toEqual({ points: 330, level: 'F', percent: 100 });
+    // full front lever touch 5 s: 55 + 65 + 55 + 65 + metà di 60
+    expect(scoreRecord(rec('front-lever-touch', 'full', 5, 60))).toEqual({ points: 270, level: 'E', percent: 50 });
+    // one leg front lever pull ups 5 rip.: 80 + 35
+    expect(scoreRecord(rec('front-lever-pull-up', 'one-leg', 5, 60))).toEqual({ points: 115, level: 'B', percent: 100 });
+    // one leg planche press 3 rip.: 120 + 65 + 60; straddle push ups 5 rip.: 100 + 60 + 75 + 80
+    expect(scoreRecord(rec('planche-press', 'one-leg', 3, 60))).toEqual({ points: 245, level: 'C', percent: 100 });
+    expect(scoreRecord(rec('planche-push-up', 'straddle', 5, 60))).toEqual({ points: 315, level: 'D', percent: 100 });
   });
 
   it('una voce che copre più livelli prende il più alto raggiunto', () => {
@@ -484,20 +630,35 @@ describe('fasce e percentuale nella fascia', () => {
     expect(at(1400)).toEqual(['leggenda', 100]);
   });
 
-  it('ogni categoria usa le proprie fasce', () => {
-    expect(bandPosition('skill-tirata', 200)).toMatchObject({ band: 'base', percent: 100, start: 0, end: 200 });
-    expect(bandPosition('skill-tirata', 583)).toMatchObject({ band: 'avanzato', percent: 50, start: 500, end: 666 });
-    expect(bandPosition('skill-tirata', 667)).toMatchObject({ band: 'elite', start: 666, end: 800 });
-    expect(bandPosition('skill-spinta', 300)).toMatchObject({ band: 'intermedio', percent: 50, start: 100, end: 500 });
-    expect(bandPosition('skill-spinta', 685)).toMatchObject({ band: 'elite', start: 684, end: 850 });
-    expect(bandPosition('skill-spinta', 850)).toMatchObject({ band: 'elite', percent: 100 });
+  it('le skill partono da Intermedio: 0–100, poi 300 punti per fascia fino a 1300', () => {
+    for (const id of ['skill-tirata', 'skill-spinta'] as const) {
+      expect(bandPosition(id, 0)).toMatchObject({ band: 'intermedio', name: 'Intermedio', percent: 0, start: 0, end: 100 });
+      expect(bandPosition(id, 50)).toMatchObject({ band: 'intermedio', percent: 50 });
+      expect(bandPosition(id, 100)).toMatchObject({ band: 'intermedio', percent: 100 });
+      expect(bandPosition(id, 101)).toMatchObject({ band: 'avanzato', percent: 0, start: 100, end: 400 });
+      expect(bandPosition(id, 250)).toMatchObject({ band: 'avanzato', percent: 50 });
+      expect(bandPosition(id, 400)).toMatchObject({ band: 'avanzato', percent: 100 });
+      expect(bandPosition(id, 401)).toMatchObject({ band: 'elite', start: 400, end: 700 });
+      expect(bandPosition(id, 700)).toMatchObject({ band: 'elite', percent: 100 });
+      expect(bandPosition(id, 701)).toMatchObject({ band: 'titano', start: 700, end: 1000 });
+      expect(bandPosition(id, 1000)).toMatchObject({ band: 'titano', percent: 100 });
+      expect(bandPosition(id, 1001)).toMatchObject({ band: 'leggenda', start: 1000, end: 1300 });
+      expect(bandPosition(id, 1300)).toMatchObject({ band: 'leggenda', percent: 100 });
+    }
   });
 
-  it('fasce del complessivo', () => {
+  it('fasce del complessivo (Michael, 26/11)', () => {
+    expect(bandPosition('complessivo', 0)).toMatchObject({ band: 'base', percent: 0 });
     expect(bandPosition('complessivo', 300)).toMatchObject({ band: 'base', name: 'Base', percent: 100 });
     expect(bandPosition('complessivo', 301)).toMatchObject({ band: 'intermedio', percent: 0 });
-    expect(bandPosition('complessivo', 1650)).toMatchObject({ band: 'avanzato', name: 'Avanzato', percent: 50 });
-    expect(bandPosition('complessivo', 7000)).toMatchObject({ band: 'leggenda', percent: 100 });
+    expect(bandPosition('complessivo', 800)).toMatchObject({ band: 'intermedio', percent: 100 });
+    expect(bandPosition('complessivo', 801)).toMatchObject({ band: 'avanzato', start: 800, end: 2300 });
+    expect(bandPosition('complessivo', 1550)).toMatchObject({ band: 'avanzato', name: 'Avanzato', percent: 50 });
+    expect(bandPosition('complessivo', 2300)).toMatchObject({ band: 'avanzato', percent: 100 });
+    expect(bandPosition('complessivo', 2301)).toMatchObject({ band: 'elite', start: 2300, end: 3800 });
+    expect(bandPosition('complessivo', 3801)).toMatchObject({ band: 'titano', start: 3800, end: 5300 });
+    expect(bandPosition('complessivo', 5301)).toMatchObject({ band: 'leggenda', start: 5300, end: 6800 });
+    expect(bandPosition('complessivo', 6800)).toMatchObject({ band: 'leggenda', percent: 100 });
   });
 });
 
@@ -507,7 +668,7 @@ describe('scoreCategory e levelSummary', () => {
     rec('muscle-up', 'ripetizioni', 3), // 30
     rec('oap', 'avambraccio', 3, 60), // 50
     rec('dip', 'ripetizioni', 7, 60), // 66
-    rec('planche', 'tuck', 10, 60), // 100
+    rec('planche', 'tuck', 10, 60), // frog stand 100 + tuck 80 = 180
     rec('verticale', 'verticale', 15), // 102
   ];
 
@@ -522,28 +683,33 @@ describe('scoreCategory e levelSummary', () => {
   it('riepilogo: 5 categorie e complessivo come somma', () => {
     const s = levelSummary(records);
     expect(s.categories.map((c) => c.categoryId)).toEqual(['fondamentali-tirata', 'fondamentali-spinta', 'skill-tirata', 'skill-spinta', 'handbalance']);
-    expect(s.categories.map((c) => c.points)).toEqual([330, 66, 0, 100, 102]);
-    expect(s.categories.map((c) => c.band)).toEqual(['avanzato', 'base', 'base', 'base', 'intermedio']);
-    expect(s.total).toBe(598);
-    expect(s.max).toBe(7000);
-    expect(s).toMatchObject({ band: 'intermedio', percent: 59, start: 300, end: 800 });
+    expect(s.categories.map((c) => c.points)).toEqual([330, 66, 0, 180, 102]);
+    // skill tirata a 0 punti è Intermedio 0%; skill spinta 180 è Avanzato (101–400)
+    expect(s.categories.map((c) => c.band)).toEqual(['avanzato', 'base', 'intermedio', 'avanzato', 'intermedio']);
+    expect(s.categories.map((c) => c.max)).toEqual([1400, 1400, 1300, 1300, 1400]);
+    expect(s.total).toBe(678);
+    expect(s.max).toBe(6800);
+    // (678 − 300) / 500 = 75,6%
+    expect(s).toMatchObject({ band: 'intermedio', percent: 75, start: 300, end: 800 });
   });
 
-  it('senza record: tutto Base a 0', () => {
+  it('senza record: tutto a 0, Base (le skill Intermedio 0%: non hanno Base)', () => {
     const s = levelSummary([]);
     expect(s.total).toBe(0);
     expect(s).toMatchObject({ band: 'base', percent: 0 });
-    expect(s.categories.every((c) => c.points === 0 && c.band === 'base')).toBe(true);
+    expect(s.categories.every((c) => c.points === 0 && c.percent === 0)).toBe(true);
+    expect(s.categories.map((c) => c.band)).toEqual(['base', 'base', 'intermedio', 'intermedio', 'base']);
   });
 
-  it('tutto al massimo: 1400 per categoria, 7000 in totale, Leggenda 100%', () => {
+  it('tutto al massimo: 1400 per categoria (1300 le skill), 6800 in totale, Leggenda 100%', () => {
     const all = CHAINS.map((chain) => {
       const top = chain.entries[chain.entries.length - 1];
       return rec(chain.id, top.id, top.measure === 'kg' ? 400 : top.measure === 'reps' ? 50 : 60, 60);
     });
     const s = levelSummary(all);
-    expect(s.categories.map((c) => c.points)).toEqual([1400, 1400, 1400, 1400, 1400]);
-    expect(s.total).toBe(7000);
+    expect(s.categories.map((c) => c.points)).toEqual([1400, 1400, 1300, 1300, 1400]);
+    expect(s.categories.every((c) => c.band === 'leggenda' && c.percent === 100)).toBe(true);
+    expect(s.total).toBe(6800);
     expect(s).toMatchObject({ band: 'leggenda', percent: 100 });
   });
 });
@@ -631,6 +797,10 @@ describe('validazione', () => {
   it('catena o voce sconosciute', () => {
     expect(validateRecord({ chainId: 'inesistente', entry: 'x', value: 1 })).toBe('unknown-chain');
     expect(validateRecord(rec('planche', 'wide', 5, 60))).toBe('unknown-entry');
+    // il frog stand è l'unica voce nuova (PDF del 26/11): secondi, col peso corporeo
+    expect(validateRecord(rec('planche', 'frog-stand', 5, 60))).toBeNull();
+    expect(validateRecord(rec('planche', 'frog-stand', 5))).toBe('bodyweight-missing');
+    expect(validateRecord(rec('planche', 'frog-stand', 61, 60))).toBe('above-max');
   });
 
   it('con i record: una voce già piena non si inserisce più', () => {
@@ -644,7 +814,8 @@ describe('validazione', () => {
   it('limiti delle voci per il database', () => {
     const limits = stageLimits();
     expect(limits).toHaveLength(CHAINS.reduce((t, c) => t + c.entries.length, 0));
-    expect(limits).toHaveLength(64);
+    expect(limits).toHaveLength(65);
+    expect(limits.find((l) => l.chainId === 'planche' && l.entry === 'frog-stand')).toEqual({ chainId: 'planche', entry: 'frog-stand', min: 1, max: 60, minExclusive: false, whole: true, usesBodyweight: true });
     expect(limits[2]).toEqual({ chainId: 'trazioni', entry: 'zavorra', min: 0, max: 400, minExclusive: true, whole: false, usesBodyweight: true });
     expect(LIMITS).toEqual({ minBodyweightKg: 30, maxBodyweightKg: 250, minReps: 1, maxReps: 50, minSeconds: 1, maxSeconds: 60, maxLoadKg: 400 });
   });

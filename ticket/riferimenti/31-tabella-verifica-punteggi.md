@@ -4,6 +4,9 @@ Generata da `node scripts/tabella-punteggi.mjs` con il motore di `src/lib/levels
 
 **Per Michael**: ogni riga è un record inserito nell’app. Rifai il conto con la tua formula e segnala le righe che non tornano.
 
+Skill tirata, skill spinta e handbalance seguono `Correzioni punteggi 26_11.pdf`; i fondamentali il PDF del 22 novembre.
+Le lettere dei livelli sono quelle dei PDF (**A = il più facile**): nell’app si leggono al contrario (A = il più difficile).
+
 Come leggerla:
 
 - **Peso**: peso corporeo dentro il record. "—" quando la formula non lo usa (il risultato è uguale per tutti).
@@ -12,22 +15,24 @@ Come leggerla:
   80 kg "inizio" e "fine" non danno sempre 1% e 100% esatti.
 - **G**: solo per i kg, il valore normalizzato della formula: `(peso + zavorra) × (60/peso)^esponente`, oppure
   `massimale × (60/peso)^esponente` per panca e military.
+- **H**: solo per gli HSPU zavorrati (PDF del 26 novembre), la zavorra come percentuale dei 60 kg di riferimento:
+  `(zavorra / 60) × (60/peso)^0,75`. Il peso del corpo non entra nella somma.
 - **% livello**: il risultato della formula del livello (0 se non raggiunto, da 1 a 100).
 - **Punti livello**: % × punti massimi del livello, non arrotondati.
 - **Punti catena**: quello che vale il record per tutta la catena, arrotondato all’intero: livelli sotto pieni + punti del
   livello raggiunto. Alla **fine** di un livello a carico il record entra già nel livello successivo all’1%: i punti della
   catena contano anche quell’1% (es. trazioni a 60 kg con 27 kg: livello C pieno = 300, più 1% del livello D = 301).
 
-Fasce dei livelli con nome:
+Fasce dei livelli con nome (le skill non hanno Base: partono da Intermedio):
 
 | | Base | Intermedio | Avanzato | Elite | Titano | Leggenda |
 |---|---|---|---|---|---|---|
 | Fondamentali tirata | 0–100 | 101–200 | 201–500 | 501–800 | 801–1100 | 1101–1400 |
 | Fondamentali spinta | 0–100 | 101–200 | 201–500 | 501–800 | 801–1100 | 1101–1400 |
-| Skill tirata | 0–200 | 201–500 | 501–666 | 667–800 | 801–1100 | 1101–1400 |
-| Skill spinta | 0–100 | 101–500 | 501–684 | 685–850 | 851–1100 | 1101–1400 |
+| Skill tirata | — | 0–100 | 101–400 | 401–700 | 701–1000 | 1001–1300 |
+| Skill spinta | — | 0–100 | 101–400 | 401–700 | 701–1000 | 1001–1300 |
 | Handbalance | 0–100 | 101–200 | 201–500 | 501–800 | 801–1100 | 1101–1400 |
-| Complessivo | 0–300 | 301–800 | 801–2500 | 2501–4000 | 4001–5500 | 5501–7000 |
+| Complessivo | 0–300 | 301–800 | 801–2300 | 2301–3800 | 3801–5300 | 5301–6800 |
 
 ## Fondamentali tirata
 
@@ -481,297 +486,9 @@ Fasce dei livelli con nome:
 
 ## Skill tirata
 
-### Front lever (800 punti)
+### Front lever (520 punti)
 
-**Livello A — Tuck front lever 1–10 s** · Base · 200 punti (da 0 a 200 nella catena) · voce "Tuck"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 20 | 20 |
-| 60 kg | metà | 6 s | 60% | 120 | 120 |
-| 60 kg | fine | 10 s | 100% | 200 | 200 |
-| 70 kg | inizio | 1 s | 11,67% | 23,33 | 23 |
-| 70 kg | metà | 5 s | 58,33% | 116,67 | 117 |
-| 70 kg | fine | 9 s | 100% | 200 | 200 |
-| 80 kg | inizio | 1 s | 13,33% | 26,67 | 27 |
-| 80 kg | metà | 5 s | 66,67% | 133,33 | 133 |
-| 80 kg | fine | 8 s | 100% | 200 | 200 |
-
-**Livello B — Tuck advanced front lever 1–10 s** · Intermedio · 150 punti (da 200 a 350 nella catena) · voce "Tuck advanced"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 15 | 215 |
-| 60 kg | metà | 6 s | 60% | 90 | 290 |
-| 60 kg | fine | 10 s | 100% | 150 | 350 |
-| 70 kg | inizio | 1 s | 11,67% | 17,5 | 218 |
-| 70 kg | metà | 5 s | 58,33% | 87,5 | 288 |
-| 70 kg | fine | 9 s | 100% | 150 | 350 |
-| 80 kg | inizio | 1 s | 13,33% | 20 | 220 |
-| 80 kg | metà | 5 s | 66,67% | 100 | 300 |
-| 80 kg | fine | 8 s | 100% | 150 | 350 |
-
-**Livello C — One leg front lever 1–10 s** · Intermedio · 150 punti (da 350 a 500 nella catena) · voce "One leg"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 15 | 365 |
-| 60 kg | metà | 6 s | 60% | 90 | 440 |
-| 60 kg | fine | 10 s | 100% | 150 | 500 |
-| 70 kg | inizio | 1 s | 11,67% | 17,5 | 368 |
-| 70 kg | metà | 5 s | 58,33% | 87,5 | 438 |
-| 70 kg | fine | 9 s | 100% | 150 | 500 |
-| 80 kg | inizio | 1 s | 13,33% | 20 | 370 |
-| 80 kg | metà | 5 s | 66,67% | 100 | 450 |
-| 80 kg | fine | 8 s | 100% | 150 | 500 |
-
-**Livello D — Straddle front lever 1–10 s** · Avanzato · 33 punti (da 500 a 533 nella catena) · voce "Straddle"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 3,3 | 503 |
-| 60 kg | metà | 6 s | 60% | 19,8 | 520 |
-| 60 kg | fine | 10 s | 100% | 33 | 533 |
-| 70 kg | inizio | 1 s | 11,67% | 3,85 | 504 |
-| 70 kg | metà | 5 s | 58,33% | 19,25 | 519 |
-| 70 kg | fine | 9 s | 100% | 33 | 533 |
-| 80 kg | inizio | 1 s | 13,33% | 4,4 | 504 |
-| 80 kg | metà | 5 s | 66,67% | 22 | 522 |
-| 80 kg | fine | 8 s | 100% | 33 | 533 |
-
-**Livello E — Half lay front lever 1–10 s** · Avanzato · 33 punti (da 533 a 566 nella catena) · voce "Half lay"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 3,3 | 536 |
-| 60 kg | metà | 6 s | 60% | 19,8 | 553 |
-| 60 kg | fine | 10 s | 100% | 33 | 566 |
-| 70 kg | inizio | 1 s | 11,67% | 3,85 | 537 |
-| 70 kg | metà | 5 s | 58,33% | 19,25 | 552 |
-| 70 kg | fine | 9 s | 100% | 33 | 566 |
-| 80 kg | inizio | 1 s | 13,33% | 4,4 | 537 |
-| 80 kg | metà | 5 s | 66,67% | 22 | 555 |
-| 80 kg | fine | 8 s | 100% | 33 | 566 |
-
-**Livello F — Full front lever 1–10 s** · Elite · 34 punti (da 566 a 600 nella catena) · voce "Full"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 3,4 | 569 |
-| 60 kg | metà | 6 s | 60% | 20,4 | 586 |
-| 60 kg | fine | 10 s | 100% | 34 | 600 |
-| 70 kg | inizio | 1 s | 11,67% | 3,97 | 570 |
-| 70 kg | metà | 5 s | 58,33% | 19,83 | 586 |
-| 70 kg | fine | 9 s | 100% | 34 | 600 |
-| 80 kg | inizio | 1 s | 13,33% | 4,53 | 571 |
-| 80 kg | metà | 5 s | 66,67% | 22,67 | 589 |
-| 80 kg | fine | 8 s | 100% | 34 | 600 |
-
-**Livello G — Wide full front lever 1–10 s** · Titano · 100 punti (da 600 a 700 nella catena) · voce "Wide full"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 10 | 610 |
-| 60 kg | metà | 6 s | 60% | 60 | 660 |
-| 60 kg | fine | 10 s | 100% | 100 | 700 |
-| 70 kg | inizio | 1 s | 11,67% | 11,67 | 612 |
-| 70 kg | metà | 5 s | 58,33% | 58,33 | 658 |
-| 70 kg | fine | 9 s | 100% | 100 | 700 |
-| 80 kg | inizio | 1 s | 13,33% | 13,33 | 613 |
-| 80 kg | metà | 5 s | 66,67% | 66,67 | 667 |
-| 80 kg | fine | 8 s | 100% | 100 | 700 |
-
-**Livello H — Victorian 1–10 s** · Leggenda · 100 punti (da 700 a 800 nella catena) · voce "Victorian"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 10 | 710 |
-| 60 kg | metà | 6 s | 60% | 60 | 760 |
-| 60 kg | fine | 10 s | 100% | 100 | 800 |
-| 70 kg | inizio | 1 s | 11,67% | 11,67 | 712 |
-| 70 kg | metà | 5 s | 58,33% | 58,33 | 758 |
-| 70 kg | fine | 9 s | 100% | 100 | 800 |
-| 80 kg | inizio | 1 s | 13,33% | 13,33 | 713 |
-| 80 kg | metà | 5 s | 66,67% | 66,67 | 767 |
-| 80 kg | fine | 8 s | 100% | 100 | 800 |
-
-### Front lever touch (300 punti)
-
-**Livello A — Tuck advanced front lever touch 1–10 s** · Avanzato · 25 punti (da 0 a 25 nella catena) · voce "Tuck advanced"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 2,5 | 3 |
-| 60 kg | metà | 6 s | 60% | 15 | 15 |
-| 60 kg | fine | 10 s | 100% | 25 | 25 |
-| 70 kg | inizio | 1 s | 11,67% | 2,92 | 3 |
-| 70 kg | metà | 5 s | 58,33% | 14,58 | 15 |
-| 70 kg | fine | 9 s | 100% | 25 | 25 |
-| 80 kg | inizio | 1 s | 13,33% | 3,33 | 3 |
-| 80 kg | metà | 5 s | 66,67% | 16,67 | 17 |
-| 80 kg | fine | 8 s | 100% | 25 | 25 |
-
-**Livello B — One leg front lever touch 1–10 s** · Avanzato · 25 punti (da 25 a 50 nella catena) · voce "One leg"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 2,5 | 28 |
-| 60 kg | metà | 6 s | 60% | 15 | 40 |
-| 60 kg | fine | 10 s | 100% | 25 | 50 |
-| 70 kg | inizio | 1 s | 11,67% | 2,92 | 28 |
-| 70 kg | metà | 5 s | 58,33% | 14,58 | 40 |
-| 70 kg | fine | 9 s | 100% | 25 | 50 |
-| 80 kg | inizio | 1 s | 13,33% | 3,33 | 28 |
-| 80 kg | metà | 5 s | 66,67% | 16,67 | 42 |
-| 80 kg | fine | 8 s | 100% | 25 | 50 |
-
-**Livello C — Straddle front lever touch 1–10 s** · Elite · 25 punti (da 50 a 75 nella catena) · voce "Straddle"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 2,5 | 53 |
-| 60 kg | metà | 6 s | 60% | 15 | 65 |
-| 60 kg | fine | 10 s | 100% | 25 | 75 |
-| 70 kg | inizio | 1 s | 11,67% | 2,92 | 53 |
-| 70 kg | metà | 5 s | 58,33% | 14,58 | 65 |
-| 70 kg | fine | 9 s | 100% | 25 | 75 |
-| 80 kg | inizio | 1 s | 13,33% | 3,33 | 53 |
-| 80 kg | metà | 5 s | 66,67% | 16,67 | 67 |
-| 80 kg | fine | 8 s | 100% | 25 | 75 |
-
-**Livello D — Half lay front lever touch 1–10 s** · Elite · 25 punti (da 75 a 100 nella catena) · voce "Half lay"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 2,5 | 78 |
-| 60 kg | metà | 6 s | 60% | 15 | 90 |
-| 60 kg | fine | 10 s | 100% | 25 | 100 |
-| 70 kg | inizio | 1 s | 11,67% | 2,92 | 78 |
-| 70 kg | metà | 5 s | 58,33% | 14,58 | 90 |
-| 70 kg | fine | 9 s | 100% | 25 | 100 |
-| 80 kg | inizio | 1 s | 13,33% | 3,33 | 78 |
-| 80 kg | metà | 5 s | 66,67% | 16,67 | 92 |
-| 80 kg | fine | 8 s | 100% | 25 | 100 |
-
-**Livello E — Full front lever touch 1–5 s** · Titano · 100 punti (da 100 a 200 nella catena) · voce "Full"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 20% | 20 | 120 |
-| 60 kg | metà | 3 s | 60% | 60 | 160 |
-| 60 kg | fine | 5 s | 100% | 100 | 200 |
-| 70 kg | inizio | 1 s | 23,33% | 23,33 | 123 |
-| 70 kg | metà | 3 s | 70% | 70 | 170 |
-| 70 kg | fine | 5 s | 100% | 100 | 200 |
-| 80 kg | inizio | 1 s | 26,67% | 26,67 | 127 |
-| 80 kg | metà | 3 s | 80% | 80 | 180 |
-| 80 kg | fine | 4 s | 100% | 100 | 200 |
-
-**Livello F — Wide full front lever touch 1–10 s** · Leggenda · 100 punti (da 200 a 300 nella catena) · voce "Wide full"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 10 | 210 |
-| 60 kg | metà | 6 s | 60% | 60 | 260 |
-| 60 kg | fine | 10 s | 100% | 100 | 300 |
-| 70 kg | inizio | 1 s | 11,67% | 11,67 | 212 |
-| 70 kg | metà | 5 s | 58,33% | 58,33 | 258 |
-| 70 kg | fine | 9 s | 100% | 100 | 300 |
-| 80 kg | inizio | 1 s | 13,33% | 13,33 | 213 |
-| 80 kg | metà | 5 s | 66,67% | 66,67 | 267 |
-| 80 kg | fine | 8 s | 100% | 100 | 300 |
-
-### Front lever pull ups (300 punti)
-
-**Livello A — Tuck advanced front lever pull ups 1–5 rip.** · Avanzato · 25 punti (da 0 a 25 nella catena) · voce "Tuck advanced"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 5 | 5 |
-| 60 kg | metà | 3 rip. | 60% | 15 | 15 |
-| 60 kg | fine | 5 rip. | 100% | 25 | 25 |
-| 70 kg | inizio | 1 rip. | 27,22% | 6,81 | 7 |
-| 70 kg | metà | 3 rip. | 81,67% | 20,42 | 20 |
-| 70 kg | fine | 4 rip. | 100% | 25 | 25 |
-| 80 kg | inizio | 1 rip. | 35,56% | 8,89 | 9 |
-| 80 kg | metà | 2 rip. | 71,11% | 17,78 | 18 |
-| 80 kg | fine | 3 rip. | 100% | 25 | 25 |
-
-**Livello B — One leg front lever pull ups 1–5 rip.** · Avanzato · 25 punti (da 25 a 50 nella catena) · voce "One leg"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 5 | 30 |
-| 60 kg | metà | 3 rip. | 60% | 15 | 40 |
-| 60 kg | fine | 5 rip. | 100% | 25 | 50 |
-| 70 kg | inizio | 1 rip. | 27,22% | 6,81 | 32 |
-| 70 kg | metà | 3 rip. | 81,67% | 20,42 | 45 |
-| 70 kg | fine | 4 rip. | 100% | 25 | 50 |
-| 80 kg | inizio | 1 rip. | 35,56% | 8,89 | 34 |
-| 80 kg | metà | 2 rip. | 71,11% | 17,78 | 43 |
-| 80 kg | fine | 3 rip. | 100% | 25 | 50 |
-
-**Livello C — Straddle front lever pull ups 1–5 rip.** · Elite · 50 punti (da 50 a 100 nella catena) · voce "Straddle"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 10 | 60 |
-| 60 kg | metà | 3 rip. | 60% | 30 | 80 |
-| 60 kg | fine | 5 rip. | 100% | 50 | 100 |
-| 70 kg | inizio | 1 rip. | 27,22% | 13,61 | 64 |
-| 70 kg | metà | 3 rip. | 81,67% | 40,83 | 91 |
-| 70 kg | fine | 4 rip. | 100% | 50 | 100 |
-| 80 kg | inizio | 1 rip. | 35,56% | 17,78 | 68 |
-| 80 kg | metà | 2 rip. | 71,11% | 35,56 | 86 |
-| 80 kg | fine | 3 rip. | 100% | 50 | 100 |
-
-**Livello D — Half lay front lever pull ups 1–5 rip.** · Titano · 50 punti (da 100 a 150 nella catena) · voce "Half lay"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 10 | 110 |
-| 60 kg | metà | 3 rip. | 60% | 30 | 130 |
-| 60 kg | fine | 5 rip. | 100% | 50 | 150 |
-| 70 kg | inizio | 1 rip. | 27,22% | 13,61 | 114 |
-| 70 kg | metà | 3 rip. | 81,67% | 40,83 | 141 |
-| 70 kg | fine | 4 rip. | 100% | 50 | 150 |
-| 80 kg | inizio | 1 rip. | 35,56% | 17,78 | 118 |
-| 80 kg | metà | 2 rip. | 71,11% | 35,56 | 136 |
-| 80 kg | fine | 3 rip. | 100% | 50 | 150 |
-
-**Livello E — Full front lever pull ups 1–5 rip.** · Titano · 50 punti (da 150 a 200 nella catena) · voce "Full"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 10 | 160 |
-| 60 kg | metà | 3 rip. | 60% | 30 | 180 |
-| 60 kg | fine | 5 rip. | 100% | 50 | 200 |
-| 70 kg | inizio | 1 rip. | 27,22% | 13,61 | 164 |
-| 70 kg | metà | 3 rip. | 81,67% | 40,83 | 191 |
-| 70 kg | fine | 4 rip. | 100% | 50 | 200 |
-| 80 kg | inizio | 1 rip. | 35,56% | 17,78 | 168 |
-| 80 kg | metà | 2 rip. | 71,11% | 35,56 | 186 |
-| 80 kg | fine | 3 rip. | 100% | 50 | 200 |
-
-**Livello F — Wide full front lever pull ups 1–5 rip.** · Leggenda · 100 punti (da 200 a 300 nella catena) · voce "Wide full"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 20 | 220 |
-| 60 kg | metà | 3 rip. | 60% | 60 | 260 |
-| 60 kg | fine | 5 rip. | 100% | 100 | 300 |
-| 70 kg | inizio | 1 rip. | 27,22% | 27,22 | 227 |
-| 70 kg | metà | 3 rip. | 81,67% | 81,67 | 282 |
-| 70 kg | fine | 4 rip. | 100% | 100 | 300 |
-| 80 kg | inizio | 1 rip. | 35,56% | 35,56 | 236 |
-| 80 kg | metà | 2 rip. | 71,11% | 71,11 | 271 |
-| 80 kg | fine | 3 rip. | 100% | 100 | 300 |
-
-## Skill spinta
-
-### Planche (534 punti)
-
-**Livello A — Tuck planche 1–10 s** · Base · 100 punti (da 0 a 100 nella catena) · voce "Tuck"
+**Livello A — Tuck front lever 1–10 s** · Intermedio · 100 punti (da 0 a 100 nella catena) · voce "Tuck"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
@@ -785,218 +502,520 @@ Fasce dei livelli con nome:
 | 80 kg | metà | 5 s | 66,67% | 66,67 | 67 |
 | 80 kg | fine | 8 s | 100% | 100 | 100 |
 
-**Livello B — Tuck advanced planche 1–10 s** · Intermedio · 134 punti (da 100 a 234 nella catena) · voce "Tuck advanced"
+**Livello B — Tuck advanced front lever 1–10 s** · Avanzato · 45 punti (da 100 a 145 nella catena) · voce "Tuck advanced"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 13,4 | 113 |
-| 60 kg | metà | 6 s | 60% | 80,4 | 180 |
-| 60 kg | fine | 10 s | 100% | 134 | 234 |
-| 70 kg | inizio | 1 s | 11,67% | 15,63 | 116 |
-| 70 kg | metà | 5 s | 58,33% | 78,17 | 178 |
-| 70 kg | fine | 9 s | 100% | 134 | 234 |
-| 80 kg | inizio | 1 s | 13,33% | 17,87 | 118 |
-| 80 kg | metà | 5 s | 66,67% | 89,33 | 189 |
-| 80 kg | fine | 8 s | 100% | 134 | 234 |
+| 60 kg | inizio | 1 s | 10% | 4,5 | 105 |
+| 60 kg | metà | 6 s | 60% | 27 | 127 |
+| 60 kg | fine | 10 s | 100% | 45 | 145 |
+| 70 kg | inizio | 1 s | 11,67% | 5,25 | 105 |
+| 70 kg | metà | 5 s | 58,33% | 26,25 | 126 |
+| 70 kg | fine | 9 s | 100% | 45 | 145 |
+| 80 kg | inizio | 1 s | 13,33% | 6 | 106 |
+| 80 kg | metà | 5 s | 66,67% | 30 | 130 |
+| 80 kg | fine | 8 s | 100% | 45 | 145 |
 
-**Livello C — One leg planche 1–10 s** · Avanzato · 50 punti (da 234 a 284 nella catena) · voce "One leg"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 5 | 239 |
-| 60 kg | metà | 6 s | 60% | 30 | 264 |
-| 60 kg | fine | 10 s | 100% | 50 | 284 |
-| 70 kg | inizio | 1 s | 11,67% | 5,83 | 240 |
-| 70 kg | metà | 5 s | 58,33% | 29,17 | 263 |
-| 70 kg | fine | 9 s | 100% | 50 | 284 |
-| 80 kg | inizio | 1 s | 13,33% | 6,67 | 241 |
-| 80 kg | metà | 5 s | 66,67% | 33,33 | 267 |
-| 80 kg | fine | 8 s | 100% | 50 | 284 |
-
-**Livello D — Straddle planche 1–10 s** · Elite · 50 punti (da 284 a 334 nella catena) · voce "Straddle"
+**Livello C — One leg front lever 1–10 s** · Avanzato · 55 punti (da 145 a 200 nella catena) · voce "One leg"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 5 | 289 |
-| 60 kg | metà | 6 s | 60% | 30 | 314 |
-| 60 kg | fine | 10 s | 100% | 50 | 334 |
-| 70 kg | inizio | 1 s | 11,67% | 5,83 | 290 |
-| 70 kg | metà | 5 s | 58,33% | 29,17 | 313 |
-| 70 kg | fine | 9 s | 100% | 50 | 334 |
-| 80 kg | inizio | 1 s | 13,33% | 6,67 | 291 |
-| 80 kg | metà | 5 s | 66,67% | 33,33 | 317 |
-| 80 kg | fine | 8 s | 100% | 50 | 334 |
+| 60 kg | inizio | 1 s | 10% | 5,5 | 151 |
+| 60 kg | metà | 6 s | 60% | 33 | 178 |
+| 60 kg | fine | 10 s | 100% | 55 | 200 |
+| 70 kg | inizio | 1 s | 11,67% | 6,42 | 151 |
+| 70 kg | metà | 5 s | 58,33% | 32,08 | 177 |
+| 70 kg | fine | 9 s | 100% | 55 | 200 |
+| 80 kg | inizio | 1 s | 13,33% | 7,33 | 152 |
+| 80 kg | metà | 5 s | 66,67% | 36,67 | 182 |
+| 80 kg | fine | 8 s | 100% | 55 | 200 |
 
-**Livello E — Full planche 1–10 s** · Titano · 100 punti (da 334 a 434 nella catena) · voce "Full"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 10 | 344 |
-| 60 kg | metà | 6 s | 60% | 60 | 394 |
-| 60 kg | fine | 10 s | 100% | 100 | 434 |
-| 70 kg | inizio | 1 s | 11,67% | 11,67 | 346 |
-| 70 kg | metà | 5 s | 58,33% | 58,33 | 392 |
-| 70 kg | fine | 9 s | 100% | 100 | 434 |
-| 80 kg | inizio | 1 s | 13,33% | 13,33 | 347 |
-| 80 kg | metà | 5 s | 66,67% | 66,67 | 401 |
-| 80 kg | fine | 8 s | 100% | 100 | 434 |
-
-**Livello F — Maltese 1–10 s** · Leggenda · 100 punti (da 434 a 534 nella catena) · voce "Maltese"
+**Livello D — Straddle front lever 1–10 s** · Elite · 40 punti (da 200 a 240 nella catena) · voce "Straddle"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| 60 kg | inizio | 1 s | 10% | 10 | 444 |
-| 60 kg | metà | 6 s | 60% | 60 | 494 |
-| 60 kg | fine | 10 s | 100% | 100 | 534 |
-| 70 kg | inizio | 1 s | 11,67% | 11,67 | 446 |
-| 70 kg | metà | 5 s | 58,33% | 58,33 | 492 |
-| 70 kg | fine | 9 s | 100% | 100 | 534 |
-| 80 kg | inizio | 1 s | 13,33% | 13,33 | 447 |
-| 80 kg | metà | 5 s | 66,67% | 66,67 | 501 |
-| 80 kg | fine | 8 s | 100% | 100 | 534 |
+| 60 kg | inizio | 1 s | 10% | 4 | 204 |
+| 60 kg | metà | 6 s | 60% | 24 | 224 |
+| 60 kg | fine | 10 s | 100% | 40 | 240 |
+| 70 kg | inizio | 1 s | 11,67% | 4,67 | 205 |
+| 70 kg | metà | 5 s | 58,33% | 23,33 | 223 |
+| 70 kg | fine | 9 s | 100% | 40 | 240 |
+| 80 kg | inizio | 1 s | 13,33% | 5,33 | 205 |
+| 80 kg | metà | 5 s | 66,67% | 26,67 | 227 |
+| 80 kg | fine | 8 s | 100% | 40 | 240 |
 
-### Planche push ups (433 punti)
-
-**Livello A — Tuck planche push ups 1–5 rip.** · Intermedio · 133 punti (da 0 a 133 nella catena) · voce "Tuck"
+**Livello E — Half lay front lever 1–10 s** · Elite · 45 punti (da 240 a 285 nella catena) · voce "Half lay"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 26,6 | 27 |
-| 60 kg | metà | 3 rip. | 60% | 79,8 | 80 |
-| 60 kg | fine | 5 rip. | 100% | 133 | 133 |
-| 70 kg | inizio | 1 rip. | 27,22% | 36,21 | 36 |
-| 70 kg | metà | 3 rip. | 81,67% | 108,62 | 109 |
-| 70 kg | fine | 4 rip. | 100% | 133 | 133 |
-| 80 kg | inizio | 1 rip. | 35,56% | 47,29 | 47 |
-| 80 kg | metà | 2 rip. | 71,11% | 94,58 | 95 |
-| 80 kg | fine | 3 rip. | 100% | 133 | 133 |
+| 60 kg | inizio | 1 s | 10% | 4,5 | 245 |
+| 60 kg | metà | 6 s | 60% | 27 | 267 |
+| 60 kg | fine | 10 s | 100% | 45 | 285 |
+| 70 kg | inizio | 1 s | 11,67% | 5,25 | 245 |
+| 70 kg | metà | 5 s | 58,33% | 26,25 | 266 |
+| 70 kg | fine | 9 s | 100% | 45 | 285 |
+| 80 kg | inizio | 1 s | 13,33% | 6 | 246 |
+| 80 kg | metà | 5 s | 66,67% | 30 | 270 |
+| 80 kg | fine | 8 s | 100% | 45 | 285 |
 
-**Livello B — Tuck advanced planche push ups 1–5 rip.** · Avanzato · 100 punti (da 133 a 233 nella catena) · voce "Tuck advanced"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 20 | 153 |
-| 60 kg | metà | 3 rip. | 60% | 60 | 193 |
-| 60 kg | fine | 5 rip. | 100% | 100 | 233 |
-| 70 kg | inizio | 1 rip. | 27,22% | 27,22 | 160 |
-| 70 kg | metà | 3 rip. | 81,67% | 81,67 | 215 |
-| 70 kg | fine | 4 rip. | 100% | 100 | 233 |
-| 80 kg | inizio | 1 rip. | 35,56% | 35,56 | 169 |
-| 80 kg | metà | 2 rip. | 71,11% | 71,11 | 204 |
-| 80 kg | fine | 3 rip. | 100% | 100 | 233 |
-
-**Livello C — One leg planche push ups 1–5 rip.** · Elite · 50 punti (da 233 a 283 nella catena) · voce "One leg"
+**Livello F — Full front lever 1–10 s** · Titano · 45 punti (da 285 a 330 nella catena) · voce "Full"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 10 | 243 |
-| 60 kg | metà | 3 rip. | 60% | 30 | 263 |
-| 60 kg | fine | 5 rip. | 100% | 50 | 283 |
-| 70 kg | inizio | 1 rip. | 27,22% | 13,61 | 247 |
-| 70 kg | metà | 3 rip. | 81,67% | 40,83 | 274 |
-| 70 kg | fine | 4 rip. | 100% | 50 | 283 |
-| 80 kg | inizio | 1 rip. | 35,56% | 17,78 | 251 |
-| 80 kg | metà | 2 rip. | 71,11% | 35,56 | 269 |
-| 80 kg | fine | 3 rip. | 100% | 50 | 283 |
+| 60 kg | inizio | 1 s | 10% | 4,5 | 290 |
+| 60 kg | metà | 6 s | 60% | 27 | 312 |
+| 60 kg | fine | 10 s | 100% | 45 | 330 |
+| 70 kg | inizio | 1 s | 11,67% | 5,25 | 290 |
+| 70 kg | metà | 5 s | 58,33% | 26,25 | 311 |
+| 70 kg | fine | 9 s | 100% | 45 | 330 |
+| 80 kg | inizio | 1 s | 13,33% | 6 | 291 |
+| 80 kg | metà | 5 s | 66,67% | 30 | 315 |
+| 80 kg | fine | 8 s | 100% | 45 | 330 |
 
-**Livello D — Straddle planche push ups 1–5 rip.** · Titano · 50 punti (da 283 a 333 nella catena) · voce "Straddle"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 10 | 293 |
-| 60 kg | metà | 3 rip. | 60% | 30 | 313 |
-| 60 kg | fine | 5 rip. | 100% | 50 | 333 |
-| 70 kg | inizio | 1 rip. | 27,22% | 13,61 | 297 |
-| 70 kg | metà | 3 rip. | 81,67% | 40,83 | 324 |
-| 70 kg | fine | 4 rip. | 100% | 50 | 333 |
-| 80 kg | inizio | 1 rip. | 35,56% | 17,78 | 301 |
-| 80 kg | metà | 2 rip. | 71,11% | 35,56 | 319 |
-| 80 kg | fine | 3 rip. | 100% | 50 | 333 |
-
-**Livello E — Full planche push ups 1–5 rip.** · Leggenda · 100 punti (da 333 a 433 nella catena) · voce "Full"
+**Livello G — Wide full front lever 1–10 s** · Titano · 70 punti (da 330 a 400 nella catena) · voce "Wide full"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 20% | 20 | 353 |
-| 60 kg | metà | 3 rip. | 60% | 60 | 393 |
-| 60 kg | fine | 5 rip. | 100% | 100 | 433 |
-| 70 kg | inizio | 1 rip. | 27,22% | 27,22 | 360 |
-| 70 kg | metà | 3 rip. | 81,67% | 81,67 | 415 |
-| 70 kg | fine | 4 rip. | 100% | 100 | 433 |
-| 80 kg | inizio | 1 rip. | 35,56% | 35,56 | 369 |
-| 80 kg | metà | 2 rip. | 71,11% | 71,11 | 404 |
-| 80 kg | fine | 3 rip. | 100% | 100 | 433 |
+| 60 kg | inizio | 1 s | 10% | 7 | 337 |
+| 60 kg | metà | 6 s | 60% | 42 | 372 |
+| 60 kg | fine | 10 s | 100% | 70 | 400 |
+| 70 kg | inizio | 1 s | 11,67% | 8,17 | 338 |
+| 70 kg | metà | 5 s | 58,33% | 40,83 | 371 |
+| 70 kg | fine | 9 s | 100% | 70 | 400 |
+| 80 kg | inizio | 1 s | 13,33% | 9,33 | 339 |
+| 80 kg | metà | 5 s | 66,67% | 46,67 | 377 |
+| 80 kg | fine | 8 s | 100% | 70 | 400 |
 
-### Planche press (433 punti)
-
-**Livello A — Tuck planche press 1–3 rip.** · Intermedio · 133 punti (da 0 a 133 nella catena) · voce "Tuck"
+**Livello H — Victorian alle parallele 1–10 s** · Leggenda · 120 punti (da 400 a 520 nella catena) · voce "Victorian alle parallele"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 33,33% | 44,33 | 44 |
-| 60 kg | metà | 2 rip. | 66,67% | 88,67 | 89 |
-| 60 kg | fine | 3 rip. | 100% | 133 | 133 |
-| 70 kg | inizio | 1 rip. | 45,37% | 60,34 | 60 |
-| 70 kg | metà | 2 rip. | 90,74% | 120,69 | 121 |
-| 70 kg | fine | 3 rip. | 100% | 133 | 133 |
-| 80 kg | inizio | 1 rip. | 59,26% | 78,81 | 79 |
-| 80 kg | metà = fine | 2 rip. | 100% | 133 | 133 |
+| 60 kg | inizio | 1 s | 10% | 12 | 412 |
+| 60 kg | metà | 6 s | 60% | 72 | 472 |
+| 60 kg | fine | 10 s | 100% | 120 | 520 |
+| 70 kg | inizio | 1 s | 11,67% | 14 | 414 |
+| 70 kg | metà | 5 s | 58,33% | 70 | 470 |
+| 70 kg | fine | 9 s | 100% | 120 | 520 |
+| 80 kg | inizio | 1 s | 13,33% | 16 | 416 |
+| 80 kg | metà | 5 s | 66,67% | 80 | 480 |
+| 80 kg | fine | 8 s | 100% | 120 | 520 |
 
-**Livello B — Tuck advanced planche press 1–3 rip.** · Avanzato · 34 punti (da 133 a 167 nella catena) · voce "Tuck advanced"
+### Front lever touch (380 punti)
 
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 33,33% | 11,33 | 144 |
-| 60 kg | metà | 2 rip. | 66,67% | 22,67 | 156 |
-| 60 kg | fine | 3 rip. | 100% | 34 | 167 |
-| 70 kg | inizio | 1 rip. | 45,37% | 15,43 | 148 |
-| 70 kg | metà | 2 rip. | 90,74% | 30,85 | 164 |
-| 70 kg | fine | 3 rip. | 100% | 34 | 167 |
-| 80 kg | inizio | 1 rip. | 59,26% | 20,15 | 153 |
-| 80 kg | metà = fine | 2 rip. | 100% | 34 | 167 |
-
-**Livello C — One leg planche press 1–3 rip.** · Elite · 66 punti (da 167 a 233 nella catena) · voce "One leg"
+**Livello A — Tuck advanced front lever touch 1–10 s** · Avanzato · 55 punti (da 0 a 55 nella catena) · voce "Tuck advanced"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 33,33% | 22 | 189 |
-| 60 kg | metà | 2 rip. | 66,67% | 44 | 211 |
-| 60 kg | fine | 3 rip. | 100% | 66 | 233 |
-| 70 kg | inizio | 1 rip. | 45,37% | 29,94 | 197 |
-| 70 kg | metà | 2 rip. | 90,74% | 59,89 | 227 |
-| 70 kg | fine | 3 rip. | 100% | 66 | 233 |
-| 80 kg | inizio | 1 rip. | 59,26% | 39,11 | 206 |
-| 80 kg | metà = fine | 2 rip. | 100% | 66 | 233 |
+| 60 kg | inizio | 1 s | 10% | 5,5 | 6 |
+| 60 kg | metà | 6 s | 60% | 33 | 33 |
+| 60 kg | fine | 10 s | 100% | 55 | 55 |
+| 70 kg | inizio | 1 s | 11,67% | 6,42 | 6 |
+| 70 kg | metà | 5 s | 58,33% | 32,08 | 32 |
+| 70 kg | fine | 9 s | 100% | 55 | 55 |
+| 80 kg | inizio | 1 s | 13,33% | 7,33 | 7 |
+| 80 kg | metà | 5 s | 66,67% | 36,67 | 37 |
+| 80 kg | fine | 8 s | 100% | 55 | 55 |
 
-**Livello D — Straddle planche press 1–3 rip.** · Titano · 100 punti (da 233 a 333 nella catena) · voce "Straddle"
-
-| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
-|---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 33,33% | 33,33 | 266 |
-| 60 kg | metà | 2 rip. | 66,67% | 66,67 | 300 |
-| 60 kg | fine | 3 rip. | 100% | 100 | 333 |
-| 70 kg | inizio | 1 rip. | 45,37% | 45,37 | 278 |
-| 70 kg | metà | 2 rip. | 90,74% | 90,74 | 324 |
-| 70 kg | fine | 3 rip. | 100% | 100 | 333 |
-| 80 kg | inizio | 1 rip. | 59,26% | 59,26 | 292 |
-| 80 kg | metà = fine | 2 rip. | 100% | 100 | 333 |
-
-**Livello E — Full planche press 1–3 rip.** · Leggenda · 100 punti (da 333 a 433 nella catena) · voce "Full"
+**Livello B — One leg front lever touch 1–10 s** · Avanzato · 65 punti (da 55 a 120 nella catena) · voce "One leg"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| 60 kg | inizio | 1 rip. | 33,33% | 33,33 | 366 |
-| 60 kg | metà | 2 rip. | 66,67% | 66,67 | 400 |
-| 60 kg | fine | 3 rip. | 100% | 100 | 433 |
-| 70 kg | inizio | 1 rip. | 45,37% | 45,37 | 378 |
-| 70 kg | metà | 2 rip. | 90,74% | 90,74 | 424 |
-| 70 kg | fine | 3 rip. | 100% | 100 | 433 |
-| 80 kg | inizio | 1 rip. | 59,26% | 59,26 | 392 |
-| 80 kg | metà = fine | 2 rip. | 100% | 100 | 433 |
+| 60 kg | inizio | 1 s | 10% | 6,5 | 62 |
+| 60 kg | metà | 6 s | 60% | 39 | 94 |
+| 60 kg | fine | 10 s | 100% | 65 | 120 |
+| 70 kg | inizio | 1 s | 11,67% | 7,58 | 63 |
+| 70 kg | metà | 5 s | 58,33% | 37,92 | 93 |
+| 70 kg | fine | 9 s | 100% | 65 | 120 |
+| 80 kg | inizio | 1 s | 13,33% | 8,67 | 64 |
+| 80 kg | metà | 5 s | 66,67% | 43,33 | 98 |
+| 80 kg | fine | 8 s | 100% | 65 | 120 |
+
+**Livello C — Straddle front lever touch 1–10 s** · Elite · 55 punti (da 120 a 175 nella catena) · voce "Straddle"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 5,5 | 126 |
+| 60 kg | metà | 6 s | 60% | 33 | 153 |
+| 60 kg | fine | 10 s | 100% | 55 | 175 |
+| 70 kg | inizio | 1 s | 11,67% | 6,42 | 126 |
+| 70 kg | metà | 5 s | 58,33% | 32,08 | 152 |
+| 70 kg | fine | 9 s | 100% | 55 | 175 |
+| 80 kg | inizio | 1 s | 13,33% | 7,33 | 127 |
+| 80 kg | metà | 5 s | 66,67% | 36,67 | 157 |
+| 80 kg | fine | 8 s | 100% | 55 | 175 |
+
+**Livello D — Half lay front lever touch 1–10 s** · Elite · 65 punti (da 175 a 240 nella catena) · voce "Half lay"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 6,5 | 182 |
+| 60 kg | metà | 6 s | 60% | 39 | 214 |
+| 60 kg | fine | 10 s | 100% | 65 | 240 |
+| 70 kg | inizio | 1 s | 11,67% | 7,58 | 183 |
+| 70 kg | metà | 5 s | 58,33% | 37,92 | 213 |
+| 70 kg | fine | 9 s | 100% | 65 | 240 |
+| 80 kg | inizio | 1 s | 13,33% | 8,67 | 184 |
+| 80 kg | metà | 5 s | 66,67% | 43,33 | 218 |
+| 80 kg | fine | 8 s | 100% | 65 | 240 |
+
+**Livello E — Full front lever touch 1–10 s** · Titano · 60 punti (da 240 a 300 nella catena) · voce "Full"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 6 | 246 |
+| 60 kg | metà | 6 s | 60% | 36 | 276 |
+| 60 kg | fine | 10 s | 100% | 60 | 300 |
+| 70 kg | inizio | 1 s | 11,67% | 7 | 247 |
+| 70 kg | metà | 5 s | 58,33% | 35 | 275 |
+| 70 kg | fine | 9 s | 100% | 60 | 300 |
+| 80 kg | inizio | 1 s | 13,33% | 8 | 248 |
+| 80 kg | metà | 5 s | 66,67% | 40 | 280 |
+| 80 kg | fine | 8 s | 100% | 60 | 300 |
+
+**Livello F — Wide full front lever touch 1–10 s** · Leggenda · 80 punti (da 300 a 380 nella catena) · voce "Wide full"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 8 | 308 |
+| 60 kg | metà | 6 s | 60% | 48 | 348 |
+| 60 kg | fine | 10 s | 100% | 80 | 380 |
+| 70 kg | inizio | 1 s | 11,67% | 9,33 | 309 |
+| 70 kg | metà | 5 s | 58,33% | 46,67 | 347 |
+| 70 kg | fine | 9 s | 100% | 80 | 380 |
+| 80 kg | inizio | 1 s | 13,33% | 10,67 | 311 |
+| 80 kg | metà | 5 s | 66,67% | 53,33 | 353 |
+| 80 kg | fine | 8 s | 100% | 80 | 380 |
+
+### Front lever pull ups (400 punti)
+
+**Livello A — Tuck advanced front lever pull ups 1–5 rip.** · Avanzato · 80 punti (da 0 a 80 nella catena) · voce "Tuck advanced"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 16 | 16 |
+| 60 kg | metà | 3 rip. | 60% | 48 | 48 |
+| 60 kg | fine | 5 rip. | 100% | 80 | 80 |
+| 70 kg | inizio | 1 rip. | 27,22% | 21,78 | 22 |
+| 70 kg | metà | 3 rip. | 81,67% | 65,33 | 65 |
+| 70 kg | fine | 4 rip. | 100% | 80 | 80 |
+| 80 kg | inizio | 1 rip. | 35,56% | 28,44 | 28 |
+| 80 kg | metà | 2 rip. | 71,11% | 56,89 | 57 |
+| 80 kg | fine | 3 rip. | 100% | 80 | 80 |
+
+**Livello B — One leg front lever pull ups 1–5 rip.** · Elite · 35 punti (da 80 a 115 nella catena) · voce "One leg"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 7 | 87 |
+| 60 kg | metà | 3 rip. | 60% | 21 | 101 |
+| 60 kg | fine | 5 rip. | 100% | 35 | 115 |
+| 70 kg | inizio | 1 rip. | 27,22% | 9,53 | 90 |
+| 70 kg | metà | 3 rip. | 81,67% | 28,58 | 109 |
+| 70 kg | fine | 4 rip. | 100% | 35 | 115 |
+| 80 kg | inizio | 1 rip. | 35,56% | 12,44 | 92 |
+| 80 kg | metà | 2 rip. | 71,11% | 24,89 | 105 |
+| 80 kg | fine | 3 rip. | 100% | 35 | 115 |
+
+**Livello C — Straddle front lever pull ups 1–5 rip.** · Elite · 60 punti (da 115 a 175 nella catena) · voce "Straddle"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 12 | 127 |
+| 60 kg | metà | 3 rip. | 60% | 36 | 151 |
+| 60 kg | fine | 5 rip. | 100% | 60 | 175 |
+| 70 kg | inizio | 1 rip. | 27,22% | 16,33 | 131 |
+| 70 kg | metà | 3 rip. | 81,67% | 49 | 164 |
+| 70 kg | fine | 4 rip. | 100% | 60 | 175 |
+| 80 kg | inizio | 1 rip. | 35,56% | 21,33 | 136 |
+| 80 kg | metà | 2 rip. | 71,11% | 42,67 | 158 |
+| 80 kg | fine | 3 rip. | 100% | 60 | 175 |
+
+**Livello D — Half lay front lever pull ups 1–5 rip.** · Titano · 50 punti (da 175 a 225 nella catena) · voce "Half lay"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 10 | 185 |
+| 60 kg | metà | 3 rip. | 60% | 30 | 205 |
+| 60 kg | fine | 5 rip. | 100% | 50 | 225 |
+| 70 kg | inizio | 1 rip. | 27,22% | 13,61 | 189 |
+| 70 kg | metà | 3 rip. | 81,67% | 40,83 | 216 |
+| 70 kg | fine | 4 rip. | 100% | 50 | 225 |
+| 80 kg | inizio | 1 rip. | 35,56% | 17,78 | 193 |
+| 80 kg | metà | 2 rip. | 71,11% | 35,56 | 211 |
+| 80 kg | fine | 3 rip. | 100% | 50 | 225 |
+
+**Livello E — Full front lever pull ups 1–5 rip.** · Titano · 75 punti (da 225 a 300 nella catena) · voce "Full"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 15 | 240 |
+| 60 kg | metà | 3 rip. | 60% | 45 | 270 |
+| 60 kg | fine | 5 rip. | 100% | 75 | 300 |
+| 70 kg | inizio | 1 rip. | 27,22% | 20,42 | 245 |
+| 70 kg | metà | 3 rip. | 81,67% | 61,25 | 286 |
+| 70 kg | fine | 4 rip. | 100% | 75 | 300 |
+| 80 kg | inizio | 1 rip. | 35,56% | 26,67 | 252 |
+| 80 kg | metà | 2 rip. | 71,11% | 53,33 | 278 |
+| 80 kg | fine | 3 rip. | 100% | 75 | 300 |
+
+**Livello F — Wide full front lever pull ups 1–5 rip.** · Leggenda · 100 punti (da 300 a 400 nella catena) · voce "Wide full"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 20 | 320 |
+| 60 kg | metà | 3 rip. | 60% | 60 | 360 |
+| 60 kg | fine | 5 rip. | 100% | 100 | 400 |
+| 70 kg | inizio | 1 rip. | 27,22% | 27,22 | 327 |
+| 70 kg | metà | 3 rip. | 81,67% | 81,67 | 382 |
+| 70 kg | fine | 4 rip. | 100% | 100 | 400 |
+| 80 kg | inizio | 1 rip. | 35,56% | 35,56 | 336 |
+| 80 kg | metà | 2 rip. | 71,11% | 71,11 | 371 |
+| 80 kg | fine | 3 rip. | 100% | 100 | 400 |
+
+## Skill spinta
+
+### Planche (500 punti)
+
+**Livello A — Frog stand 1–10 s** · Intermedio · 100 punti (da 0 a 100 nella catena) · voce "Frog stand"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 10 | 10 |
+| 60 kg | metà | 6 s | 60% | 60 | 60 |
+| 60 kg | fine | 10 s | 100% | 100 | 100 |
+| 70 kg | inizio | 1 s | 11,67% | 11,67 | 12 |
+| 70 kg | metà | 5 s | 58,33% | 58,33 | 58 |
+| 70 kg | fine | 9 s | 100% | 100 | 100 |
+| 80 kg | inizio | 1 s | 13,33% | 13,33 | 13 |
+| 80 kg | metà | 5 s | 66,67% | 66,67 | 67 |
+| 80 kg | fine | 8 s | 100% | 100 | 100 |
+
+**Livello B — Tuck planche 1–10 s** · Avanzato · 80 punti (da 100 a 180 nella catena) · voce "Tuck"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 8 | 108 |
+| 60 kg | metà | 6 s | 60% | 48 | 148 |
+| 60 kg | fine | 10 s | 100% | 80 | 180 |
+| 70 kg | inizio | 1 s | 11,67% | 9,33 | 109 |
+| 70 kg | metà | 5 s | 58,33% | 46,67 | 147 |
+| 70 kg | fine | 9 s | 100% | 80 | 180 |
+| 80 kg | inizio | 1 s | 13,33% | 10,67 | 111 |
+| 80 kg | metà | 5 s | 66,67% | 53,33 | 153 |
+| 80 kg | fine | 8 s | 100% | 80 | 180 |
+
+**Livello C — Tuck advanced planche 1–10 s** · Elite · 45 punti (da 180 a 225 nella catena) · voce "Tuck advanced"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 4,5 | 185 |
+| 60 kg | metà | 6 s | 60% | 27 | 207 |
+| 60 kg | fine | 10 s | 100% | 45 | 225 |
+| 70 kg | inizio | 1 s | 11,67% | 5,25 | 185 |
+| 70 kg | metà | 5 s | 58,33% | 26,25 | 206 |
+| 70 kg | fine | 9 s | 100% | 45 | 225 |
+| 80 kg | inizio | 1 s | 13,33% | 6 | 186 |
+| 80 kg | metà | 5 s | 66,67% | 30 | 210 |
+| 80 kg | fine | 8 s | 100% | 45 | 225 |
+
+**Livello D — One leg planche 1–10 s** · Elite · 55 punti (da 225 a 280 nella catena) · voce "One leg"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 5,5 | 231 |
+| 60 kg | metà | 6 s | 60% | 33 | 258 |
+| 60 kg | fine | 10 s | 100% | 55 | 280 |
+| 70 kg | inizio | 1 s | 11,67% | 6,42 | 231 |
+| 70 kg | metà | 5 s | 58,33% | 32,08 | 257 |
+| 70 kg | fine | 9 s | 100% | 55 | 280 |
+| 80 kg | inizio | 1 s | 13,33% | 7,33 | 232 |
+| 80 kg | metà | 5 s | 66,67% | 36,67 | 262 |
+| 80 kg | fine | 8 s | 100% | 55 | 280 |
+
+**Livello E — Straddle planche 1–10 s** · Titano · 70 punti (da 280 a 350 nella catena) · voce "Straddle"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 7 | 287 |
+| 60 kg | metà | 6 s | 60% | 42 | 322 |
+| 60 kg | fine | 10 s | 100% | 70 | 350 |
+| 70 kg | inizio | 1 s | 11,67% | 8,17 | 288 |
+| 70 kg | metà | 5 s | 58,33% | 40,83 | 321 |
+| 70 kg | fine | 9 s | 100% | 70 | 350 |
+| 80 kg | inizio | 1 s | 13,33% | 9,33 | 289 |
+| 80 kg | metà | 5 s | 66,67% | 46,67 | 327 |
+| 80 kg | fine | 8 s | 100% | 70 | 350 |
+
+**Livello F — Full planche 1–10 s** · Leggenda · 50 punti (da 350 a 400 nella catena) · voce "Full"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 5 | 355 |
+| 60 kg | metà | 6 s | 60% | 30 | 380 |
+| 60 kg | fine | 10 s | 100% | 50 | 400 |
+| 70 kg | inizio | 1 s | 11,67% | 5,83 | 356 |
+| 70 kg | metà | 5 s | 58,33% | 29,17 | 379 |
+| 70 kg | fine | 9 s | 100% | 50 | 400 |
+| 80 kg | inizio | 1 s | 13,33% | 6,67 | 357 |
+| 80 kg | metà | 5 s | 66,67% | 33,33 | 383 |
+| 80 kg | fine | 8 s | 100% | 50 | 400 |
+
+**Livello G — Maltese 1–10 s** · Leggenda · 100 punti (da 400 a 500 nella catena) · voce "Maltese"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 s | 10% | 10 | 410 |
+| 60 kg | metà | 6 s | 60% | 60 | 460 |
+| 60 kg | fine | 10 s | 100% | 100 | 500 |
+| 70 kg | inizio | 1 s | 11,67% | 11,67 | 412 |
+| 70 kg | metà | 5 s | 58,33% | 58,33 | 458 |
+| 70 kg | fine | 9 s | 100% | 100 | 500 |
+| 80 kg | inizio | 1 s | 13,33% | 13,33 | 413 |
+| 80 kg | metà | 5 s | 66,67% | 66,67 | 467 |
+| 80 kg | fine | 8 s | 100% | 100 | 500 |
+
+### Planche push ups (385 punti)
+
+**Livello A — Tuck planche push ups 1–5 rip.** · Avanzato · 100 punti (da 0 a 100 nella catena) · voce "Tuck"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 20 | 20 |
+| 60 kg | metà | 3 rip. | 60% | 60 | 60 |
+| 60 kg | fine | 5 rip. | 100% | 100 | 100 |
+| 70 kg | inizio | 1 rip. | 27,22% | 27,22 | 27 |
+| 70 kg | metà | 3 rip. | 81,67% | 81,67 | 82 |
+| 70 kg | fine | 4 rip. | 100% | 100 | 100 |
+| 80 kg | inizio | 1 rip. | 35,56% | 35,56 | 36 |
+| 80 kg | metà | 2 rip. | 71,11% | 71,11 | 71 |
+| 80 kg | fine | 3 rip. | 100% | 100 | 100 |
+
+**Livello B — Tuck advanced planche push ups 1–5 rip.** · Elite · 60 punti (da 100 a 160 nella catena) · voce "Tuck advanced"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 12 | 112 |
+| 60 kg | metà | 3 rip. | 60% | 36 | 136 |
+| 60 kg | fine | 5 rip. | 100% | 60 | 160 |
+| 70 kg | inizio | 1 rip. | 27,22% | 16,33 | 116 |
+| 70 kg | metà | 3 rip. | 81,67% | 49 | 149 |
+| 70 kg | fine | 4 rip. | 100% | 60 | 160 |
+| 80 kg | inizio | 1 rip. | 35,56% | 21,33 | 121 |
+| 80 kg | metà | 2 rip. | 71,11% | 42,67 | 143 |
+| 80 kg | fine | 3 rip. | 100% | 60 | 160 |
+
+**Livello C — One leg planche push ups 1–5 rip.** · Elite · 75 punti (da 160 a 235 nella catena) · voce "One leg"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 15 | 175 |
+| 60 kg | metà | 3 rip. | 60% | 45 | 205 |
+| 60 kg | fine | 5 rip. | 100% | 75 | 235 |
+| 70 kg | inizio | 1 rip. | 27,22% | 20,42 | 180 |
+| 70 kg | metà | 3 rip. | 81,67% | 61,25 | 221 |
+| 70 kg | fine | 4 rip. | 100% | 75 | 235 |
+| 80 kg | inizio | 1 rip. | 35,56% | 26,67 | 187 |
+| 80 kg | metà | 2 rip. | 71,11% | 53,33 | 213 |
+| 80 kg | fine | 3 rip. | 100% | 75 | 235 |
+
+**Livello D — Straddle planche push ups 1–5 rip.** · Titano · 80 punti (da 235 a 315 nella catena) · voce "Straddle"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 16 | 251 |
+| 60 kg | metà | 3 rip. | 60% | 48 | 283 |
+| 60 kg | fine | 5 rip. | 100% | 80 | 315 |
+| 70 kg | inizio | 1 rip. | 27,22% | 21,78 | 257 |
+| 70 kg | metà | 3 rip. | 81,67% | 65,33 | 300 |
+| 70 kg | fine | 4 rip. | 100% | 80 | 315 |
+| 80 kg | inizio | 1 rip. | 35,56% | 28,44 | 263 |
+| 80 kg | metà | 2 rip. | 71,11% | 56,89 | 292 |
+| 80 kg | fine | 3 rip. | 100% | 80 | 315 |
+
+**Livello E — Full planche push ups 1–5 rip.** · Leggenda · 70 punti (da 315 a 385 nella catena) · voce "Full"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 20% | 14 | 329 |
+| 60 kg | metà | 3 rip. | 60% | 42 | 357 |
+| 60 kg | fine | 5 rip. | 100% | 70 | 385 |
+| 70 kg | inizio | 1 rip. | 27,22% | 19,06 | 334 |
+| 70 kg | metà | 3 rip. | 81,67% | 57,17 | 372 |
+| 70 kg | fine | 4 rip. | 100% | 70 | 385 |
+| 80 kg | inizio | 1 rip. | 35,56% | 24,89 | 340 |
+| 80 kg | metà | 2 rip. | 71,11% | 49,78 | 365 |
+| 80 kg | fine | 3 rip. | 100% | 70 | 385 |
+
+### Planche press (415 punti)
+
+**Livello A — Tuck planche press 1–3 rip.** · Avanzato · 120 punti (da 0 a 120 nella catena) · voce "Tuck"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 33,33% | 40 | 40 |
+| 60 kg | metà | 2 rip. | 66,67% | 80 | 80 |
+| 60 kg | fine | 3 rip. | 100% | 120 | 120 |
+| 70 kg | inizio | 1 rip. | 45,37% | 54,44 | 54 |
+| 70 kg | metà | 2 rip. | 90,74% | 108,89 | 109 |
+| 70 kg | fine | 3 rip. | 100% | 120 | 120 |
+| 80 kg | inizio | 1 rip. | 59,26% | 71,11 | 71 |
+| 80 kg | metà = fine | 2 rip. | 100% | 120 | 120 |
+
+**Livello B — Tuck advanced planche press 1–3 rip.** · Elite · 65 punti (da 120 a 185 nella catena) · voce "Tuck advanced"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 33,33% | 21,67 | 142 |
+| 60 kg | metà | 2 rip. | 66,67% | 43,33 | 163 |
+| 60 kg | fine | 3 rip. | 100% | 65 | 185 |
+| 70 kg | inizio | 1 rip. | 45,37% | 29,49 | 149 |
+| 70 kg | metà | 2 rip. | 90,74% | 58,98 | 179 |
+| 70 kg | fine | 3 rip. | 100% | 65 | 185 |
+| 80 kg | inizio | 1 rip. | 59,26% | 38,52 | 159 |
+| 80 kg | metà = fine | 2 rip. | 100% | 65 | 185 |
+
+**Livello C — One leg planche press 1–3 rip.** · Titano · 60 punti (da 185 a 245 nella catena) · voce "One leg"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 33,33% | 20 | 205 |
+| 60 kg | metà | 2 rip. | 66,67% | 40 | 225 |
+| 60 kg | fine | 3 rip. | 100% | 60 | 245 |
+| 70 kg | inizio | 1 rip. | 45,37% | 27,22 | 212 |
+| 70 kg | metà | 2 rip. | 90,74% | 54,44 | 239 |
+| 70 kg | fine | 3 rip. | 100% | 60 | 245 |
+| 80 kg | inizio | 1 rip. | 59,26% | 35,56 | 221 |
+| 80 kg | metà = fine | 2 rip. | 100% | 60 | 245 |
+
+**Livello D — Straddle planche press 1–3 rip.** · Titano · 90 punti (da 245 a 335 nella catena) · voce "Straddle"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 33,33% | 30 | 275 |
+| 60 kg | metà | 2 rip. | 66,67% | 60 | 305 |
+| 60 kg | fine | 3 rip. | 100% | 90 | 335 |
+| 70 kg | inizio | 1 rip. | 45,37% | 40,83 | 286 |
+| 70 kg | metà | 2 rip. | 90,74% | 81,67 | 327 |
+| 70 kg | fine | 3 rip. | 100% | 90 | 335 |
+| 80 kg | inizio | 1 rip. | 59,26% | 53,33 | 298 |
+| 80 kg | metà = fine | 2 rip. | 100% | 90 | 335 |
+
+**Livello E — Full planche press 1–3 rip.** · Leggenda · 80 punti (da 335 a 415 nella catena) · voce "Full"
+
+| Peso | Punto | Valore | % livello | Punti livello | Punti catena |
+|---|---|---|---|---|---|
+| 60 kg | inizio | 1 rip. | 33,33% | 26,67 | 362 |
+| 60 kg | metà | 2 rip. | 66,67% | 53,33 | 388 |
+| 60 kg | fine | 3 rip. | 100% | 80 | 415 |
+| 70 kg | inizio | 1 rip. | 45,37% | 36,3 | 371 |
+| 70 kg | metà | 2 rip. | 90,74% | 72,59 | 408 |
+| 70 kg | fine | 3 rip. | 100% | 80 | 415 |
+| 80 kg | inizio | 1 rip. | 59,26% | 47,41 | 382 |
+| 80 kg | metà = fine | 2 rip. | 100% | 80 | 415 |
 
 ## Handbalance
 
-### HSPU (700 punti, esponente 0,75)
+### HSPU (755 punti, esponente 0,75)
 
 **Livello A — Pike push up a terra 1–15 rip.** · Base · 50 punti (da 0 a 50 nella catena) · voce "Pike push up a terra"
 
@@ -1040,7 +1059,7 @@ Fasce dei livelli con nome:
 | 80 kg | metà | 3 rip. | 64,47% | 96,71 | 197 |
 | 80 kg | fine | 5 rip. | 100% | 150 | 250 |
 
-**Livello D — HSPU 1–10 rip.** · Elite · 150 punti (da 250 a 400 nella catena) · voce "HSPU liberi"
+**Livello D — HSPU liberi 1–10 rip.** · Elite · 150 punti (da 250 a 400 nella catena) · voce "HSPU liberi"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
@@ -1054,35 +1073,35 @@ Fasce dei livelli con nome:
 | 80 kg | metà | 6 rip. | 64,47% | 96,71 | 347 |
 | 80 kg | fine | 10 rip. | 100% | 150 | 400 |
 
-**Livello E — HSPU 5%–30% PC** · Titano · 150 punti (da 400 a 550 nella catena) · voce "HSPU zavorrati"
+**Livello E — HSPU liberi zavorrati 5%–30% PC** · Titano · 175 punti (da 400 a 575 nella catena) · voce "HSPU liberi zavorrati"
 
-| Peso | Punto | Valore | G | % livello | Punti livello | Punti catena |
+| Peso | Punto | Valore | H | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|---|
-| 60 kg | inizio | 3 kg | 63 | 1% | 1,5 | 402 |
-| 60 kg | metà | 10,5 kg | 70,5 | 50% | 75 | 475 |
-| 60 kg | fine | 18 kg | 78 | 100% | 150 | 552 |
-| 70 kg | inizio | 0,8 kg | 63,07 | 1% | 1,5 | 402 |
-| 70 kg | metà | 9,2 kg | 70,55 | 50,35% | 75,53 | 476 |
-| 70 kg | fine | 17,6 kg | 78,04 | 100% | 150 | 552 |
-| 80 kg | inizio | 0,1 kg | 64,55 | 10,37% | 15,55 | 416 |
-| 80 kg | metà | 7,5 kg | 70,52 | 50,12% | 75,19 | 475 |
-| 80 kg | fine | 16,8 kg | 78,01 | 100% | 150 | 552 |
+| 60 kg | inizio | 3 kg | 5% | 1% | 1,75 | 402 |
+| 60 kg | metà | 10,5 kg | 17,5% | 50% | 87,5 | 488 |
+| 60 kg | fine | 18 kg | 30% | 100% | 175 | 577 |
+| 70 kg | inizio | 3,4 kg | 5,05% | 1% | 1,75 | 402 |
+| 70 kg | metà | 11,8 kg | 17,52% | 50,08% | 87,64 | 488 |
+| 70 kg | fine | 20,3 kg | 30,14% | 100% | 175 | 577 |
+| 80 kg | inizio | 3,8 kg | 5,1% | 1% | 1,75 | 402 |
+| 80 kg | metà | 13,1 kg | 17,6% | 50,38% | 88,17 | 488 |
+| 80 kg | fine | 22,4 kg | 30,09% | 100% | 175 | 577 |
 
-**Livello F — HSPU 30%–65% PC** · Leggenda · 150 punti (da 550 a 700 nella catena) · voce "HSPU zavorrati"
+**Livello F — HSPU liberi zavorrati 30%–65% PC** · Leggenda · 180 punti (da 575 a 755 nella catena) · voce "HSPU liberi zavorrati"
 
-| Peso | Punto | Valore | G | % livello | Punti livello | Punti catena |
+| Peso | Punto | Valore | H | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|---|
-| 60 kg | inizio | 18 kg | 78 | 1% | 1,5 | 552 |
-| 60 kg | metà | 28,5 kg | 88,5 | 50% | 75 | 625 |
-| 60 kg | fine | 39 kg | 99 | 100% | 150 | 700 |
-| 70 kg | inizio | 17,6 kg | 78,04 | 1% | 1,5 | 552 |
-| 70 kg | metà | 29,4 kg | 88,55 | 50,23% | 75,34 | 625 |
-| 70 kg | fine | 41,2 kg | 99,06 | 100% | 150 | 700 |
-| 80 kg | inizio | 16,8 kg | 78,01 | 1% | 1,5 | 552 |
-| 80 kg | metà | 29,9 kg | 88,57 | 50,34% | 75,51 | 626 |
-| 80 kg | fine | 42,9 kg | 99,05 | 100% | 150 | 700 |
+| 60 kg | inizio | 18 kg | 30% | 1% | 1,8 | 577 |
+| 60 kg | metà | 28,5 kg | 47,5% | 50% | 90 | 665 |
+| 60 kg | fine | 39 kg | 65% | 100% | 180 | 755 |
+| 70 kg | inizio | 20,3 kg | 30,14% | 1% | 1,8 | 577 |
+| 70 kg | metà | 32 kg | 47,51% | 50,03% | 90,05 | 665 |
+| 70 kg | fine | 43,8 kg | 65,03% | 100% | 180 | 755 |
+| 80 kg | inizio | 22,4 kg | 30,09% | 1% | 1,8 | 577 |
+| 80 kg | metà | 35,4 kg | 47,55% | 50,14% | 90,26 | 665 |
+| 80 kg | fine | 48,4 kg | 65,01% | 100% | 180 | 755 |
 
-### Verticale e OAHS (700 punti)
+### Verticale e OAHS (645 punti)
 
 **Livello A — Verticale a muro 1–60 s** · Base · 50 punti (da 0 a 50 nella catena) · voce "Verticale a muro"
 
@@ -1092,7 +1111,7 @@ Fasce dei livelli con nome:
 | — | metà | 31 s | 51,67% | 25,83 | 26 |
 | — | fine | 60 s | 100% | 50 | 50 |
 
-**Livello B — Verticale 1–15 s** · Intermedio · 50 punti (da 50 a 100 nella catena) · voce "Verticale"
+**Livello B — Verticale libera 1–15 s** · Intermedio · 50 punti (da 50 a 100 nella catena) · voce "Verticale libera"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
@@ -1100,7 +1119,7 @@ Fasce dei livelli con nome:
 | — | metà | 8 s | 53,33% | 26,67 | 77 |
 | — | fine | 15 s | 100% | 50 | 102 |
 
-**Livello C — Verticale 15–60 s** · Avanzato · 150 punti (da 100 a 250 nella catena) · voce "Verticale"
+**Livello C — Verticale libera 15–60 s** · Avanzato · 150 punti (da 100 a 250 nella catena) · voce "Verticale libera"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
@@ -1132,18 +1151,18 @@ Fasce dei livelli con nome:
 | — | metà | 6 s | 60% | 30 | 380 |
 | — | fine | 10 s | 100% | 50 | 400 |
 
-**Livello G — OAHS straddle 1–10 s** · Titano · 150 punti (da 400 a 550 nella catena) · voce "OAHS straddle"
+**Livello G — OAHS straddle 1–10 s** · Titano · 125 punti (da 400 a 525 nella catena) · voce "OAHS straddle"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| — | inizio | 1 s | 10% | 15 | 415 |
-| — | metà | 6 s | 60% | 90 | 490 |
-| — | fine | 10 s | 100% | 150 | 550 |
+| — | inizio | 1 s | 10% | 12,5 | 413 |
+| — | metà | 6 s | 60% | 75 | 475 |
+| — | fine | 10 s | 100% | 125 | 525 |
 
-**Livello H — OAHS 1–10 s** · Leggenda · 150 punti (da 550 a 700 nella catena) · voce "OAHS"
+**Livello H — OAHS full 1–10 s** · Leggenda · 120 punti (da 525 a 645 nella catena) · voce "OAHS full"
 
 | Peso | Punto | Valore | % livello | Punti livello | Punti catena |
 |---|---|---|---|---|---|
-| — | inizio | 1 s | 10% | 15 | 565 |
-| — | metà | 6 s | 60% | 90 | 640 |
-| — | fine | 10 s | 100% | 150 | 700 |
+| — | inizio | 1 s | 10% | 12 | 537 |
+| — | metà | 6 s | 60% | 72 | 597 |
+| — | fine | 10 s | 100% | 120 | 645 |

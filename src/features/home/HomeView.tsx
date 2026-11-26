@@ -54,16 +54,6 @@ export function HomeView() {
   return (
     <>
       <PageTitle title="Home" />
-      <Link className="home-find" to="/persone">
-        <IconSearch />
-        <span>Cerca persone</span>
-        {requests.length > 0 && (
-          <b className="badge" aria-label={`${requests.length} ${requests.length === 1 ? 'richiesta' : 'richieste'} di seguirti`}>
-            {requests.length}
-          </b>
-        )}
-      </Link>
-
       <FirstStepsGuide onRecord={() => navigate('/livello')} />
 
       {profile.data && !profile.data.country && (
@@ -96,6 +86,17 @@ export function HomeView() {
         waiting={people.data?.following.some((p) => p.relation === 'pending') ?? false}
       />
 
+      {/* in fondo: nel mockup di Michael la Home apre con la Classifica (25 novembre 2026) */}
+      <Link className="home-find" to="/persone">
+        <IconSearch />
+        <span>Cerca persone</span>
+        {requests.length > 0 && (
+          <b className="badge" aria-label={`${requests.length} ${requests.length === 1 ? 'richiesta' : 'richieste'} di seguirti`}>
+            {requests.length}
+          </b>
+        )}
+      </Link>
+
       {sheet?.kind === 'ranking' && <RankingSheet scope={sheet.scope} metric={sheet.metric} profile={profile.data} onClose={close} />}
       {sheet && sheet.kind !== 'ranking' && (
         <Suspense fallback={null}>
@@ -117,7 +118,7 @@ function News({ onOpen, onAll, loading, friends, waiting }: { onOpen: (e: FeedEv
   const events = feed.data?.events ?? [];
   const unread = feed.data?.unread ?? 0;
   return (
-    <section className="card nv" aria-labelledby="nv-h">
+    <section className="nv" aria-labelledby="nv-h">
       <div className="card-h">
         <span className="card-t">
           <h2 id="nv-h">Novità</h2>

@@ -8,8 +8,8 @@ import { CARDS, SIGLA, categoryName, ladder, type LadderScope } from './levelVie
 const pts = (n: number) => n.toLocaleString('it-IT');
 
 /**
- * Foglio "I livelli": i sei livelli (Base…Leggenda) con le fasce di punti, per il complessivo e per ogni categoria
- * (le fasce cambiano da categoria a categoria). Segna i livelli superati e quello attuale, e dice quanti punti mancano
+ * Foglio "I livelli": i livelli (Base…Leggenda) con le fasce di punti, per il complessivo e per ogni categoria
+ * (le fasce cambiano da categoria a categoria; le skill partono da Intermedio). Segna i livelli superati e quello attuale, e dice quanti punti mancano
  * al prossimo. I numeri sono quelli del motore: qui si leggono soltanto.
  */
 export function LevelsSheet({ summary, onClose }: { summary: LevelSummary<LevelRow>; onClose: () => void }) {
@@ -20,7 +20,7 @@ export function LevelsSheet({ summary, onClose }: { summary: LevelSummary<LevelR
   const options = [{ v: 'complessivo' as LadderScope, l: 'Totale' }, ...CARDS.map((id) => ({ v: id as LadderScope, l: SIGLA[id] }))];
 
   return (
-    <Sheet title="I livelli" sub="Sei livelli, da Base a Leggenda. Le fasce di punti cambiano da categoria a categoria." className="lvl-sheet" onClose={onClose}>
+    <Sheet title="I livelli" sub="Da Base a Leggenda. Le fasce di punti cambiano da categoria a categoria: le skill partono da Intermedio." className="lvl-sheet" onClose={onClose}>
       <div className="lvl-scope">
         <Seg label="Scala" value={scope} options={options} onChange={setScope} />
       </div>

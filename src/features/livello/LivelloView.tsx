@@ -1,8 +1,7 @@
-import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useScope } from '../../app/session';
 import { Bust } from '../../components/Bust';
 import { Pentagon } from '../../components/Pentagon';
-import { IconFondSpinta, IconFondTirata, IconHandbalance, IconSkillSpinta, IconSkillTirata } from '../../components/icons';
 import { PageTitle, Skeleton, Sparks, useNested } from '../../components/ui';
 import { useLevel, type LevelRow } from '../../data/hooks';
 import { shortDate } from '../../lib/dates';
@@ -14,14 +13,6 @@ import { CARDS, categoryName, chainLevelText, chainName, chainPercent, missingBo
 // Il foglio del record si apre a un tocco: si scarica dopo il primo disegno della pagina (audit A4)
 const loadRecordSheet = () => import('./RecordSheet');
 const RecordSheet = lazy(() => loadRecordSheet().then((m) => ({ default: m.RecordSheet })));
-
-const ICON: Record<CategoryId, ReactNode> = {
-  'fondamentali-tirata': <IconFondTirata />,
-  'fondamentali-spinta': <IconFondSpinta />,
-  'skill-spinta': <IconSkillSpinta />,
-  'skill-tirata': <IconSkillTirata />,
-  handbalance: <IconHandbalance />,
-};
 
 /**
  * Pagina Livello (ticket 34): busto a sinistra, pentagono a destra, 5 categorie a tendina che si aprono sulle catene,
@@ -144,7 +135,6 @@ function Category({
     <div className={open ? 'card lv-cat open' : 'card lv-cat'} id={id}>
       <h2 className="lv-cat-t">
         <button ref={head} type="button" className="lv-cat-h" id={`${id}-h`} aria-expanded={open} aria-controls={`${id}-p`} onClick={onToggle}>
-          <span className="lv-cat-ico">{ICON[cat.categoryId]}</span>
           <span className="lv-cat-name">{name}</span>
           <span className="lv-cat-lvl">{cat.name}</span>
           <span className="lv-cat-pc">
