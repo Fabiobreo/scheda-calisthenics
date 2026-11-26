@@ -1,3 +1,4 @@
+import { InstallPrompt } from './install';
 import { lazy, Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
@@ -119,6 +120,7 @@ export function App() {
           <LoggerProvider>
             <Offline userId={session.userId} part="agent" />
             <ScoreSync />
+            <InstallPrompt />
             <Main />
           </LoggerProvider>
         ))}

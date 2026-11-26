@@ -1321,3 +1321,11 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1) bright
 /* campi: più bassi, il testo resta a 16 px (sotto, l'iPhone ingrandisce la pagina quando li tocchi) */
 input, select { min-height: 44px; padding-block: 9px; }
 input[type='checkbox'] { min-height: 0; padding: 0; }
+
+/* foglio "Installa l'app" */
+.inst-act { margin-top: 16px; gap: 10px; }
+.inst-act .btn { flex: 1 1 auto; min-height: 44px; }
+.inst-steps { margin: 14px 0 16px; padding-left: 22px; display: grid; gap: 10px; line-height: 1.45; }
+.inst-ico { vertical-align: -3px; color: var(--gold); margin: 0 2px; }
+/* non compare mai col timer aperto: basta lo spazio della barra in basso */
+@media (max-width: 699px) { .sheet.inst-sheet { padding-bottom: calc(var(--tabbar) + 24px + env(safe-area-inset-bottom, 0px)); } }
