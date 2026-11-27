@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { GROUNDS, METALS, metalUnlocked, setLook, useLook } from '../../app/look';
 import { useRepo, useSession } from '../../app/session';
 import { useToast } from '../../app/toast';
 import { PlaceForm } from '../../components/PlaceFields';
-import { Field, PageTitle, PasswordField } from '../../components/ui';
-import { useData, useDeleteAccount, useProfile, useUpdateProfile } from '../../data/hooks';
+import { CardHead, Field, PageTitle, PasswordField, Seg } from '../../components/ui';
+import { useData, useDeleteAccount, useLevel, useProfile, useUpdateProfile } from '../../data/hooks';
+import { BAND_NAMES } from '../../lib/levels';
 import { todayStr } from '../../lib/dates';
 import { publicProfilesEnabled } from '../../lib/privacy';
 import { supabase } from '../../lib/supabase';
@@ -24,6 +26,7 @@ export function AccountView({ inviteCode }: { inviteCode?: string }) {
       {/* su schermo largo le schede vanno su due colonne (audit A06) */}
       <div className="masonry">
         <ProfileCard />
+        <LookCard />
         <RankingCard />
         {!inviteCode && <MyTrainerCard />}
         <TrainerModeCard />
@@ -82,6 +85,68 @@ function ProfileCard() {
     </section>
   );
 }
+
+/**
+ * Aspetto (ticket 43): il fondo (Notte o Marmo) e il metallo che fa da oro. Un tocco e l'app cambia, senza "Salva":
+ * la scelta resta su questo dispositivo (`app/look.ts`). Ogni medaglione mostra il suo metallo (`data-metal`); quelli
+ * legati a un livello restano chiusi finché non ci si arriva, e toccandoli la riga sotto dice a che livello si aprono.
+ * Un metallo già scelto resta anche se poi il livello scende.
+ */
+function LookCard() {
+  const look = useLook();
+  const { summary, isLoading } = useLevel();
+  const toast = useToast();
+  const locked = METALS.filter((m) => m.from && m.v !== look.metal && (isLoading || !metalUnlocked(m.v, summary.band)));
+  const name = (list: readonly { v: string; l: string }[], v: string) => list.find((o) => o.v === v)?.l ?? '';
+  return (
+    <section className="card look">
+      <CardHead title="Aspetto">
+        <span className="look-now">
+          {name(GROUNDS, look.ground)} · {name(METALS, look.metal)}
+        </span>
+      </CardHead>
+      <span className="fld-l look-l">Fondo</span>
+      <Seg label="Fondo dell'app" value={look.ground} options={[...GROUNDS]} onChange={(ground) => setLook({ ground })} />
+      <span className="fld-l look-l">Metallo</span>
+      <div className="coins" role="group" aria-label="Metallo dell'app">
+        {METALS.map((m) => {
+          const closed = locked.includes(m);
+          return (
+            <button
+              key={m.v}
+              type="button"
+              className={closed ? 'coin locked' : 'coin'}
+              data-metal={m.v}
+              aria-pressed={m.v === look.metal}
+              aria-label={closed ? `${m.l}: si sblocca al livello ${BAND_NAMES[m.from!]}` : m.l}
+              onClick={() => (closed ? toast(`${m.l} si sblocca al livello ${BAND_NAMES[m.from!]}`) : setLook({ metal: m.v }))}
+            >
+              <i aria-hidden="true">{closed ? <IconLock /> : <IconCheck />}</i>
+              <span aria-hidden="true">{m.l}</span>
+            </button>
+          );
+        })}
+      </div>
+      {locked.map((m) => (
+        <p className="hint look-foot" key={m.v}>
+          <b>{m.l}</b> si sblocca al livello {BAND_NAMES[m.from!]}.
+        </p>
+      ))}
+    </section>
+  );
+}
+
+const IconCheck = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </svg>
+);
+const IconLock = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5.5" y="11" width="13" height="9" rx="2.5" />
+    <path d="M8.5 11V8a3.5 3.5 0 017 0v3" />
+  </svg>
+);
 
 /**
  * Luogo e visibilità nelle classifiche (ticket 38). Il profilo nasce privato; si diventa pubblici solo da qui, con una

@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 43 · Account «Aspetto»: fondo e metallo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Mockup statico (27 novembre 2026): stessi token di src/styles.css. Non è codice dell'app: serve a decidere la
+   direzione. L'unica novità sono i valori dei quattro "ori" per ogni metallo: neutri, stati e forme non cambiano.
+   Toccando un medaglione si ritingono tutti e due i telefoni. Nomi, punti e livelli sono di esempio. */
+:root {
+  --bg: #0b0b0d; --surface: #161618; --surface2: #1f1f23; --line: #2b2b30; --line-strong: #3b3a40;
+  --fg: #f1ece2; --muted: #a29c90;
+  --r-ctl: 14px; --r-tile: 16px; --r-card: 22px;
+  --fs-1: 18px; --fs-2: 14px; --fs-3: 12px;
+  --f: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+/* i metalli: quattro valori ciascuno, con gli stessi contrasti dell'oro su --surface
+   (valore ≥ 7,8:1 · chiaro ≥ 11,9:1 · spento ≥ 7,3:1 · testo scuro sul pulsante ≥ 8,1:1) */
+[data-tint='oro']      { --gold: #c9ab74; --gold-hi: #e4d0a3; --gold-deep: #8d7444; --gold-dim: #b3a488; --on-gold: #1a1206; }
+[data-tint='rame']     { --gold: #d49f82; --gold-hi: #efcdb8; --gold-deep: #9a6a4e; --gold-dim: #bba498; --on-gold: #1c0f08; }
+[data-tint='argento']  { --gold: #b7bcc6; --gold-hi: #dfe3ea; --gold-deep: #787d88; --gold-dim: #a6aab3; --on-gold: #0e1014; }
+[data-tint='cobalto']  { --gold: #93b1dc; --gold-hi: #c6d9f2; --gold-deep: #5d7dab; --gold-dim: #a0adbf; --on-gold: #08111e; }
+[data-tint='ametista'] { --gold: #b9a2dc; --gold-hi: #dccdf2; --gold-deep: #8068a8; --gold-dim: #aaa1ba; --on-gold: #120a1e; }
+[data-tint] { --fill-hi: var(--gold-hi); --fill: var(--gold); --fill-deep: var(--gold-deep); }
+/* MARMO: fondo chiaro caldo. I riempimenti (pulsanti, medaglioni, barre) restano il metallo lucido di sempre;
+   cambiano i neutri e i toni del metallo usati come TESTO, che su chiaro si scuriscono (valore ≥ 4,7:1, chiaro ≥ 8,9:1) */
+.phone[data-ground='marmo'] { --bg: #ebe6dc; --surface: #f8f5ef; --surface2: #ece7dc; --line: #dcd5c7; --line-strong: #c6bead; --fg: #1d1a15; --muted: #655f54;
+  --fill-hi: var(--m-hi); --fill: var(--m); --fill-deep: var(--m-deep); color: var(--fg); }
+[data-tint='oro']      { --m: #c9ab74; --m-hi: #e4d0a3; --m-deep: #8d7444; }
+[data-tint='rame']     { --m: #d49f82; --m-hi: #efcdb8; --m-deep: #9a6a4e; }
+[data-tint='argento']  { --m: #b7bcc6; --m-hi: #dfe3ea; --m-deep: #787d88; }
+[data-tint='cobalto']  { --m: #93b1dc; --m-hi: #c6d9f2; --m-deep: #5d7dab; }
+[data-tint='ametista'] { --m: #b9a2dc; --m-hi: #dccdf2; --m-deep: #8068a8; }
+[data-tint='oro'] .phone[data-ground='marmo']     { --gold: #7c6024; --gold-hi: #54400f; --gold-dim: #6f6247; }
+[data-tint='rame'] .phone[data-ground='marmo']    { --gold: #94553a; --gold-hi: #6a3620; --gold-dim: #7a6257; }
+[data-tint='argento'] .phone[data-ground='marmo'] { --gold: #5b616c; --gold-hi: #353a44; --gold-dim: #666a72; }
+[data-tint='cobalto'] .phone[data-ground='marmo'] { --gold: #3f639a; --gold-hi: #254474; --gold-dim: #5a6779; }
+.phone[data-ground='marmo'] .coin[data-tint] { --fill-hi: var(--m-hi); --fill: var(--m); --fill-deep: var(--m-deep); }
+/* la foto: su marmo diventa un'incisione chiara, appena accennata */
+.phone[data-ground='marmo'] .photo { filter: grayscale(1) invert(1) contrast(.8); opacity: .5; }
+.phone[data-ground='marmo'] .photo::after { background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, #141210 30%, transparent) 55%, #141210 88%); }
+.phone[data-ground='marmo'] .card { box-shadow: inset 0 1px 0 rgb(255 255 255 / .7), 0 1px 2px rgb(60 50 30 / .08), 0 8px 20px -12px rgb(60 50 30 / .25); }
+.phone[data-ground='marmo'] .tabbar { box-shadow: 0 10px 24px rgb(60 50 30 / .22); }
+.phone[data-ground='marmo'] .btn { box-shadow: inset 0 -1px 0 var(--fill-deep), 0 6px 14px -6px color-mix(in srgb, var(--fill-deep) 70%, transparent); }
+.phone[data-ground='marmo'] .coin i { box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--fill-deep) 80%, #000), inset 0 1px 0 rgb(255 255 255 / .5), 0 5px 10px rgb(60 50 30 / .28); }
+.phone[data-ground='marmo'] .coin[aria-pressed='true'] i { box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--fill-deep) 80%, #000), inset 0 1px 0 rgb(255 255 255 / .5), 0 0 0 3px var(--surface), 0 0 0 5px var(--fill-deep), 0 5px 10px rgb(60 50 30 / .28); }
+.phone[data-ground='marmo'] .coin.locked i { filter: saturate(.3) brightness(.8); }
+.phone[data-ground='marmo'] .bust img { filter: drop-shadow(0 8px 12px rgb(60 50 30 / .35)); }
+[data-tint]:not([data-tint='oro']) .phone[data-ground='marmo'] .bust img { filter: grayscale(1) brightness(1.08) drop-shadow(0 8px 12px rgb(60 50 30 / .35)); }
+.phone[data-ground='marmo'] .bust::after { background: var(--fill); }
+.phone { transition: background .35s, color .35s; }
+[data-tint] { --glow: 0 0 10px color-mix(in srgb, var(--gold) 16%, transparent); --halo: color-mix(in srgb, var(--gold) 26%, transparent); }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: #050506; color: var(--fg); font-family: var(--f); font-size: 14px; line-height: 1.45; padding: 28px 16px 64px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.intro { max-width: 1240px; margin: 0 auto 24px; }
+.intro h1 { font-size: 24px; letter-spacing: -.02em; margin: 0 0 6px; }
+.intro p { color: var(--muted); margin: 0; max-width: 760px; }
+.stage { display: flex; flex-wrap: wrap; gap: 36px 28px; justify-content: center; max-width: 1240px; margin: 0 auto; }
+figure { margin: 0; width: 375px; max-width: 100%; }
+figcaption { margin: 0 0 10px 4px; }
+figcaption b { display: block; font-size: 15px; }
+figcaption span { color: var(--muted); font-size: 12px; }
+.note { margin: 12px 4px 0; padding: 0 0 0 16px; color: var(--muted); font-size: 12.5px; }
+.note li { margin-bottom: 4px; }
+.note b { color: var(--gold-dim); font-weight: 600; }
+
+/* telefono */
+.phone { position: relative; height: 812px; overflow: hidden; background: var(--bg); border: 1px solid var(--line-strong); border-radius: 34px; padding: 18px 16px 0; }
+.photo { position: absolute; inset: 0 0 auto 0; height: 300px; background: url('../../public/bg/palestra-688.webp') 50% 0 / cover; }
+.photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(11 11 13 / .62) 0%, rgb(11 11 13 / .5) 25%, rgb(11 11 13 / .86) 55%, var(--bg) 88%); }
+.in { position: relative; display: flex; flex-direction: column; gap: 12px; }
+
+/* testata */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 72px; }
+.top-name { font-size: 24px; font-weight: 700; letter-spacing: -.025em; line-height: 1.1; }
+.top-level { font-size: 13px; font-weight: 600; color: var(--gold-dim); margin-top: 3px; }
+.total { position: relative; width: 68px; height: 68px; display: grid; place-items: center; flex: none; }
+.total svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.total circle { fill: none; stroke-width: 5; }
+.total .a { stroke: color-mix(in srgb, var(--fg) 12%, transparent); }
+.total .b { stroke: var(--gold); stroke-linecap: round; filter: drop-shadow(0 0 4px var(--halo)); transition: stroke .35s; }
+.total div { position: relative; text-align: center; line-height: 1; }
+.total b { display: block; font-size: 16px; font-weight: 700; color: var(--gold-hi); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.total small { font-size: 10px; font-weight: 600; color: var(--muted); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px; box-shadow: inset 0 1px 0 rgb(255 255 255 / .04); }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+h2 { margin: 0; font-size: var(--fs-1); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+.page-h h2 { font-size: 22px; }
+.sub { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+.btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; border: 0; border-radius: 999px; font: 600 15px var(--f); color: var(--on-gold);
+  background: linear-gradient(180deg, var(--fill-hi), var(--fill) 70%); box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--fill-deep) 60%, transparent), var(--glow); transition: background .35s; }
+.btn.small { width: auto; min-height: 32px; padding: 0 14px; font-size: 12.5px; }
+.fld-l { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.input { margin-top: 6px; height: 44px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: var(--bg); display: flex; align-items: center; padding: 0 14px; font-size: 14px; }
+.row { display: flex; gap: 10px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 7px; background: var(--surface2); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 500; }
+.chip.pr { color: var(--gold-hi); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold-hi) 45%, transparent); }
+
+/* ── LA SCHEDA NUOVA: Metallo ───────────────────────────────────────────────────────────────────────────── */
+.metal { border-color: color-mix(in srgb, var(--gold) 38%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 7%, var(--surface)), var(--surface) 55%); transition: border-color .35s, background .35s; }
+.metal-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.metal-now { font-size: 13px; font-weight: 600; color: var(--gold); }
+/* medaglioni: monete coniate, luce dall'alto come i pulsanti */
+.coins { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 16px -4px 0; }
+.coin { background: none; border: 0; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 84px; }
+.coin i { position: relative; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 22%, var(--fill-hi), var(--fill) 55%, var(--fill-deep) 100%);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--fill-deep) 80%, #000), inset 0 1px 0 rgb(255 255 255 / .35), 0 6px 14px rgb(0 0 0 / .5); transition: transform .2s; }
+.coin i::before { content: ''; position: absolute; inset: 5px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--fill-deep) 55%, transparent); }
+.coin span { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.coin svg { position: relative; width: 18px; height: 18px; color: var(--on-gold); opacity: 0; }
+.coin[aria-pressed='true'] i { transform: scale(1.08); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--fill-deep) 80%, #000), inset 0 1px 0 rgb(255 255 255 / .35), 0 0 0 3px var(--surface), 0 0 0 5px var(--gold), 0 0 18px var(--halo); }
+.coin[aria-pressed='true'] svg { opacity: 1; }
+.coin[aria-pressed='true'] span { color: var(--fg); }
+/* chiuso: il metallo si intravede, il lucchetto dice perché */
+.coin.locked i { filter: saturate(.35) brightness(.5); }
+.coin.locked svg { opacity: 1; color: var(--fg); }
+.coin.locked span { color: var(--muted); opacity: .8; }
+.metal-l { display: block; margin: 14px 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.seg button { flex: 1; border: 0; background: none; border-radius: 999px; padding: 9px 6px; font-weight: 600; font-size: 13px; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 7px; }
+.seg button i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line-strong); }
+.seg button[aria-pressed='true'] { background: color-mix(in srgb, var(--gold) 16%, var(--surface2)); color: var(--gold-hi); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent); }
+.metal .coins { margin-top: 0; }
+.metal-foot { margin: 12px 0 0; font-size: 12px; color: var(--muted); min-height: 18px; }
+.metal-foot b { color: var(--gold-dim); font-weight: 600; }
+
+/* ── telefono 2: come cambia il resto ───────────────────────────────────────────────────────────────────── */
+.hero { display: grid; grid-template-columns: 124px 1fr; gap: 14px; align-items: center; border-color: color-mix(in srgb, var(--gold) 38%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 9%, var(--surface)), var(--surface) 60%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .05), 0 0 24px -10px var(--halo); }
+/* il busto è una foto dorata: in scala di grigi, poi il metallo ci torna sopra come tinta (ritagliata sulla sua sagoma) */
+.bust { position: relative; height: 124px; display: grid; place-items: center; }
+.bust img { max-width: 100%; max-height: 100%; filter: drop-shadow(0 8px 14px rgb(0 0 0 / .55)); }
+.bust::after { content: ''; position: absolute; inset: 0; background: var(--gold); mix-blend-mode: color; opacity: 0; transition: background .35s;
+  -webkit-mask: url('../../public/avatar/busto-270.webp') center / contain no-repeat; mask: url('../../public/avatar/busto-270.webp') center / contain no-repeat; }
+[data-tint]:not([data-tint='oro']) .bust img { filter: grayscale(1) brightness(1.08) drop-shadow(0 8px 14px rgb(0 0 0 / .55)); }
+[data-tint]:not([data-tint='oro']) .bust::after { opacity: 1; }
+.hero-lv { font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: var(--gold-hi); line-height: 1.1; }
+.bar { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--fg) 10%, transparent); margin: 10px 0 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 62%; border-radius: 999px; background: linear-gradient(90deg, var(--fill-deep), var(--fill-hi)); box-shadow: 0 0 8px var(--halo); }
+.seg { display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+.seg span { flex: 1; text-align: center; border-radius: 999px; padding: 9px 6px; font-weight: 600; font-size: 13px; color: var(--muted); }
+.seg .on { background: color-mix(in srgb, var(--gold) 16%, var(--surface2)); color: var(--gold-hi); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent); }
+.spark { display: block; width: 100%; height: 86px; margin-top: 10px; }
+.spark path.l { fill: none; stroke: var(--gold); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px var(--halo)); }
+.spark path.f { fill: color-mix(in srgb, var(--gold) 12%, transparent); }
+.spark circle { fill: var(--gold-hi); }
+/* stati e tipi restano quelli: non seguono il metallo */
+.states { display: flex; gap: 8px; flex-wrap: wrap; }
+.states .chip i { width: 8px; height: 8px; border-radius: 50%; }
+.tabbar { position: absolute; left: 12px; right: 12px; bottom: 10px; display: flex; gap: 4px; border: 1px solid var(--line-strong); border-radius: 999px; padding: 6px; background: color-mix(in srgb, var(--surface) 86%, transparent); backdrop-filter: blur(14px); box-shadow: 0 12px 32px rgb(0 0 0 / .55); }
+.tabbar span { flex: 1; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 999px; color: var(--muted); font-size: 10.5px; font-weight: 600; }
+.tabbar svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tabbar .on { color: var(--gold-hi); background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 24%, transparent), color-mix(in srgb, var(--gold-deep) 16%, transparent)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 60%, transparent), 0 0 16px -4px var(--halo); }
+
+/* ── confronto ──────────────────────────────────────────────────────────────────────────────────────────── */
+.cmp { max-width: 1240px; margin: 40px auto 0; }
+.cmp h2 { margin-bottom: 4px; }
+.cmp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 14px; }
+.cmp-grid .card { display: flex; flex-direction: column; gap: 12px; }
+.cmp-grid .row { justify-content: space-between; }
+.cmp-name { font-size: 15px; font-weight: 700; color: var(--gold-hi); }
+.cmp-val { font-size: 30px; font-weight: 700; letter-spacing: -.03em; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; }
+.cmp-val small { font-size: 13px; color: var(--gold-dim); font-weight: 600; letter-spacing: 0; }
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>Mockup 43 · «Aspetto»: fondo e metallo dell'app, in Account</h1>
+  <p>Non una tavolozza libera: quattro metalli coniati, più uno che si guadagna. Cambia solo ciò che oggi è oro (valori, pulsanti, traguardi, bagliori); fondo, schede, testi e colori di stato restano. <b style="color:var(--fg)">Tocca un medaglione o il fondo</b>: cambiano tutti e due i telefoni.</p>
+</div>
+
+<div class="stage" id="stage" data-tint="oro">
+  <!-- 1 · Account -->
+  <figure>
+    <figcaption><b>1 · Account, la scheda «Aspetto»</b><span>Due scelte indipendenti: il fondo (Notte o Marmo) e il metallo. Un tocco e l'app cambia.</span></figcaption>
+    <div class="phone">
+      <div class="photo"></div>
+      <div class="in">
+        <div class="top">
+          <div><div class="top-name">Marco</div><div class="top-level">Avanzato</div></div>
+          <div class="total"><svg viewBox="0 0 68 68" width="68" height="68"><circle class="a" cx="34" cy="34" r="30"/><circle class="b" cx="34" cy="34" r="30" stroke-dasharray="188.5" stroke-dashoffset="72"/></svg><div><b>62%</b><small>Totale</small></div></div>
+        </div>
+        <div class="page-h"><h2>Account</h2></div>
+
+        <section class="card">
+          <h2>Profilo</h2>
+          <div style="margin-top:12px"><span class="fld-l">Nome</span><div class="input">Marco</div></div>
+        </section>
+
+        <section class="card metal">
+          <div class="metal-h"><h2>Aspetto</h2><span class="metal-now"><span data-ground-now>Notte</span> · <span data-now>Oro</span></span></div>
+          <span class="metal-l">Fondo</span>
+          <div class="seg" role="group" aria-label="Fondo dell'app">
+            <button data-ground-pick="notte" aria-pressed="true"><i style="background:#0b0b0d"></i>Notte</button>
+            <button data-ground-pick="marmo" aria-pressed="false"><i style="background:#f8f5ef"></i>Marmo</button>
+          </div>
+          <span class="metal-l">Metallo</span>
+          <div class="coins" role="group" aria-label="Metallo dell'app">
+            <button class="coin" data-tint="oro" data-pick="oro" aria-pressed="true"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Oro</span></button>
+            <button class="coin" data-tint="rame" data-pick="rame" aria-pressed="false"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Rame</span></button>
+            <button class="coin" data-tint="argento" data-pick="argento" aria-pressed="false"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Argento</span></button>
+            <button class="coin" data-tint="cobalto" data-pick="cobalto" aria-pressed="false"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i><span>Cobalto</span></button>
+            <button class="coin locked" data-tint="ametista" data-locked aria-pressed="false"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="11" width="13" height="9" rx="2.5"/><path d="M8.5 11V8a3.5 3.5 0 017 0v3"/></svg></i><span>Ametista</span></button>
+          </div>
+          <p class="metal-foot" data-foot><b>Ametista</b> si sblocca al livello Elite.</p>
+        </section>
+
+        <section class="card">
+          <h2>Luogo, classifiche e amici</h2>
+          <p class="sub">Profilo privato · Milano</p>
+        </section>
+        <section class="card"><h2>Accesso e sicurezza</h2><p class="sub">marco@esempio.it</p></section>
+      </div>
+      <div class="tabbar">
+        <span><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 01-1 1h-4v-6h-6v6H5a1 1 0 01-1-1z"/></svg>Home</span>
+        <span><svg viewBox="0 0 24 24"><path d="M12 3l8.5 6.2-3.2 10H6.7l-3.2-10z"/></svg>Livello</span>
+        <span><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 9h6M9 13h6"/></svg>Scheda</span>
+        <span><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 4-6"/></svg>Grafici</span>
+        <span><svg viewBox="0 0 24 24"><path d="M3 12h3M18 12h3M6 8v8M18 8v8M6 12h12"/></svg>Esercizi</span>
+      </div>
+    </div>
+    <ul class="note">
+      <li><b>Perché «Metallo»</b> e non «Colori»: Kalos è luce di metallo su nero. Una scelta fra metalli resta Kalos; un selettore libero la farebbe sembrare un'altra app.</li>
+      <li><b>Il medaglione chiuso</b> è il motivo per tornare: si vede che cosa si guadagna e a che livello.</li>
+      <li>Verde e rosso non ci sono apposta: sono «fatto» ed «errore».</li>
+    </ul>
+  </figure>
+
+  <!-- 2 · il resto dell'app -->
+  <figure>
+    <figcaption><b>2 · Che cosa cambia nel resto dell'app</b><span>Testata, busto, livello, grafici, pulsante, barra. Il resto sta fermo.</span></figcaption>
+    <div class="phone">
+      <div class="photo"></div>
+      <div class="in">
+        <div class="top">
+          <div><div class="top-name">Marco</div><div class="top-level">Avanzato</div></div>
+          <div class="total"><svg viewBox="0 0 68 68" width="68" height="68"><circle class="a" cx="34" cy="34" r="30"/><circle class="b" cx="34" cy="34" r="30" stroke-dasharray="188.5" stroke-dashoffset="72"/></svg><div><b>62%</b><small>Totale</small></div></div>
+        </div>
+
+        <section class="card hero">
+          <div class="bust"><img src="../../public/avatar/busto-270.webp" alt=""></div>
+          <div>
+            <p class="eyebrow">Livello</p>
+            <div class="hero-lv">Avanzato</div>
+            <div class="bar"><i></i></div>
+            <p class="sub" style="margin:0">1.240 punti · 760 a Elite</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="row" style="justify-content:space-between"><h2>Trazioni zavorrate</h2><span class="chip pr">Record</span></div>
+          <div class="seg" style="margin-top:12px"><span>1 mese</span><span class="on">3 mesi</span><span>Anno</span></div>
+          <svg class="spark" viewBox="0 0 320 86" preserveAspectRatio="none"><path class="f" d="M0 70 L40 62 L80 66 L120 50 L160 54 L200 38 L240 40 L280 22 L320 14 L320 86 L0 86Z"/><path class="l" d="M0 70 L40 62 L80 66 L120 50 L160 54 L200 38 L240 40 L280 22 L320 14"/><circle cx="320" cy="14" r="4"/></svg>
+        </section>
+
+        <button class="btn">Inizia l'allenamento</button>
+
+        <section class="card">
+          <p class="eyebrow">Restano uguali con ogni metallo</p>
+          <div class="states">
+            <span class="chip"><i style="background:#6fcf8e"></i>Fatto</span>
+            <span class="chip"><i style="background:#f0796b"></i>Errore</span>
+            <span class="chip"><i style="background:#8ea4c8"></i>Forza</span>
+            <span class="chip"><i style="background:#b996c6"></i>Volume</span>
+            <span class="chip"><i style="background:#8fc49c"></i>Tecnico</span>
+          </div>
+        </section>
+      </div>
+      <div class="tabbar">
+        <span><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 01-1 1h-4v-6h-6v6H5a1 1 0 01-1-1z"/></svg>Home</span>
+        <span class="on"><svg viewBox="0 0 24 24"><path d="M12 3l8.5 6.2-3.2 10H6.7l-3.2-10z"/></svg>Livello</span>
+        <span><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 9h6M9 13h6"/></svg>Scheda</span>
+        <span><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 4-6"/></svg>Grafici</span>
+        <span><svg viewBox="0 0 24 24"><path d="M3 12h3M18 12h3M6 8v8M18 8v8M6 12h12"/></svg>Esercizi</span>
+      </div>
+    </div>
+    <ul class="note">
+      <li><b>Il busto</b> è una foto dorata: qui è ritinto sopra la sua sagoma, e nell'app si farebbe allo stesso modo (nessuna immagine nuova).</li>
+      <li><b>La foto di sfondo</b> è quasi senza colore: regge tutti i metalli così com'è.</li>
+      <li><b>Cobalto</b> e il pallino «Forza» sono vicini: si incontrano solo nell'editor del trainer.</li>
+    </ul>
+  </figure>
+</div>
+
+<section class="cmp">
+  <h2>I metalli a confronto</h2>
+  <p class="sub">Stessi quattro ruoli dell'oro (valore, chiaro, bronzo, spento), stessi contrasti su antracite.</p>
+  <div class="cmp-grid">
+    <div class="card" data-tint="oro"><div class="row"><span class="cmp-name">Oro</span><span class="chip pr">Record</span></div><div class="cmp-val">1.240 <small>punti</small></div><div class="bar" style="margin:0"><i></i></div><button class="btn small" style="align-self:flex-start">Registra</button></div>
+    <div class="card" data-tint="rame"><div class="row"><span class="cmp-name">Rame</span><span class="chip pr">Record</span></div><div class="cmp-val">1.240 <small>punti</small></div><div class="bar" style="margin:0"><i></i></div><button class="btn small" style="align-self:flex-start">Registra</button></div>
+    <div class="card" data-tint="argento"><div class="row"><span class="cmp-name">Argento</span><span class="chip pr">Record</span></div><div class="cmp-val">1.240 <small>punti</small></div><div class="bar" style="margin:0"><i></i></div><button class="btn small" style="align-self:flex-start">Registra</button></div>
+    <div class="card" data-tint="cobalto"><div class="row"><span class="cmp-name">Cobalto</span><span class="chip pr">Record</span></div><div class="cmp-val">1.240 <small>punti</small></div><div class="bar" style="margin:0"><i></i></div><button class="btn small" style="align-self:flex-start">Registra</button></div>
+    <div class="card" data-tint="ametista"><div class="row"><span class="cmp-name">Ametista · livello Elite</span></div><div class="cmp-val">1.240 <small>punti</small></div><div class="bar" style="margin:0"><i></i></div><button class="btn small" style="align-self:flex-start">Registra</button></div>
+  </div>
+</section>
+
+<script>
+// solo per il mockup: il medaglione toccato ritinge i due telefoni
+const stage = document.getElementById('stage');
+const names = { oro: 'Oro', rame: 'Rame', argento: 'Argento', cobalto: 'Cobalto' };
+const foot = document.querySelector('[data-foot]');
+const footHome = foot.innerHTML;
+document.querySelectorAll('.coin').forEach((b) =>
+  b.addEventListener('click', () => {
+    if (b.hasAttribute('data-locked')) {
+      foot.innerHTML = '<b>Ametista</b> è chiusa: ti mancano 760 punti per Elite.';
+      return;
+    }
+    const t = b.dataset.pick;
+    stage.dataset.tint = t;
+    document.querySelectorAll('.coin').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+    document.querySelector('[data-now]').textContent = names[t];
+    foot.innerHTML = footHome;
+  }),
+);
+document.querySelectorAll('[data-ground-pick]').forEach((b) =>
+  b.addEventListener('click', () => {
+    const g = b.dataset.groundPick;
+    document.querySelectorAll('.phone').forEach((ph) => (ph.dataset.ground = g));
+    document.querySelectorAll('[data-ground-pick]').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+    document.querySelector('[data-ground-now]').textContent = g === 'marmo' ? 'Marmo' : 'Notte';
+  }),
+);
+</script>
+</body>
+</html>

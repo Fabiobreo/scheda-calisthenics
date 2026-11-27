@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0b0d" />
     <meta name="color-scheme" content="dark" />
+    <!-- aspetto scelto in Account (ticket 43): fondo e metallo su <html> prima del primo disegno, così l'app non parte
+         in Notte per poi cambiare. Chiave e nomi sono quelli di src/app/look.ts; un valore sconosciuto non fa nulla. -->
+    <script>
+      try {
+        var look = JSON.parse(localStorage.getItem('scheda:look') || 'null');
+        if (look) {
+          if (look.ground) document.documentElement.dataset.ground = look.ground;
+          if (look.metal) document.documentElement.dataset.metal = look.metal;
+          if (look.ground === 'marmo') {
+            document.querySelector('meta[name="theme-color"]').content = '#ebe6dc';
+            document.querySelector('meta[name="color-scheme"]').content = 'light';
+          }
+        }
+      } catch (e) {}
+    </script>
     <meta name="description" content="Registro allenamenti: programma, serie, record e grafici." />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />

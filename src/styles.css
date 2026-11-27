@@ -3,7 +3,9 @@
    palestra in alto, ORO per azioni e valori, Inter. Quattro ori e basta (--gold, --gold-hi, --gold-deep, --gold-dim);
    il bianco caldo (--fg) solo per titoli e nomi, il resto dei testi in --muted. Nessun colore fuori da questi token.
    Ticket 41 (Michael, 25 novembre 2026): oro più tenue, caratteri più piccoli (misure dei mockup), la foto sfuma prima
-   delle schede. Le regole delle pagine riviste sono in fondo al file. */
+   delle schede. Le regole delle pagine riviste sono in fondo al file.
+   Ticket 43: da Account si scelgono il metallo che fa da oro (i quattro ori restano quattro, cambiano i valori) e il
+   fondo, Notte o Marmo (chiaro). Di partenza: Notte e oro, come prima. */
 :root {
   /* fondo e superfici: neri e antracite neutri, appena caldi */
   --bg: #0b0b0d; --surface: #161618; --surface2: #1f1f23; --line: #2b2b30; --line-strong: #3b3a40;
@@ -12,17 +14,20 @@
      attive, linee dei grafici, voce attiva della barra (8,0:1 su --surface). --gold-hi: chiaro, cima dei gradienti,
      record e celebrazioni (11,6:1). --gold-deep: bronzo, fondo dei gradienti e bordi attivi, MAI per il testo
      (4,0:1). --gold-dim: oro spento per i testi secondari importanti (7,2:1). */
-  --gold: #c9ab74; --gold-hi: #e4d0a3; --gold-deep: #8d7444; --gold-dim: #b3a488;
-  /* testo scuro sopra l'oro (8,5:1 su --gold) */
-  --on-gold: #1a1206;
+  /* I valori stanno nel metallo scelto (--metal…, più sotto: ticket 43). --gold… sono il metallo usato come TESTO,
+     linea o velatura; per i riempimenti lucidi (bottoni, contatori) si usa --metal…, che resta chiaro anche su Marmo. */
+  --gold: var(--metal); --gold-hi: var(--metal-hi); --gold-deep: var(--metal-deep); --gold-dim: var(--metal-dim);
   /* stati, solo per conferme ed errori */
   --ok: #6fcf8e; --on-ok: #0b2414; --danger: #f0796b;
   /* tipo dell'esercizio (editor del trainer, pallini della settimana): tinte spente che non stonano con l'oro */
   --forza: #8ea4c8; --volume: #b996c6; --tecnico: #8fc49c;
   /* luce e ombre: bagliori dorati, leggeri */
-  --glow: 0 0 10px rgb(201 171 116 / .16); --glow-elite: 0 0 14px rgb(228 208 163 / .28);
-  --halo: rgb(201 171 116 / .26); --halo-elite: rgb(228 208 163 / .36);
+  --glow: 0 0 10px color-mix(in srgb, var(--metal) 16%, transparent); --glow-elite: 0 0 14px color-mix(in srgb, var(--metal-hi) 28%, transparent);
+  --halo: color-mix(in srgb, var(--metal) 26%, transparent); --halo-elite: color-mix(in srgb, var(--metal-hi) 36%, transparent);
   --shadow: 0 10px 30px rgb(0 0 0 / .45); --scrim: rgb(0 0 0 / .6);
+  /* ombre e filo di luce delle superfici: token perché su Marmo cambiano (ticket 43) */
+  --shadow-bar: 0 12px 32px rgb(0 0 0 / .55); --shadow-sheet: 0 -12px 40px rgb(0 0 0 / .5); --shadow-bust: 0 8px 14px rgb(0 0 0 / .55);
+  --shadow-star: 0 12px 30px rgb(0 0 0 / .4), inset 0 1px 0 rgb(255 255 255 / .06); --edge: inset 0 1px 0 rgb(255 255 255 / .04);
   /* scintille delle celebrazioni */
   --spark: #fff4d6;
   /* raggi: schede molto arrotondate, come nei mockup */
@@ -39,6 +44,15 @@
   /* spazio occupato dalla barra in basso (pillola + distacco dal bordo), senza l'area sicura dell'iPhone */
   --tabbar: 78px;
 }
+/* I metalli (ticket 43): quattro toni ciascuno, con gli stessi ruoli e contrasti dell'oro su --surface (valore ≥ 7,8:1,
+   chiaro ≥ 11,9:1, spento ≥ 7,3:1, --on-gold sul metallo ≥ 8,1:1; il bronzo mai per il testo). Senza attributo vale
+   l'oro. `data-metal` sta su <html> (lo mette index.html prima del primo disegno, poi app/look.ts), ma funziona su
+   qualsiasi elemento: i medaglioni di Account lo usano per mostrare ognuno il suo metallo. */
+:root, [data-metal='oro'] { --metal: #c9ab74; --metal-hi: #e4d0a3; --metal-deep: #8d7444; --metal-dim: #b3a488; --on-gold: #1a1206; }
+[data-metal='rame'] { --metal: #d49f82; --metal-hi: #efcdb8; --metal-deep: #9a6a4e; --metal-dim: #bba498; --on-gold: #1c0f08; }
+[data-metal='argento'] { --metal: #b7bcc6; --metal-hi: #dfe3ea; --metal-deep: #787d88; --metal-dim: #a6aab3; --on-gold: #0e1014; }
+[data-metal='cobalto'] { --metal: #93b1dc; --metal-hi: #c6d9f2; --metal-deep: #5d7dab; --metal-dim: #a0adbf; --on-gold: #08111e; }
+[data-metal='ametista'] { --metal: #b9a2dc; --metal-hi: #dccdf2; --metal-deep: #8068a8; --metal-dim: #aaa1ba; --on-gold: #120a1e; }
 * { box-sizing: border-box; }
 html { scroll-padding-top: 16px; scroll-padding-bottom: calc(var(--tabbar) + 16px + env(safe-area-inset-bottom, 0px)); }
 body {
@@ -99,7 +113,7 @@ h1 { font-size: clamp(34px, 10vw, 56px); line-height: 1; letter-spacing: -.035em
   bottom: calc(10px + env(safe-area-inset-bottom, 0px)); max-width: 520px; margin: 0 auto;
   border: 1px solid var(--line-strong); border-radius: 999px; padding: 6px;
   background: color-mix(in srgb, var(--surface) 86%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  box-shadow: 0 12px 32px rgb(0 0 0 / .55);
+  box-shadow: var(--shadow-bar);
 }
 .tabbar-in { display: flex; gap: 4px; }
 .tabbar a {
@@ -137,7 +151,7 @@ h1 { font-size: clamp(34px, 10vw, 56px); line-height: 1; letter-spacing: -.035em
 
 main { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
 /* scheda: antracite molto arrotondata, bordo sottile, un filo di luce sul bordo alto */
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px; min-width: 0; box-shadow: inset 0 1px 0 rgb(255 255 255 / .04); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px; min-width: 0; box-shadow: var(--edge); }
 .card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 /* titoli delle schede piccoli (ticket 21) in oro spento; quelli grandi per i protagonisti e per i giorni */
 .card h2 { font-family: var(--f-body); font-size: var(--fs-2); font-weight: 600; letter-spacing: 0; color: var(--fg); }
@@ -157,7 +171,7 @@ main { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
 
 /* bottone primario: gradiente oro, testo scuro; secondario (.ghost): contorno bronzo, testo oro */
 .btn {
-  background: linear-gradient(180deg, var(--gold-hi), var(--gold) 70%); box-shadow: inset 0 -2px 0 var(--gold-deep), var(--glow);
+  background: linear-gradient(180deg, var(--metal-hi), var(--metal) 70%); box-shadow: inset 0 -2px 0 var(--metal-deep), var(--glow);
   color: var(--on-gold); border: 0; border-radius: var(--r-ctl); padding: 11px 18px; font-weight: 600; font-size: 14px; white-space: nowrap;
   /* bersaglio di tocco minimo 44 px (audit A01), anche per i link con l'aspetto di pulsante */
   min-height: 44px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
@@ -322,7 +336,7 @@ body:has(.gr:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
 .gr .seg button { flex: 1 1 0; padding: 9px 2px; font-size: 13px; }
 .gr select { min-height: 44px; padding-block: 9px; color: var(--gold-hi); font-weight: 600; }
 .gr select option, .gr select optgroup { color: var(--fg); font-weight: 400; }
-.gr-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; min-width: 0; box-shadow: inset 0 1px 0 rgb(255 255 255 / .04); }
+.gr-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; min-width: 0; box-shadow: var(--edge); }
 .gr-chart { flex: 1 1 auto; display: flex; flex-direction: column; max-height: 480px; }
 .gr-plot { position: relative; flex: 1 1 140px; min-height: 140px; }
 .gr-empty { flex: 1 1 auto; display: grid; place-items: center; padding: 0 14px 14px; }
@@ -374,7 +388,7 @@ body:has(.gr:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
 .sheet-back { position: fixed; inset: 0; z-index: 30; background: var(--scrim); display: flex; align-items: flex-end; justify-content: center; }
 .sheet {
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: 28px 28px 0 0; width: 100%; max-width: 640px; border-bottom: 0;
-  box-shadow: 0 -12px 40px rgb(0 0 0 / .5);
+  box-shadow: var(--shadow-sheet);
   max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain;
   /* in fondo resta spazio per il timer di recupero, che sta sopra la barra */
   padding: 18px max(16px, env(safe-area-inset-left, 0px)) calc(var(--tabbar) + 110px + env(safe-area-inset-bottom, 0px));
@@ -429,7 +443,7 @@ body:has(.gr:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
 .hold-opts > span { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
 .hold-auto { justify-content: center; }
 .hold-main {
-  flex: 0 0 38dvh; border: 0; border-radius: 24px; background: var(--gold); color: var(--on-gold); box-shadow: var(--glow); box-shadow: var(--glow);
+  flex: 0 0 38dvh; border: 0; border-radius: 24px; background: var(--metal); color: var(--on-gold); box-shadow: var(--glow);
   font-family: var(--f-display); font-weight: 700; font-size: 24px; letter-spacing: -.02em;
 }
 .hold.on .hold-main { background: var(--surface2); color: var(--fg); border: 2px solid var(--gold); }
@@ -537,7 +551,7 @@ body:has(.lv:not(.nested)):not(:has(.timer)) { padding-bottom: calc(var(--tabbar
   position: relative; display: grid; place-items: center; min-width: 0; min-height: 0; height: 100%;
   background: radial-gradient(closest-side circle at 50% 48%, color-mix(in srgb, var(--gold) 46%, transparent), color-mix(in srgb, var(--gold) 14%, transparent) 60%, transparent);
 }
-.bust img { display: block; width: auto; height: auto; max-width: 92%; max-height: 92%; object-fit: contain; filter: drop-shadow(0 8px 14px rgb(0 0 0 / .55)); }
+.bust img { display: block; width: auto; height: auto; max-width: 92%; max-height: 92%; object-fit: contain; filter: drop-shadow(var(--shadow-bust)); }
 .bust.sm {
   flex: none; width: 44px; height: 44px; border-radius: 50%; overflow: hidden; border: 1px solid var(--gold-deep);
   background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--gold) 26%, var(--surface2)), var(--bg));
@@ -783,7 +797,7 @@ body:has(.timer) .cat-list { padding-bottom: calc(var(--tabbar) + 110px + env(sa
   position: relative; border-color: color-mix(in srgb, var(--gold) 35%, transparent);
   background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--gold) 20%, transparent), transparent 60%),
     linear-gradient(160deg, color-mix(in srgb, var(--gold) 12%, var(--surface)), var(--surface) 70%);
-  box-shadow: 0 12px 30px rgb(0 0 0 / .4), inset 0 1px 0 rgb(255 255 255 / .06);
+  box-shadow: var(--shadow-star);
 }
 .card-t { display: inline-flex; align-items: center; gap: 2px; min-width: 0; }
 .card-t h2 { white-space: nowrap; }
@@ -910,7 +924,7 @@ main > :nth-child(n + 5), .cols > .col > :nth-child(n + 5) { animation-delay: .2
   0% { transform: rotate(var(--a)) translateY(0) scale(1.2); opacity: 1; }
   100% { transform: rotate(var(--a)) translateY(-90px) scale(.2); opacity: 0; }
 }
-#toast.record { background: var(--gold-hi); color: var(--on-gold); box-shadow: var(--glow-elite); }
+#toast.record { background: var(--metal-hi); color: var(--on-gold); box-shadow: var(--glow-elite); }
 #toast.record.show { animation: toast-pop .55s cubic-bezier(.2, 1.8, .4, 1); }
 @keyframes toast-pop { 0% { transform: translateX(-50%) scale(.6); } 60% { transform: translateX(-50%) scale(1.1); } 100% { transform: translateX(-50%); } }
 
@@ -993,7 +1007,7 @@ main > :nth-child(n + 5), .cols > .col > :nth-child(n + 5) { animation-delay: .2
 .fs-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
 .fs-list li { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 4px 0; border-top: 1px solid var(--line); }
 .fs-list li:first-child { border-top: 0; }
-.fs-check { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line-strong); color: var(--on-gold); font-weight: 700; font-size: 13px; }
+.fs-check { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line-strong); color: var(--on-ok); font-weight: 700; font-size: 13px; }
 .fs-check.on { background: var(--ok); border-color: var(--ok); }
 .fs-list li.next .fs-check { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 20%, transparent); }
 .fs-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -1101,7 +1115,7 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1) bright
 /* contatore: non lette, richieste */
 .badge {
   flex: none; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 8px; border-radius: 999px; display: inline-grid; place-items: center;
-  background: var(--gold); color: var(--on-gold); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1;
+  background: var(--metal); color: var(--on-gold); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1;
 }
 .home-req { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--fg); border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
 .home-req-t { flex: 1; min-width: 0; font-weight: 600; }
@@ -1252,7 +1266,7 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1) bright
   .rk-tile b { font-size: 20px; }
 }
 .nv-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
-.nv-list .nv-row { min-height: 0; padding: 10px 12px; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: inset 0 1px 0 rgb(255 255 255 / .04); }
+.nv-list .nv-row { min-height: 0; padding: 10px 12px; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--edge); }
 .nv-list .nv-row.new { border-color: color-mix(in srgb, var(--gold) 38%, var(--line)); }
 .nv-av { width: 34px; height: 34px; font-size: 14px; color: var(--gold); border-color: color-mix(in srgb, var(--gold-deep) 70%, transparent); }
 .nv-txt > span { font-size: 11.5px; line-height: 1.35; }
@@ -1267,7 +1281,7 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1) bright
 .ex-page { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .ex-page .ex-list { display: flex; flex-direction: column; gap: 8px; margin: 0; }
 .ex-page .ex-row, .ex-page .ex-list .ex-row:last-child {
-  min-height: 52px; padding: 5px 9px 5px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: inset 0 1px 0 rgb(255 255 255 / .04);
+  min-height: 52px; padding: 5px 9px 5px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--edge);
 }
 .ex-txt { gap: 1px; }
 .ex-txt b { font-size: 13.5px; }
@@ -1338,7 +1352,7 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1) bright
 .lv-ch-lvl, .lv-ch-best { font-size: 11.5px; }
 .lv-ch-pc { font-size: 15px; }
 .penta-val { fill: var(--fg); }
-.bust { background: radial-gradient(closest-side circle at 50% 48%, color-mix(in srgb, var(--gold) 30%, transparent), color-mix(in srgb, var(--gold) 9%, transparent) 60%, transparent); }
+.bust { background: radial-gradient(closest-side circle at 50% 48%, color-mix(in srgb, var(--metal) 30%, transparent), color-mix(in srgb, var(--metal) 9%, transparent) 60%, transparent); }
 @media (min-width: 1024px) { .lv { --lv-card: 68px; --lv-gap: 12px; } }
 .lv.nested { --lv-card: 60px; --lv-gap: 10px; }
 /* novità vuote (o in caricamento) e avvisi della classifica: senza la scheda intorno servono un fondo loro */
@@ -1354,3 +1368,73 @@ input[type='checkbox'] { min-height: 0; padding: 0; }
 .inst-ico { vertical-align: -3px; color: var(--gold); margin: 0 2px; }
 /* non compare mai col timer aperto: basta lo spazio della barra in basso */
 @media (max-width: 699px) { .sheet.inst-sheet { padding-bottom: calc(var(--tabbar) + 24px + env(safe-area-inset-bottom, 0px)); } }
+
+/* ===== Ticket 43: Aspetto — fondo Marmo e scheda in Account =====
+   I metalli stanno in cima al file, accanto a :root. Qui: il fondo chiaro e i pochi punti dove non basta un token.
+
+   MARMO (`data-ground='marmo'` su <html>): avorio caldo al posto del nero. Cambiano i neutri, le ombre (i bagliori su
+   chiaro non esistono: diventano ombre corte del colore del bronzo) e i toni del metallo usati come TESTO, che su
+   chiaro si scuriscono: --gold ≥ 4,7:1 su --bg e ≥ 5,3:1 su --surface, --gold-hi ≥ 8,9:1, --gold-dim ≥ 5,0:1. I
+   riempimenti lucidi (--metal…) e il bronzo dei bordi (--gold-deep) restano quelli del metallo. Stati e tipi più scuri
+   per lo stesso motivo (--ok 5,6:1, --danger 5,5:1 su --surface). */
+:root[data-ground='marmo'] {
+  --bg: #ebe6dc; --surface: #f8f5ef; --surface2: #ece7dc; --line: #dcd5c7; --line-strong: #c6bead;
+  --fg: #1d1a15; --muted: #655f54;
+  --gold: var(--ink); --gold-hi: var(--ink-hi); --gold-dim: var(--ink-dim);
+  --ink: #7c6024; --ink-hi: #54400f; --ink-dim: #6f6247;
+  --ok: #1a6e3d; --on-ok: #f2fbf4; --danger: #b3392b;
+  --forza: #4f6b9c; --volume: #855a96; --tecnico: #357a4a;
+  --glow: 0 4px 10px -4px color-mix(in srgb, var(--metal-deep) 45%, transparent); --glow-elite: 0 6px 16px -4px color-mix(in srgb, var(--metal-deep) 55%, transparent);
+  --halo: color-mix(in srgb, var(--metal-deep) 30%, transparent); --halo-elite: color-mix(in srgb, var(--metal-deep) 40%, transparent);
+  --shadow: 0 10px 30px rgb(60 50 30 / .18); --scrim: rgb(40 34 22 / .45);
+  --shadow-bar: 0 10px 24px rgb(60 50 30 / .2); --shadow-sheet: 0 -12px 40px rgb(60 50 30 / .22); --shadow-bust: 0 8px 12px rgb(60 50 30 / .35);
+  --shadow-star: 0 12px 30px -8px rgb(60 50 30 / .2), inset 0 1px 0 rgb(255 255 255 / .7); --edge: inset 0 1px 0 rgb(255 255 255 / .7), 0 1px 2px rgb(60 50 30 / .06);
+  --spark: var(--metal);
+  color-scheme: light;
+}
+:root[data-ground='marmo'][data-metal='rame'] { --ink: #94553a; --ink-hi: #6a3620; --ink-dim: #7a6257; }
+:root[data-ground='marmo'][data-metal='argento'] { --ink: #5b616c; --ink-hi: #353a44; --ink-dim: #666a72; }
+:root[data-ground='marmo'][data-metal='cobalto'] { --ink: #3f639a; --ink-hi: #254474; --ink-dim: #5a6779; }
+:root[data-ground='marmo'][data-metal='ametista'] { --ink: #6e52a0; --ink-hi: #4a3478; --ink-dim: #6a607c; }
+/* la foto della palestra è scura: su Marmo si rovescia in un'incisione chiara, appena accennata sotto il velo */
+:root[data-ground='marmo'] .bg img { filter: grayscale(1) invert(1) contrast(.8); opacity: .5; }
+/* freccia della tendina e lente della ricerca: sono immagini col colore scritto dentro, qui nel --muted di Marmo */
+:root[data-ground='marmo'] select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23655f54' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+:root[data-ground='marmo'] input[type='search'], :root[data-ground='marmo'] .ss input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23655f54' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E"); }
+:root[data-ground='marmo'] input[type='search']::-webkit-search-cancel-button { filter: none; }
+
+/* il busto è un'immagine dorata: con un altro metallo va in scala di grigi e il metallo ci torna sopra come tinta,
+   ritagliata sulla sua sagoma (stessa immagine come maschera, stesse misure dell'<img>). Con l'oro resta com'è. */
+:root[data-metal]:not([data-metal='oro']) .bust img { filter: grayscale(1) brightness(.94) drop-shadow(var(--shadow-bust)); }
+:root[data-metal]:not([data-metal='oro']) .bust.sm img { filter: grayscale(1) brightness(.94); }
+:root[data-metal]:not([data-metal='oro']) .bust::after {
+  content: ''; position: absolute; inset: 4%; background: var(--metal); mix-blend-mode: color; pointer-events: none;
+  -webkit-mask: url('/avatar/busto-270.webp') center / contain no-repeat; mask: url('/avatar/busto-270.webp') center / contain no-repeat;
+}
+:root[data-metal]:not([data-metal='oro']) .bust.sm::after { inset: 0; -webkit-mask-size: cover; mask-size: cover; -webkit-mask-position: 50% 12%; mask-position: 50% 12%; }
+
+/* scheda Aspetto: fondo e metallo. I medaglioni sono monete coniate, con la luce dall'alto come i bottoni; ognuno
+   porta `data-metal` e quindi il suo metallo, qualunque sia quello dell'app. */
+.look { border-color: color-mix(in srgb, var(--gold) 38%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 7%, var(--surface)), var(--surface) 55%); }
+.look-now { flex: none; font-size: 13px; font-weight: 600; color: var(--gold); }
+.look-l { display: block; margin: 14px 0 8px; }
+.coins { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0 -4px; }
+.coin { min-width: 0; min-height: 84px; padding: 4px 0 0; display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: 0; border-radius: var(--r-ctl); }
+.coin i {
+  position: relative; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; color: var(--on-gold);
+  background: radial-gradient(circle at 50% 22%, var(--metal-hi), var(--metal) 55%, var(--metal-deep) 100%);
+  box-shadow: inset 0 -2px 0 var(--metal-deep), inset 0 1px 0 color-mix(in srgb, var(--metal-hi) 80%, transparent), 0 6px 12px -2px var(--scrim); transition: transform .2s;
+}
+.coin i::before { content: ''; position: absolute; inset: 5px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--metal-deep) 55%, transparent); }
+.coin svg { position: relative; opacity: 0; }
+.coin span { max-width: 100%; font-size: 11.5px; font-weight: 600; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.coin[aria-pressed='true'] i { transform: scale(1.08); box-shadow: inset 0 -2px 0 var(--metal-deep), inset 0 1px 0 color-mix(in srgb, var(--metal-hi) 80%, transparent), 0 0 0 3px var(--surface), 0 0 0 5px var(--metal-deep), 0 6px 12px -2px var(--scrim); }
+.coin[aria-pressed='true'] svg { opacity: 1; }
+.coin[aria-pressed='true'] span { color: var(--fg); }
+/* chiuso: il metallo si intravede, il lucchetto dice perché */
+.coin.locked i { filter: saturate(.35) brightness(.55); }
+.coin.locked svg { opacity: 1; color: var(--fg); }
+:root[data-ground='marmo'] .coin.locked i { filter: saturate(.3) brightness(.85); }
+.look-foot { margin-top: 10px; }
+.look-foot b { color: var(--gold-dim); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .coin i { transition: none; } }
