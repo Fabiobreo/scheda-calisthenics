@@ -15,6 +15,7 @@ import type {
   PlanItem,
   People,
   PersonCard,
+  PersonProfile,
   Ranking,
   RankingMetric,
   RankingPlace,
@@ -55,6 +56,8 @@ export interface Repo {
   // Home social (ticket 39). Di un altro utente arrivano solo nome, livello e ciò che condivide.
   /** persone per nome (almeno 2 caratteri, al massimo 20) */
   searchPeople(query: string): Promise<PersonCard[]>;
+  /** il profilo di una persona; null = non esiste, non ha un nome o c'è un blocco */
+  personProfile(userId: string): Promise<PersonProfile | null>;
   /** richieste ricevute, chi seguo, chi mi segue, chi ho bloccato */
   myPeople(): Promise<People>;
   /** segue: subito se il profilo è pubblico ('accepted'), con una richiesta se è privato ('pending') */

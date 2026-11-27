@@ -47,7 +47,7 @@ export interface RankingRow {
   me: boolean;
 }
 
-/** Una classifica: dove sono e le righe da mostrare (le prime 3 visibili e i vicini), non l'elenco intero. */
+/** Una classifica: dove sono e le righe da mostrare. Tra amici tutte (fino a 100); negli altri ambiti le prime 3 visibili e i vicini. */
 export interface Ranking extends RankingPlace {
   rows: RankingRow[];
 }
@@ -252,6 +252,29 @@ export interface PersonCard {
   country: string | null;
   province: string | null;
   region: string | null;
+}
+
+/** Punti di una persona: complessivo e le 5 categorie (fondamentali tirata e spinta, skill tirata e spinta, handbalance). */
+export interface PersonScores {
+  total: number;
+  ft: number;
+  fs: number;
+  st: number;
+  ss: number;
+  hb: number;
+}
+
+/**
+ * Il profilo di una persona (migration 0021). Punti e record condivisi arrivano solo se la seguo con richiesta
+ * accettata (`visible`); altrimenti c'è solo la scheda. Il peso corporeo e i record non condivisi non arrivano mai.
+ */
+export interface PersonProfile {
+  card: PersonCard;
+  visible: boolean;
+  /** null: non la seguo, o non ha ancora punti */
+  scores: PersonScores | null;
+  /** i record che ha condiviso, dal più recente: come il `payload` di una novità "record" */
+  records: Record<string, unknown>[];
 }
 
 export interface People {

@@ -315,7 +315,7 @@ function AboutCard() {
     <section className="card">
       <h2>Informazioni</h2>
       <p className="sub">
-        Scheda Calisthenics · versione {__APP_VERSION__}
+        Kalos · versione {__APP_VERSION__}
         {__APP_COMMIT__ && ` (${__APP_COMMIT__})`}
       </p>
       <p className="sub">
@@ -323,7 +323,7 @@ function AboutCard() {
       </p>
       {support && (
         <p className="sub">
-          Problemi o idee? Scrivi a <a href={`mailto:${support}?subject=${encodeURIComponent(`Scheda Calisthenics ${__APP_VERSION__}`)}`}>{support}</a>.
+          Problemi o idee? Scrivi a <a href={`mailto:${support}?subject=${encodeURIComponent(`Kalos ${__APP_VERSION__}`)}`}>{support}</a>.
         </p>
       )}
     </section>
@@ -370,7 +370,7 @@ function ExportCard() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `scheda-calisthenics-${todayStr()}.json`;
+    a.download = `kalos-${todayStr()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };

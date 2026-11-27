@@ -1,4 +1,4 @@
-# Scheda Calisthenics
+# Kalos
 
 Registro allenamenti installabile sul telefono (PWA): programma settimanale, serie con peso e ripetizioni per ognuna,
 timer di recupero, record personali e grafici di progresso. Dati nel cloud (Supabase) con login, sincronizzati tra dispositivi.

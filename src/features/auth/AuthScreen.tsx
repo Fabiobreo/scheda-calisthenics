@@ -174,11 +174,7 @@ export function AuthScreen({ invite }: { invite?: string }) {
     <div className="auth-page">
       <header className="auth-hero">
         <p className="eyebrow">Registro allenamenti</p>
-        <h1>
-          Scheda
-          <br />
-          Calisthenics
-        </h1>
+        <h1>Kalos</h1>
         <p className="lede">Programma, serie e record personali. Salvati nel cloud, uguali su telefono e computer.</p>
       </header>
       {inviter && (

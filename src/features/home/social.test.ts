@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { FeedEvent } from '../../data/types';
 import { BANDS } from '../../lib/levels';
-import { bandName, followButton, followLink, initial, newsLine, overtakeMetric, personName, personPlace, personSub, recordNews, requestsText, timeAgo } from './socialView';
+import { bandName, followButton, followLink, initial, newsLine, overtakeMetric, personName, personPlace, personSub, recordNews, requestsText, scoresSummary, sharedRecord, timeAgo } from './socialView';
 
 /**
  * Il database dà il livello di una persona come fascia (`level_band`, migration 0018), senza far uscire i punti: le
@@ -101,5 +101,22 @@ describe('novità', () => {
     expect(ago(4 * 24 * 60 * MIN)).toBe('4 g fa');
     expect(ago(10 * 24 * 60 * MIN)).toBe('15 nov');
     expect(timeAgo('boh', now)).toBe('');
+  });
+});
+
+describe('profilo di una persona', () => {
+  it('dai punti: livello complessivo e delle 5 categorie, come li dà il motore', () => {
+    const s = scoresSummary({ total: 1100, ft: 500, fs: 300, st: 0, ss: 200, hb: 100 });
+    expect(s.total).toBe(1100);
+    expect(s.name).toBe(bandName(2));
+    expect(s.categories.map((c) => c.points)).toEqual([500, 300, 0, 200, 100]);
+    expect(s.categories.map((c) => c.categoryId)).toEqual(['fondamentali-tirata', 'fondamentali-spinta', 'skill-tirata', 'skill-spinta', 'handbalance']);
+    // le skill non hanno Base: a 0 punti sono Intermedio 0%
+    expect(s.categories[2]).toMatchObject({ name: 'Intermedio', percent: 0, label: 'Skill tirata' });
+  });
+
+  it('un record condiviso scritto male non si mostra', () => {
+    expect(sharedRecord({ subId: 'planche', stage: 'straddle', value: 8 })).toMatchObject({ subId: 'planche', value: 8, date: null });
+    expect(sharedRecord({ subId: 'planche' })).toBeNull();
   });
 });

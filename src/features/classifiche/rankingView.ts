@@ -87,3 +87,14 @@ function ties(rows: readonly RankingRow[], i: number): number {
   for (let k = i - 1; k >= 0 && rows[k].position === rows[i].position; k--) n++;
   return n;
 }
+
+/**
+ * Le righe della classifica tra amici che stanno nella Home: le prime `max`; se la mia è più giù prende il posto
+ * dell'ultima (il salto lo segna `withGaps`).
+ */
+export function homeRows(rows: readonly RankingRow[], max: number): RankingRow[] {
+  const top = rows.slice(0, max);
+  const me = rows.find((r) => r.me);
+  if (!me || top.includes(me)) return top;
+  return [...top.slice(0, max - 1), me];
+}

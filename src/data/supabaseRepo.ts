@@ -16,6 +16,7 @@ import type {
   PlanItemInput,
   People,
   PersonCard,
+  PersonProfile,
   Profile,
   ProfilePatch,
   Ranking,
@@ -443,6 +444,9 @@ export function createSupabaseRepo(sb: Db, userId: string): Repo {
 
     async searchPeople(query) {
       return must(await sb.rpc('search_people', { p_query: query })) as PersonCard[];
+    },
+    async personProfile(id) {
+      return (must(await sb.rpc('person_profile', { p_user: id })) as PersonProfile | null) ?? null;
     },
     async myPeople() {
       return must(await sb.rpc('my_people')) as People;

@@ -9,13 +9,14 @@ import { copySteps } from '../../lib/share';
 import { useToast } from '../../app/toast';
 import { chainName, recordText } from '../livello/levelView';
 import { NewsList } from './HomeView';
+import type { PersonRef } from './PersonSheet';
 import { personName, recordNews, workoutName } from './socialView';
 
 /** Quante novità mostra "Vedi tutte" (il database ne dà al massimo 100 per volta). */
 const ALL_NEWS = 100;
 
 /** "Vedi tutte": l'elenco completo delle novità. Aprirlo le segna come lette. */
-export function NewsSheet({ onClose, onOpen }: { onClose: () => void; onOpen: (e: FeedEvent) => void }) {
+export function NewsSheet({ onClose, onOpen, onPerson }: { onClose: () => void; onOpen: (e: FeedEvent) => void; onPerson: (p: PersonRef) => void }) {
   const feed = useFeed(ALL_NEWS);
   const mark = useMarkFeedRead();
   const events = feed.data?.events ?? [];
@@ -39,7 +40,7 @@ export function NewsSheet({ onClose, onOpen }: { onClose: () => void; onOpen: (e
         </p>
       )}
       {feed.data && events.length === 0 && <p className="empty">Ancora nessuna novità.</p>}
-      {shown.length > 0 && <NewsList events={shown} onOpen={onOpen} />}
+      {shown.length > 0 && <NewsList events={shown} onOpen={onOpen} onPerson={onPerson} />}
       {events.length >= ALL_NEWS && <p className="hint mt-12">Qui ci sono le ultime {ALL_NEWS}.</p>}
     </Sheet>
   );

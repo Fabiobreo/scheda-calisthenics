@@ -2,9 +2,9 @@
  * Logica di presentazione della Home social (ticket 39): livello e luogo di una persona, testo e bottone di una
  * novità, "3 h fa". Nessun dato nuovo: di un'altra persona arrivano solo nome, fascia del livello e ciò che condivide.
  */
-import type { FeedEvent, FollowState, PersonCard, RankingMetric } from '../../data/types';
+import type { FeedEvent, FollowState, PersonCard, PersonScores, RankingMetric } from '../../data/types';
 import { shortDate } from '../../lib/dates';
-import { BANDS } from '../../lib/levels';
+import { bandPosition, BANDS, CATEGORIES, type CategoryId } from '../../lib/levels';
 import { countryName, province } from '../../lib/places';
 import { METRICS, metricName } from '../classifiche/rankingView';
 import { recordText } from '../livello/levelView';
@@ -54,14 +54,36 @@ export interface RecordNews {
   gained: number | null;
 }
 
-/** Il record di una novità, se è scritto come ci si aspetta. Il peso corporeo non c'è: il database non lo manda. */
-export function recordNews(e: Pick<FeedEvent, 'kind' | 'payload'>): RecordNews | null {
-  if (e.kind !== 'record') return null;
-  const subId = text(e.payload.subId);
-  const stage = text(e.payload.stage);
-  const value = number(e.payload.value);
+/** Un record condiviso, se è scritto come ci si aspetta. Il peso corporeo non c'è: il database non lo manda. */
+export function sharedRecord(payload: Record<string, unknown>): RecordNews | null {
+  const subId = text(payload.subId);
+  const stage = text(payload.stage);
+  const value = number(payload.value);
   if (!subId || !stage || value === null) return null;
-  return { subId, stage, value, date: text(e.payload.date), gained: number(e.payload.gained) };
+  return { subId, stage, value, date: text(payload.date), gained: number(payload.gained) };
+}
+
+/** Il record di una novità. */
+export const recordNews = (e: Pick<FeedEvent, 'kind' | 'payload'>): RecordNews | null => (e.kind === 'record' ? sharedRecord(e.payload) : null);
+
+const SCORE_KEY: Record<CategoryId, keyof PersonScores> = {
+  'fondamentali-tirata': 'ft',
+  'fondamentali-spinta': 'fs',
+  'skill-tirata': 'st',
+  'skill-spinta': 'ss',
+  handbalance: 'hb',
+};
+
+/**
+ * Il livello di una persona dai suoi punti (profilo, migration 0021): complessivo e categorie con nome e % nella
+ * fascia, come li calcola il motore dai record. Serve al pentagono e alle righe delle categorie.
+ */
+export function scoresSummary(scores: PersonScores) {
+  const categories = CATEGORIES.map((c) => {
+    const points = scores[SCORE_KEY[c.id]];
+    return { categoryId: c.id, label: c.name, points, ...bandPosition(c.id, points) };
+  });
+  return { total: scores.total, ...bandPosition('complessivo', scores.total), categories };
 }
 
 /** La classifica del sorpasso, se è una di quelle che l'app conosce. */

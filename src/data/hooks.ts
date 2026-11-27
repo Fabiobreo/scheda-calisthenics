@@ -407,7 +407,7 @@ export function useRankingOverview(metric: RankingMetric) {
   return useQuery({ queryKey: [...useKey(K.ranking), 'overview', metric], queryFn: () => repo.rankingOverview(metric), staleTime: RANKING_STALE });
 }
 
-/** Una classifica con le righe (prime 3 e vicini). `scope` null = nessuna aperta. */
+/** Una classifica con le righe (tra amici tutte; altrove prime 3 e vicini). `scope` null = nessuna aperta. */
 export function useRanking(scope: RankingScope | null, metric: RankingMetric) {
   const repo = useRepo();
   return useQuery({
@@ -465,6 +465,12 @@ export function useFollowCode() {
 }
 
 export const useRotateFollowCode = () => useRepoMutation((r) => r.rotateFollowCode(), [K.social], undefined, true);
+
+/** Il profilo di una persona (punti e record condivisi solo se la seguo). `userId` null = nessuno aperto. */
+export function usePersonProfile(userId: string | null) {
+  const repo = useRepo();
+  return useQuery({ queryKey: [...useKey(K.social), 'person', userId], queryFn: () => repo.personProfile(userId!), enabled: userId !== null, staleTime: SOCIAL_STALE });
+}
 
 /** Chi c'è dietro un link "seguimi". Non si rilegge da solo: ogni codice sbagliato conta tra i tentativi falliti. */
 export function useFollowInvite(code: string | undefined) {

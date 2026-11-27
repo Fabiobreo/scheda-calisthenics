@@ -106,7 +106,7 @@ export function App() {
           <TopBar email={session.email} end={<Offline userId={session.userId} part="pill" />} />
         ) : (
           <Link className="brand" to="/">
-            Scheda Calisthenics
+            Kalos
           </Link>
         )}
       </header>

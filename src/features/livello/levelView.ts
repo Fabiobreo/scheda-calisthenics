@@ -11,6 +11,7 @@ import {
   validateRecord,
   type BandId,
   type CategoryId,
+  type CategoryScore,
   type ChainScore,
   type EntryOption,
   type LevelRecord,
@@ -78,7 +79,7 @@ export interface PentagonScale {
  * contorno, altrimenti chi inizia vedrebbe un pentagono in scala Intermedio. Se il contorno è Base, l'asse di una
  * skill (che è per forza a 0) usa la sua prima fascia.
  */
-export function pentagonScale(summary: LevelSummary): PentagonScale {
+export function pentagonScale(summary: { categories: readonly Pick<CategoryScore, 'categoryId' | 'points' | 'band' | 'name' | 'percent'>[] }): PentagonScale {
   const top = Math.max(0, ...summary.categories.filter((c) => c.points > 0).map((c) => rank(c.band)));
   const topBand = BANDS.complessivo[top];
   const axes = AXES.map((id): PentagonAxis => {

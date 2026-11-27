@@ -8,6 +8,7 @@ import type { FeedEvent, RankingMetric, RankingScope } from '../../data/types';
 import { whenIdle } from '../../lib/idle';
 import { RankingBoard, RankingSheet } from '../classifiche/ClassificheView';
 import { FirstStepsGuide } from '../livello/FirstStepsCard';
+import type { PersonRef } from './PersonSheet';
 import { initial, newsLine, overtakeMetric, personName, requestsText, timeAgo } from './socialView';
 
 // i fogli delle novità si aprono a un tocco: si scaricano dopo il primo disegno
@@ -15,6 +16,8 @@ const loadSheets = () => import('./FeedSheets');
 const NewsSheet = lazy(() => loadSheets().then((m) => ({ default: m.NewsSheet })));
 const RecordNewsSheet = lazy(() => loadSheets().then((m) => ({ default: m.RecordNewsSheet })));
 const WorkoutSheet = lazy(() => loadSheets().then((m) => ({ default: m.WorkoutSheet })));
+// il profilo di una persona porta il pentagono: si scarica al primo tocco su un nome
+const PersonSheet = lazy(() => import('./PersonSheet').then((m) => ({ default: m.PersonSheet })));
 
 /** Quante novità stanno nella Home; le altre dietro "Vedi tutte". */
 const HOME_NEWS = 4;
@@ -23,7 +26,9 @@ type HomeSheet =
   | { kind: 'ranking'; scope: RankingScope; metric: RankingMetric; fromNews?: boolean }
   | { kind: 'news' }
   | { kind: 'record'; event: FeedEvent; fromNews?: boolean }
-  | { kind: 'workout'; event: FeedEvent; fromNews?: boolean };
+  | { kind: 'workout'; event: FeedEvent; fromNews?: boolean }
+  /** il profilo di una persona; `back`: il foglio da cui si è toccato il nome, a cui si torna chiudendo */
+  | { kind: 'person'; person: PersonRef; back: HomeSheet | null };
 
 /**
  * Home (ticket 39): "Cerca persone", la Classifica (le pastiglie della metrica e i 5 riquadri del 38: toccandone uno
@@ -49,7 +54,9 @@ export function HomeView() {
     else if (m) setSheet({ kind: 'ranking', scope: 'amici', metric: m, fromNews });
   };
   // un foglio aperto da "Vedi tutte" si richiude sull'elenco
-  const close = () => setSheet(sheet && sheet.kind !== 'news' && sheet.fromNews ? { kind: 'news' } : null);
+  const close = () => setSheet(!sheet || sheet.kind === 'news' ? null : sheet.kind === 'person' ? sheet.back : sheet.fromNews ? { kind: 'news' } : null);
+  /** Tocco su un nome: il profilo prende il posto del foglio che c'è (classifica, "Vedi tutte") e chiudendolo ci si torna. */
+  const openPerson = (person: PersonRef) => setSheet({ kind: 'person', person, back: sheet?.kind === 'person' ? sheet.back : sheet });
 
   return (
     <>
@@ -76,10 +83,11 @@ export function HomeView() {
         </Link>
       )}
 
-      <RankingBoard metric={metric} onMetric={setMetric} onOpen={(scope) => setSheet({ kind: 'ranking', scope, metric })} profile={profile.data} />
+      <RankingBoard metric={metric} onMetric={setMetric} onOpen={(scope) => setSheet({ kind: 'ranking', scope, metric })} onPerson={openPerson} profile={profile.data} />
 
       <News
         onOpen={openEvent}
+        onPerson={openPerson}
         onAll={() => setSheet({ kind: 'news' })}
         loading={people.isLoading}
         friends={people.data ? people.data.following.filter((p) => p.relation === 'accepted').length : null}
@@ -97,10 +105,11 @@ export function HomeView() {
         )}
       </Link>
 
-      {sheet?.kind === 'ranking' && <RankingSheet scope={sheet.scope} metric={sheet.metric} profile={profile.data} onClose={close} />}
+      {sheet?.kind === 'ranking' && <RankingSheet scope={sheet.scope} metric={sheet.metric} profile={profile.data} onClose={close} onPerson={openPerson} />}
       {sheet && sheet.kind !== 'ranking' && (
         <Suspense fallback={null}>
-          {sheet.kind === 'news' && <NewsSheet onClose={close} onOpen={(e) => openEvent(e, true)} />}
+          {sheet.kind === 'news' && <NewsSheet onClose={close} onOpen={(e) => openEvent(e, true)} onPerson={openPerson} />}
+          {sheet.kind === 'person' && <PersonSheet key={sheet.person.userId} person={sheet.person} onClose={close} />}
           {sheet.kind === 'record' && <RecordNewsSheet event={sheet.event} onClose={close} />}
           {sheet.kind === 'workout' && <WorkoutSheet event={sheet.event} onClose={close} />}
         </Suspense>
@@ -113,7 +122,7 @@ export function HomeView() {
  * Novità: le ultime delle persone che segui, col contatore delle non lette e "Vedi tutte". `friends`: quante persone
  * segui (null = non si è riusciti a saperlo); `waiting`: hai richieste non ancora accettate.
  */
-function News({ onOpen, onAll, loading, friends, waiting }: { onOpen: (e: FeedEvent) => void; onAll: () => void; loading: boolean; friends: number | null; waiting: boolean }) {
+function News({ onOpen, onPerson, onAll, loading, friends, waiting }: { onOpen: (e: FeedEvent) => void; onPerson: (p: PersonRef) => void; onAll: () => void; loading: boolean; friends: number | null; waiting: boolean }) {
   const feed = useFeed(HOME_NEWS);
   const events = feed.data?.events ?? [];
   const unread = feed.data?.unread ?? 0;
@@ -141,7 +150,7 @@ function News({ onOpen, onAll, loading, friends, waiting }: { onOpen: (e: FeedEv
       ) : feed.isLoading || loading ? (
         <Skeleton inline />
       ) : events.length > 0 ? (
-        <NewsList events={events} onOpen={onOpen} />
+        <NewsList events={events} onOpen={onOpen} onPerson={onPerson} />
       ) : friends === 0 ? (
         <EmptyState
           small
@@ -164,8 +173,8 @@ function News({ onOpen, onAll, loading, friends, waiting }: { onOpen: (e: FeedEv
   );
 }
 
-/** Righe delle novità: iniziale, nome, che cosa è successo, quando, e il bottone che la apre. */
-export function NewsList({ events, onOpen }: { events: FeedEvent[]; onOpen: (e: FeedEvent) => void }) {
+/** Righe delle novità: iniziale, nome (apre il profilo), che cosa è successo, quando, e il bottone che la apre. */
+export function NewsList({ events, onOpen, onPerson }: { events: FeedEvent[]; onOpen: (e: FeedEvent) => void; onPerson: (p: PersonRef) => void }) {
   return (
     <ul className="nv-list">
       {events.map((e) => {
@@ -178,7 +187,10 @@ export function NewsList({ events, onOpen }: { events: FeedEvent[]; onOpen: (e: 
             </span>
             <span className="nv-txt">
               <span>
-                <b>{name}</b> {line.text}
+                <button type="button" className="who-btn" onClick={() => onPerson({ userId: e.actorId, name: e.actorName })} aria-label={`${name}: apri il profilo`}>
+                  <b>{name}</b>
+                </button>{' '}
+                {line.text}
               </span>
               <small>
                 {timeAgo(e.createdAt)}

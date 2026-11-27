@@ -14,8 +14,8 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'icon.svg'],
       manifest: {
-        name: 'Scheda Calisthenics',
-        short_name: 'Scheda',
+        name: 'Kalos',
+        short_name: 'Kalos',
         description: 'Registro allenamenti: programma, serie, record e grafici.',
         lang: 'it',
         start_url: '/',

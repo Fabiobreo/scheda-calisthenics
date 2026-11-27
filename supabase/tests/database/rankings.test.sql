@@ -2,7 +2,7 @@
 -- e nelle 6 metriche, profili privati invisibili fuori da chi li segue, nessuna lettura di record e peso altrui.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(72);
+select plan(74);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000a1', 'anna@test.local'),
@@ -199,6 +199,18 @@ select is(pg_temp.names(public.ranking('mondo', 'generale')), 'Elena 1, Anna 2, 
 select pg_temp.as_user('00000000-0000-0000-0000-000000000093');
 select is(pg_temp.pos(public.ranking('provincia', 'generale')), '-/4', 'senza riga di punti: nessuna posizione, partecipanti contati');
 select throws_ok($$ update public.profiles set is_private = false $$, '23514', null, 'senza nome non si diventa pubblici');
+
+-- Tra amici la classifica esce per intero (0020), non solo le prime 3 righe e i vicini: Anna ne segue 7.
+reset role;
+insert into public.follows (follower, followee, status)
+select '00000000-0000-0000-0000-0000000000a1', u.id, 'accepted'
+from unnest(array['b1', 'c1', 'd1', 'e1', 'f1', '92', '94']) as t (s)
+join auth.users u on u.id::text = '00000000-0000-0000-0000-0000000000' || t.s;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
+select is(pg_temp.names(public.ranking('amici', 'generale')), 'Elena 1, Anna 2, Katia 3, Bruno 4, Carla 5, Dario 6, Furio 7, Hugo 8',
+  'amici: tutte le righe, anche lontano da me');
+select is(pg_temp.names(public.ranking('nazione', 'generale')), 'Anna 1, Katia 2, Bruno 3',
+  'gli altri ambiti restano alle prime 3 e ai vicini');
 
 -- Chi non ha fatto l'accesso non legge niente.
 select set_config('role', 'anon', true), set_config('request.jwt.claims', '', true);

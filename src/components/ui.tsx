@@ -32,7 +32,7 @@ export const NestedView = ({ children }: { children: ReactNode }) => <Nested.Pro
 export function usePageTitle(title: string | null) {
   useEffect(() => {
     if (title === null) return;
-    document.title = title ? `${title} · Scheda Calisthenics` : 'Scheda Calisthenics';
+    document.title = title ? `${title} · Kalos` : 'Kalos';
   }, [title]);
 }
 

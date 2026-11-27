@@ -2,7 +2,7 @@
 -- novità (record, allenamento condiviso, sorpasso), blocco, segnalazione, link d'invito, limiti, account eliminato.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(131);
+select plan(142);
 
 -- Anna (pubblica), Bruno (privato), Carla (privata: è lei che guarda), Dario (pubblico), Elena (senza nome),
 -- Furio (pubblico), più 31 profili pubblici "Folla" per il limite delle richieste.
@@ -118,6 +118,18 @@ select is(pg_temp.names(public.ranking('amici', 'generale')), 'Carla 1, Anna 2',
 select is((public.my_people() -> 'following' -> 0 ->> 'relation') || '/' || (public.my_people() -> 'following' -> 1 ->> 'relation'), 'accepted/pending',
   'le mie persone: chi seguo, con le richieste in attesa');
 
+-- Profilo di una persona (0021): punti e record condivisi solo di chi seguo con richiesta accettata.
+select is(public.person_profile('00000000-0000-0000-0000-0000000000b1') - 'card', '{"visible": false, "scores": null, "records": []}'::jsonb,
+  'profilo di Bruno, privato con richiesta in attesa: né punti né record');
+select is(public.person_profile('00000000-0000-0000-0000-0000000000b1') -> 'card', public.search_people('bru') -> 0, 'solo la scheda con nome e livello');
+select is(public.person_profile('00000000-0000-0000-0000-0000000000a1') -> 'scores', '{"total": 1100, "ft": 1000, "fs": 0, "st": 0, "ss": 0, "hb": 100}'::jsonb,
+  'profilo di Anna, che seguo: i punti del complessivo e delle 5 categorie');
+select is((select string_agg((x ->> 'subId') || ' ' || (x ->> 'stage'), ', ') from jsonb_array_elements(public.person_profile('00000000-0000-0000-0000-0000000000a1') -> 'records') x),
+  'verticale verticale', 'e i record che ha condiviso');
+select is(public.person_profile('00000000-0000-0000-0000-00000000dead'), null::jsonb, 'profilo che non esiste: niente');
+select is(public.person_profile('00000000-0000-0000-0000-0000000000e1'), null::jsonb, 'profilo senza nome: niente');
+select is((public.person_profile('00000000-0000-0000-0000-0000000000c1') ->> 'visible')::boolean, true, 'il mio profilo lo vedo');
+
 -- Bruno vede la richiesta e la accetta.
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');
 select is(public.my_people() -> 'requests' -> 0 ->> 'name', 'Carla', 'Bruno vede la richiesta di Carla');
@@ -140,6 +152,9 @@ select is((select items -> 0 ->> 'name' from public.shared_workouts where name =
 select is(public.search_people('bru') -> 0 ->> 'region', 'Lombardia', 'ora vede anche il luogo');
 select is((select count(*)::int from public.level_records), 0, 'ma record e peso corporeo di Bruno restano illeggibili');
 select is(pg_temp.names(public.ranking('amici', 'generale')), 'Bruno 1, Carla 2, Anna 3', 'e Bruno entra tra gli amici in classifica');
+select is((public.person_profile('00000000-0000-0000-0000-0000000000b1') -> 'scores' ->> 'st')::int, 100, 'e nel profilo di Bruno i punti delle categorie');
+select is((select array_agg(k order by k) from jsonb_object_keys(public.person_profile('00000000-0000-0000-0000-0000000000b1') -> 'records' -> 0) k),
+  array['date', 'gained', 'stage', 'subId', 'value'], 'coi record condivisi: voce, valore, data, punti guadagnati; mai il peso corporeo');
 select is(pg_temp.kinds(public.feed(1)), 'Bruno workout', 'il limite delle novità');
 select lives_ok($$ select public.feed_mark_read() $$, 'segno le novità come lette');
 select is((public.feed() ->> 'unread')::int, 0, 'nessuna non letta');
@@ -235,6 +250,7 @@ select is(public.search_people('car'), '[]'::jsonb, 'chi blocca non trova più l
 select is(public.my_people() -> 'blocked' -> 0 ->> 'name', 'Carla', 'e la vede tra i bloccati');
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000c1');
 select throws_ok($$ select public.follow_user('00000000-0000-0000-0000-0000000000f1') $$, 'P0002', 'Profilo non trovato', 'chi è bloccato non può seguire: il profilo sembra non esistere');
+select is(public.person_profile('00000000-0000-0000-0000-0000000000f1'), null::jsonb, 'né ne apre il profilo');
 select is(public.search_people('fur'), '[]'::jsonb, 'né lo trova nella ricerca');
 select is((select count(*)::int from public.blocks), 0, 'né sa di essere bloccato');
 select ok(pg_temp.names(public.ranking('mondo', 'generale')) not like '%Furio%', 'in classifica la sua riga non si vede più');
@@ -294,6 +310,7 @@ select is((select count(*)::int from public.feed_events where kind = 'workout' a
 select set_config('role', 'anon', true), set_config('request.jwt.claims', '', true);
 select throws_ok($$ select public.search_people('anna') $$, '42501', null, 'senza accesso niente ricerca');
 select throws_ok($$ select public.feed() $$, '42501', null, 'né novità');
+select throws_ok($$ select public.person_profile('00000000-0000-0000-0000-0000000000a1') $$, '42501', null, 'né profili');
 select throws_ok($$ select public.follow_user('00000000-0000-0000-0000-0000000000a1') $$, '42501', null, 'né seguire');
 select is((select count(*)::int from public.feed_events) + (select count(*)::int from public.shared_workouts) + (select count(*)::int from public.follows), 0, 'né tabelle');
 

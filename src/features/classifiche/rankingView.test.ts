@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { RankingPlace, RankingRow } from '../../data/types';
 import { CATEGORIES } from '../../lib/levels';
 import { privacyEmail, publicProfilesEnabled } from '../../lib/privacy';
-import { METRICS, metricName, rowLevel, scopePlace, scopeTitle, tileLabel, tileText, unavailableText, withGaps } from './rankingView';
+import { METRICS, metricName, homeRows, rowLevel, scopePlace, scopeTitle, tileLabel, tileText, unavailableText, withGaps } from './rankingView';
 
 const MILANO = { country: 'IT', province: 'MI', region: 'Lombardia' };
 const PARIGI = { country: 'FR', province: null, region: null };
@@ -93,5 +93,24 @@ describe('informativa', () => {
     expect(publicProfilesEnabled('')).toBe(false);
     expect(privacyEmail(' privacy@example.com ')).toBe('privacy@example.com');
     expect(publicProfilesEnabled('privacy@example.com')).toBe(true);
+  });
+});
+
+describe('classifica tra amici nella Home', () => {
+  const rows = [row(1, 'Anna'), row(2, 'Bruno'), row(3, 'Carla'), row(4, 'Dario'), row(5, 'Elena'), row(6, 'Furio'), row(7, 'Io', true)];
+  const names = (r: RankingRow[]) => r.map((x) => x.name);
+
+  it('se ci stanno, tutte', () => {
+    expect(homeRows(rows.slice(0, 3), 5)).toHaveLength(3);
+  });
+
+  it('le prime, e la mia al posto della quinta se sono più giù', () => {
+    expect(names(homeRows(rows, 5))).toEqual(['Anna', 'Bruno', 'Carla', 'Dario', 'Io']);
+    expect(withGaps(homeRows(rows, 5)).map((i) => i.kind)).toEqual(['row', 'row', 'row', 'row', 'gap', 'row']);
+  });
+
+  it('se sono tra le prime, o non ho punti, solo le prime', () => {
+    expect(names(homeRows([row(1, 'Io', true), ...rows.slice(1, 6)], 5))).toEqual(['Io', 'Bruno', 'Carla', 'Dario', 'Elena']);
+    expect(names(homeRows(rows.slice(0, 6), 5))).toEqual(['Anna', 'Bruno', 'Carla', 'Dario', 'Elena']);
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { createContext, lazy, Suspense, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../app/toast';
 import { Sheet } from '../../components/Sheet';
@@ -25,7 +25,13 @@ import type { PersonCard } from '../../data/types';
 import { shortDate } from '../../lib/dates';
 import { plural } from '../../lib/format';
 import { publicProfilesEnabled } from '../../lib/privacy';
+import type { PersonRef } from './PersonSheet';
 import { followButton, followLink, initial, personName, personSub } from './socialView';
+
+const PersonSheet = lazy(() => import('./PersonSheet').then((m) => ({ default: m.PersonSheet })));
+
+/** Tocco sul nome di una riga: apre il profilo di quella persona. */
+const OpenPerson = createContext<(p: PersonRef) => void>(() => {});
 
 /**
  * Persone (ticket 39), dalla lente della Home: cerca per nome, il proprio link "seguimi", le richieste da accettare,
@@ -35,9 +41,10 @@ import { followButton, followLink, initial, personName, personSub } from './soci
 export function PeopleView({ inviteCode }: { inviteCode?: string }) {
   const people = usePeople();
   const [report, setReport] = useState<PersonCard | null>(null);
+  const [person, setPerson] = useState<PersonRef | null>(null);
   const p = people.data;
   return (
-    <>
+    <OpenPerson.Provider value={setPerson}>
       <PageTitle show title="Persone" />
       {inviteCode && <InviteCard code={inviteCode} onReport={setReport} />}
       <SearchCard onReport={setReport} />
@@ -68,7 +75,7 @@ export function PeopleView({ inviteCode }: { inviteCode?: string }) {
           {p.followers.length > 0 && (
             <section className="card" aria-labelledby="pp-followers">
               <h2 id="pp-followers">Ti seguono · {p.followers.length}</h2>
-              <p className="sub">Vedono il tuo nome in classifica, i record che condividi e gli allenamenti che condividi.</p>
+              <p className="sub">Vedono il tuo nome e i tuoi punti, in classifica e nel tuo profilo, i record che condividi e gli allenamenti che condividi.</p>
               <ul className="pp-list">
                 {p.followers.map((x) => (
                   <Person key={x.userId} person={x} onReport={setReport} followBack />
@@ -86,24 +93,30 @@ export function PeopleView({ inviteCode }: { inviteCode?: string }) {
         </Link>
       </p>
       {report && <ReportSheet person={report} onClose={() => setReport(null)} />}
-    </>
+      {person && (
+        <Suspense fallback={null}>
+          <PersonSheet key={person.userId} person={person} onClose={() => setPerson(null)} />
+        </Suspense>
+      )}
+    </OpenPerson.Provider>
   );
 }
 
 /** Tondo con l'iniziale, nome, livello (e luogo se visibile); a destra le azioni. */
-function Row({ person, wide, children }: { person: Pick<PersonCard, 'name' | 'band' | 'country' | 'province' | 'isPrivate'>; /** più azioni: sul telefono vanno a capo */ wide?: boolean; children?: ReactNode }) {
+function Row({ person, wide, children }: { person: Pick<PersonCard, 'userId' | 'name' | 'band' | 'country' | 'province' | 'isPrivate'>; /** più azioni: sul telefono vanno a capo */ wide?: boolean; children?: ReactNode }) {
+  const open = useContext(OpenPerson);
   return (
     <li className={wide ? 'pp-row req' : 'pp-row'}>
       <span className="nv-av" aria-hidden="true">
         {initial(person.name)}
       </span>
-      <span className="pp-who">
+      <button type="button" className="pp-who who-btn" onClick={() => open({ userId: person.userId, name: person.name })} aria-label={`${personName(person.name)}: apri il profilo`}>
         <b>{personName(person.name)}</b>
         <small>
           {personSub(person)}
           {person.isPrivate && ' · privato'}
         </small>
-      </span>
+      </button>
       {children && <span className="pp-act">{children}</span>}
     </li>
   );
@@ -245,7 +258,7 @@ function LinkCard() {
   const send = async () => {
     if (!link) return;
     try {
-      if (navigator.share) await navigator.share({ title: 'Scheda Calisthenics', text: 'Seguimi su Scheda Calisthenics', url: link });
+      if (navigator.share) await navigator.share({ title: 'Kalos', text: 'Seguimi su Kalos', url: link });
       else {
         await navigator.clipboard.writeText(link);
         toast('Link copiato');

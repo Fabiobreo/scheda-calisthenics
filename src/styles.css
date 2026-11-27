@@ -1221,6 +1221,31 @@ input[type='search']::-webkit-search-cancel-button { filter: grayscale(1) bright
 .rk-place { display: none; }
 .rk-vis { font-size: 11px; }
 .rk .hint { padding: 0 2px; }
+/* nome di una persona che apre il suo profilo: un bottone che si legge come il testo che sostituisce */
+.who-btn { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: 6px; }
+.nv-txt .who-btn, .nv-txt .who-btn b { display: inline; }
+@media (hover: hover) { .who-btn:hover b { text-decoration: underline; text-underline-offset: 3px; } }
+/* profilo di una persona */
+.ps-hero { margin-top: 14px; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); align-items: center; gap: 8px; }
+.ps-total { margin: 0; color: var(--muted); font-size: 13px; }
+.ps-total b { font-family: var(--f-display); font-size: 30px; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--gold-hi); }
+.ps-total small { display: block; margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--fg); }
+.ps-penta { height: 170px; min-width: 0; }
+.ps-cats, .ps-recs { list-style: none; margin: 8px 0 0; padding: 0; }
+.ps-cats li, .ps-recs li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 46px; padding: 6px 2px; border-top: 1px solid var(--line); }
+.ps-cats li:first-child, .ps-recs li:first-child { border-top: 0; }
+.ps-cats li > span:first-child, .ps-recs li > span:first-child { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ps-cats b, .ps-recs b { font-weight: 600; font-size: 14px; }
+.ps-cats small, .ps-recs small { font-size: 12px; color: var(--muted); }
+.ps-recs time { flex: none; font-size: 12px; color: var(--muted); }
+.ps-h { margin: 18px 0 0; font-size: 13px; font-weight: 600; color: var(--fg); }
+/* "Tra amici": la classifica di chi segui, aperta sotto i riquadri */
+.rk-fr { margin-top: 10px; padding: 10px 12px 6px; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line); border-radius: 18px; }
+.rk-fr-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
+.rk-fr-h h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--fg); }
+.rk-fr .rk-rows { margin-top: 4px; }
+.rk-fr .rk-row { min-height: 48px; }
+.rk-fr-empty { margin: 4px 0 6px; font-size: 12px; color: var(--muted); }
 @media (min-width: 1024px) {
   .rk-tile { grid-template-areas: 'kind' 'place' 'big' 'small'; min-height: 92px; padding: 12px; }
   .rk-place { display: block; min-height: 0; font-size: 13px; }
