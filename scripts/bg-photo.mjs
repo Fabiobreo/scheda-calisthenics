@@ -3,6 +3,11 @@
 //
 //   node scripts/bg-photo.mjs percorso/della/foto.jpg   → public/bg/palestra-688.webp e palestra-480.webp
 //   node scripts/bg-photo.mjs                           → segnaposto scuro con gli anelli, finché la foto non c'è
+//   node scripts/bg-photo.mjs percorso/della/foto.webp marmo
+//                                                       → public/bg/marmo-960.webp e marmo-640.webp: la foto chiara del
+//                                                         fondo Marmo (ticket 43), che è orizzontale (2000×1116). Se ne
+//                                                         tiene il centro in 4:3: sul telefono la fascia è più alta che
+//                                                         larga e i lati non si vedrebbero comunque.
 //
 // Usa sharp, che arriva con @vite-pwa/assets-generator (già tra le dipendenze di sviluppo).
 import { mkdirSync } from 'node:fs';
@@ -30,6 +35,14 @@ const placeholder = () =>
 
 const src = process.argv[2];
 mkdirSync(OUT, { recursive: true });
+if (process.argv[3] === 'marmo') {
+  for (const w of [960, 640]) {
+    const file = join(OUT, `marmo-${w}.webp`);
+    await sharp(src).resize(w, (w * 3) / 4, { fit: 'cover', position: 'centre' }).webp({ quality: 68 }).toFile(file);
+    console.log(file);
+  }
+  process.exit(0);
+}
 const input = src ? sharp(src) : sharp(placeholder());
 for (const w of SIZES) {
   const file = join(OUT, `palestra-${w}.webp`);

@@ -1396,8 +1396,16 @@ input[type='checkbox'] { min-height: 0; padding: 0; }
 :root[data-ground='marmo'][data-metal='argento'] { --ink: #5b616c; --ink-hi: #353a44; --ink-dim: #666a72; }
 :root[data-ground='marmo'][data-metal='cobalto'] { --ink: #3f639a; --ink-hi: #254474; --ink-dim: #5a6779; }
 :root[data-ground='marmo'][data-metal='ametista'] { --ink: #6e52a0; --ink-hi: #4a3478; --ink-dim: #6a607c; }
-/* la foto della palestra è scura: su Marmo si rovescia in un'incisione chiara, appena accennata sotto il velo */
-:root[data-ground='marmo'] .bg img { filter: grayscale(1) invert(1) contrast(.8); opacity: .5; }
+/* su Marmo la palestra ha la sua foto chiara (public/bg/marmo-*.webp, da scripts/bg-photo.mjs): le due immagini stanno
+   in index.html e qui si mostra quella del fondo scelto */
+.bg img.marmo { display: none; }
+:root[data-ground='marmo'] .bg img { display: none; }
+:root[data-ground='marmo'] .bg img.marmo { display: block; }
+/* i pali neri della struttura passano dietro la testata: su Marmo il velo è più fitto, così il testo scuro si legge */
+:root[data-ground='marmo'] .bg::after {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 72%, transparent) 0%, color-mix(in srgb, var(--bg) 64%, transparent) 22%,
+    color-mix(in srgb, var(--bg) 86%, transparent) 46%, color-mix(in srgb, var(--bg) 97%, transparent) 68%, var(--bg) 84%);
+}
 /* freccia della tendina e lente della ricerca: sono immagini col colore scritto dentro, qui nel --muted di Marmo */
 :root[data-ground='marmo'] select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23655f54' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
 :root[data-ground='marmo'] input[type='search'], :root[data-ground='marmo'] .ss input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23655f54' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E"); }

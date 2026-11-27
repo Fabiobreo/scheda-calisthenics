@@ -31,6 +31,8 @@
   <body>
     <div class="bg" aria-hidden="true">
       <img src="/bg/palestra-688.webp" srcset="/bg/palestra-480.webp 480w, /bg/palestra-688.webp 688w" sizes="100vw" width="688" height="1536" alt="" fetchpriority="high" decoding="async" />
+      <!-- foto del fondo Marmo (ticket 43): nascosta finché il fondo è Notte, e con loading="lazy" finché è nascosta non si scarica -->
+      <img class="marmo" src="/bg/marmo-960.webp" srcset="/bg/marmo-640.webp 640w, /bg/marmo-960.webp 960w" sizes="100vw" width="960" height="720" alt="" loading="lazy" decoding="async" />
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
